@@ -98,19 +98,27 @@ const AdminUsers = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Header />
-      <div className="flex flex-1 overflow-hidden max-w-7xl mx-auto w-full pt-16">
-        <SidebarNav />
-        <main className="flex-1 overflow-y-auto p-6 md:p-8">
-          <div className="mb-8 flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-              <p className="text-muted-foreground mt-1">Manage system users, roles, and permissions.</p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-[#fafbfc] flex flex-col relative overflow-hidden">
+      {/* Mesh Gradient Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] rounded-full bg-info/10 blur-[100px]" />
+        <div className="absolute top-[40%] left-[60%] w-[25%] h-[25%] rounded-full bg-success/5 blur-[80px]" />
+      </div>
 
-          <Card className="border-none shadow-sm overflow-hidden">
+      <Header />
+      <div className="flex flex-1 overflow-hidden relative z-10">
+        <SidebarNav />
+        <main className="flex-1 overflow-y-auto p-6 md:p-10">
+          <div className="max-w-5xl mx-auto">
+            <div className="mb-10 flex justify-between items-center animate-fade-in-up">
+              <div>
+                <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">User Management</h1>
+                <p className="text-muted-foreground mt-3 text-lg">Manage system users, roles, and permissions.</p>
+              </div>
+            </div>
+
+            <Card className="border-none shadow-premium bg-white/60 backdrop-blur-md overflow-hidden animate-fade-in-up md:animate-delay-100">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead className="bg-muted/50 border-b">
@@ -203,8 +211,9 @@ const AdminUsers = () => {
                </table>
              </div>
            </Card>
-         </main>
-       </div>
+          </div>
+        </main>
+      </div>
 
        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
          <DialogContent className="sm:max-w-md">

@@ -1,7 +1,8 @@
-import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, type LucideIcon } from "lucide-react";
+import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, type LucideIcon } from "lucide-react";
 import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 interface SidebarItem {
   icon: LucideIcon;
@@ -39,15 +40,15 @@ interface SidebarButtonProps {
 
 function SidebarButton({ icon: Icon, label, active, onClick }: SidebarButtonProps) {
   return (
-    <button 
+    <button
       onClick={onClick}
-      className={`flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-colors w-full text-left ${
-        active 
-          ? "bg-primary/10 text-primary font-medium" 
-          : "text-muted-foreground hover:text-foreground hover:bg-accent"
+      className={`flex items-center gap-2.5 px-4 py-2.5 text-sm rounded-full transition-all duration-200 w-full text-left group ${
+        active
+          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 font-bold"
+          : "text-muted-foreground hover:text-foreground hover:bg-white hover:shadow-premium"
       }`}
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
       {label}
     </button>
   );
@@ -58,14 +59,14 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
-  
+
   const selectedCategory = propCategory || searchParams.get("category") || "All";
 
   const handleCategoryClick = (label: string) => {
     if (onCategorySelect) {
       onCategorySelect(label);
     } else {
-      // If we don't have an explicit handler (like on Detail page), 
+      // If we don't have an explicit handler (like on Detail page),
       // navigate to root with the category param
       const params = new URLSearchParams();
       if (label !== "All") params.set("category", label);
@@ -74,44 +75,36 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
   };
 
   return (
-    <aside className="w-52 shrink-0 bg-card border-r hidden md:flex flex-col p-4 gap-1">
-      <Link to={ROUTES.PROFILE} className="w-full">
-        <SidebarButton icon={User} label="My Ideas" />
-      </Link>
-      <SidebarButton icon={TrendingUp} label="Trending Ideas" />
-      <SidebarButton icon={Users} label="Team Ideas" />
+    <aside className="w-64 shrink-0 border-r border-border/50 hidden md:flex flex-col p-4 pt-6 gap-1 bg-background/50 backdrop-blur-sm">
 
-      {user?.role === 'admin' && (
-        <>
-          <div className="mt-4 mb-1 px-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              <Lock className="h-3.5 w-3.5" />
-              Admin
-            </div>
-          </div>
-          <Link to={ROUTES.ADMIN_USERS} className="w-full">
-            <SidebarButton icon={Users} label="Manage Users" />
-          </Link>
-        </>
-      )}
-
-      <div className="mt-4 mb-1 px-3">
-        {/* ... Categories label ... */}
-        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          <Tag className="h-3.5 w-3.5" />
+      <div className="px-3 mb-2">
+        <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
+          <Tag className="h-3 w-3" />
           Categories
         </div>
       </div>
 
-      {categories.map((cat) => (
-        <SidebarButton 
-          key={cat.label} 
-          icon={cat.icon} 
-          label={cat.label} 
-          active={selectedCategory === cat.label || (cat.label === "All" && !selectedCategory)}
-          onClick={() => handleCategoryClick(cat.label)}
-        />
-      ))}
+      <div className="flex-1 space-y-1 overflow-y-auto px-1 -mx-1 custom-scrollbar">
+        {categories.map((cat) => (
+          <SidebarButton
+            key={cat.label}
+            icon={cat.icon}
+            label={cat.label}
+            active={selectedCategory === cat.label || (cat.label === "All" && !selectedCategory)}
+            onClick={() => handleCategoryClick(cat.label)}
+          />
+        ))}
+
+        <div className="pt-6 pb-2">
+          <Button asChild className="w-full justify-start gap-2 shadow-md hover:shadow-lg transition-all rounded-xl h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm">
+            <Link to={ROUTES.SUBMIT_IDEA}>
+              <Plus className="h-5 w-5 shrink-0" />
+              New Idea
+            </Link>
+          </Button>
+        </div>
+      </div>
+
     </aside>
   );
 };
