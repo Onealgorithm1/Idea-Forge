@@ -8,7 +8,7 @@ interface LogoProps extends HTMLAttributes<HTMLDivElement> {
 export function Logo({ className = "", imageClassName = "h-4 w-4", ...props }: LogoProps) {
   return (
     <div className={`flex items-center justify-center ${className}`} {...props}>
-      <img src="/ideaforge.png" alt="IdeaForge Logo" className={imageClassName} />
+      <img src="/idea.png" alt="IdeaForge Logo" className={imageClassName} />
     </div>
   );
 }

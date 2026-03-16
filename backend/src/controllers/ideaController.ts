@@ -68,46 +68,29 @@ import { emitVoteUpdate, emitStatusUpdate } from '../lib/socket.js';
 
 export const voteIdea = async (req: any, res: Response) => {
   const { id } = req.params;
-  const { type } = req.body; // 'up' or 'down'
+  const { type } = req.body; 
   const user_id = req.user.id;
+
+  // Only 'up' votes are allowed in the new strict voting system
+  if (type !== 'up') {
+    return res.status(400).json({ message: 'Only upvoting is allowed' });
+  }
 
   try {
     // Check if vote already exists
     const existingVote = await query('SELECT * FROM votes WHERE idea_id = $1 AND user_id = $2', [id, user_id]);
     
     if (existingVote.rows.length > 0) {
-      if (existingVote.rows[0].type === type) {
-        // Remove vote if same type (toggle)
-        await query('DELETE FROM votes WHERE idea_id = $1 AND user_id = $2', [id, user_id]);
-      } else {
-        // Update vote type
-        await query('UPDATE votes SET type = $1 WHERE idea_id = $2 AND user_id = $3', [type, id, user_id]);
-      }
+      // If vote exists, remove it (toggle behavior)
+      await query('DELETE FROM votes WHERE idea_id = $1 AND user_id = $2', [id, user_id]);
     } else {
-      // Create new vote
-      await query('INSERT INTO votes (idea_id, user_id, type) VALUES ($1, $2, $3)', [id, user_id, type]);
+      // Create new 'up' vote
+      await query('INSERT INTO votes (idea_id, user_id, type) VALUES ($1, $2, \'up\')', [id, user_id]);
     }
 
-    // Update votes_count in ideas table
-    const voteCounts = await query('SELECT COUNT(*) FILTER (WHERE type = \'up\') - COUNT(*) FILTER (WHERE type = \'down\') as total FROM votes WHERE idea_id = $1', [id]);
+    // Update votes_count in ideas table - strictly count 'up' votes
+    const voteCounts = await query('SELECT COUNT(*) as total FROM votes WHERE idea_id = $1 AND type = \'up\'', [id]);
     const totalVotes = parseInt(voteCounts.rows[0].total || 0);
-    
-    if (totalVotes < 0) {
-      // Undo the vote change
-      if (existingVote.rows.length > 0) {
-        if (existingVote.rows[0].type !== type) {
-          // Revert swap (down to up)
-          await query('UPDATE votes SET type = $1 WHERE idea_id = $2 AND user_id = $3', [existingVote.rows[0].type, id, user_id]);
-        } else {
-          // Toggle off was already negative? (Shouldn't happen with floor logic but for safety)
-          await query('INSERT INTO votes (idea_id, user_id, type) VALUES ($1, $2, $3)', [id, user_id, type]);
-        }
-      } else {
-        // New downvote made it negative? Delete it.
-        await query('DELETE FROM votes WHERE idea_id = $1 AND user_id = $2', [id, user_id]);
-      }
-      return res.status(400).json({ message: 'No negative allowed' });
-    }
 
     await query('UPDATE ideas SET votes_count = $1 WHERE id = $2', [totalVotes, id]);
 
@@ -116,13 +99,15 @@ export const voteIdea = async (req: any, res: Response) => {
 
     res.json({ message: 'Vote recorded', id, votes_count: totalVotes });
 
-    // Trigger Notification for author
-    const ideaInfo = await query('SELECT author_id, title FROM ideas WHERE id = $1', [id]);
-    if (ideaInfo.rows.length > 0 && ideaInfo.rows[0].author_id !== user_id) {
-      await query(
-        'INSERT INTO notifications (user_id, type, reference_id, message) VALUES ($1, $2, $3, $4)',
-        [ideaInfo.rows[0].author_id, 'vote', id, `Someone voted on your idea: ${ideaInfo.rows[0].title}`]
-      );
+    // Trigger Notification for author - only for new votes
+    if (existingVote.rows.length === 0) {
+      const ideaInfo = await query('SELECT author_id, title FROM ideas WHERE id = $1', [id]);
+      if (ideaInfo.rows.length > 0 && ideaInfo.rows[0].author_id !== user_id) {
+        await query(
+          'INSERT INTO notifications (user_id, type, reference_id, message) VALUES ($1, $2, $3, $4)',
+          [ideaInfo.rows[0].author_id, 'vote', id, `Someone upvoted your idea: ${ideaInfo.rows[0].title}`]
+        );
+      }
     }
   } catch (error) {
     console.error('Vote idea error:', error);
