@@ -4,10 +4,10 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import ideaRoutes from './routes/ideaRoutes.js';
-
 import { createServer } from 'http';
 import { initSocket } from './lib/socket.js';
 import adminRoutes from './routes/adminRoutes.js';
+import superAdminRoutes from './routes/superAdminRoutes.js';
 
 dotenv.config();
 
@@ -27,6 +27,7 @@ app.use(morgan('dev'));
 app.use('/api/auth', authRoutes);
 app.use('/api/ideas', ideaRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/super-admin', superAdminRoutes);
 
 import { query } from './config/db.js';
 

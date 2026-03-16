@@ -1,4 +1,4 @@
-import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, type LucideIcon } from "lucide-react";
+import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, ShieldCheck, Activity, type LucideIcon } from "lucide-react";
 import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { ROUTES } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
@@ -76,6 +76,31 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
 
   return (
     <aside className="w-64 shrink-0 border-r border-border/50 hidden md:flex flex-col p-4 pt-6 gap-1 bg-background/50 backdrop-blur-sm">
+
+      {user?.role === 'admin' && (
+        <div className="mb-4 space-y-1">
+          <div className="px-3 mb-2">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-[0.15em]">
+              <ShieldCheck className="h-3 w-3" />
+              Administration
+            </div>
+          </div>
+          <Link to={ROUTES.ADMIN_DASHBOARD} className="w-full">
+            <SidebarButton
+              icon={Activity}
+              label="Admin Dashboard"
+              active={pathname === ROUTES.ADMIN_DASHBOARD}
+            />
+          </Link>
+          <Link to={ROUTES.ADMIN_USERS} className="w-full">
+            <SidebarButton
+              icon={Users}
+              label="Manage Users"
+              active={pathname === ROUTES.ADMIN_USERS}
+            />
+          </Link>
+        </div>
+      )}
 
       <div className="px-3 mb-2">
         <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">

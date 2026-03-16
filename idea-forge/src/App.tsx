@@ -12,6 +12,9 @@ import SubmitIdea from "./pages/SubmitIdea";
 import IdeaDetail from "./pages/IdeaDetail";
 import Profile from "./pages/Profile";
 import AdminUsers from "./pages/AdminUsers";
+import AdminDashboard from "./pages/AdminDashboard";
+import SuperAdminLogin from "./pages/SuperAdmin/Login";
+import SuperAdminDashboard from "./pages/SuperAdmin/Dashboard";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ROUTES } from "./lib/constants";
 
@@ -26,6 +29,12 @@ const App = () => (
         <SocketProvider>
           <AuthProvider>
             <Routes>
+              {/* Super Admin Portal — standalone, no AuthContext needed */}
+              <Route path="/super-admin" element={<SuperAdminLogin />} />
+              <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+              <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
+
+              {/* Main App — protected routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path={ROUTES.ROOT} element={<Index />} />
                 <Route path={ROUTES.IDEA_BOARD} element={<Index />} />
@@ -34,8 +43,10 @@ const App = () => (
                 <Route path={ROUTES.SUBMIT_IDEA} element={<SubmitIdea />} />
                 <Route path={ROUTES.IDEA_DETAIL} element={<IdeaDetail />} />
                 <Route path={ROUTES.PROFILE} element={<Profile />} />
+                <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminDashboard />} />
                 <Route path={ROUTES.ADMIN_USERS} element={<AdminUsers />} />
               </Route>
+
               <Route path={ROUTES.LOGIN} element={<AuthPage />} />
               <Route path={ROUTES.SIGNUP} element={<AuthPage />} />
               <Route path="*" element={<NotFound />} />

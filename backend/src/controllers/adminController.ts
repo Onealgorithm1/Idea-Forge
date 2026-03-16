@@ -76,3 +76,59 @@ export const updateUserPassword = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const getStats = async (_req: Request, res: Response) => {
+  try {
+    const result = await query(`
+      SELECT
+        (SELECT COUNT(*) FROM users)::int                                            AS total_users,
+        (SELECT COUNT(*) FROM ideas)::int                                            AS total_ideas,
+        (SELECT COUNT(*) FROM comments)::int                                         AS total_comments,
+        (SELECT COUNT(*) FROM votes WHERE type = 'up')::int                          AS total_votes,
+        (SELECT COUNT(*) FROM users  WHERE created_at > NOW() - INTERVAL '30 days')::int AS new_users_30d,
+        (SELECT COUNT(*) FROM ideas  WHERE created_at > NOW() - INTERVAL '30 days')::int AS new_ideas_30d,
+        (SELECT COUNT(*) FROM users  WHERE role = 'admin' OR role = 'super_admin')::int  AS admin_count,
+        (
+          CASE WHEN (SELECT COUNT(*) FROM users) = 0 THEN 0
+          ELSE ROUND(
+            100.0 * (SELECT COUNT(DISTINCT user_id) FROM votes) / (SELECT COUNT(*) FROM users)
+          ) END
+        )::int AS engagement_rate
+    `);
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Get stats error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getRecentActivity = async (_req: Request, res: Response) => {
+  try {
+    // Get last 5 audit log entries; fall back to user registrations if audit_logs is empty
+    const logs = await query(`
+      SELECT 
+        COALESCE(u.name, 'System') AS actor,
+        al.action,
+        al.entity_type,
+        al.created_at
+      FROM audit_logs al
+      LEFT JOIN users u ON u.id = al.actor_user_id
+      ORDER BY al.created_at DESC
+      LIMIT 5
+    `);
+
+    if (logs.rows.length > 0) {
+      return res.json(logs.rows);
+    }
+
+    // Fallback: latest user registrations and idea submissions
+    const fallback = await query(`
+      SELECT name AS actor, 'registered' AS action, 'user' AS entity_type, created_at
+      FROM users ORDER BY created_at DESC LIMIT 5
+    `);
+    res.json(fallback.rows);
+  } catch (error) {
+    console.error('Get recent activity error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

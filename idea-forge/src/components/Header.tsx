@@ -1,4 +1,4 @@
-import { Bell, LogOut, User, TrendingUp, Users, Lock, ChevronDown } from "lucide-react";
+import { Bell, LogOut, User, TrendingUp, Users, ShieldCheck, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -203,11 +203,11 @@ const Header = () => {
                       </div>
                       <div className="space-y-1">
                         <DropdownMenuItem asChild className="outline-none">
-                          <Link to={ROUTES.ADMIN_USERS} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-white/10 focus:bg-white/10 cursor-pointer transition-all group outline-none">
+                          <Link to={ROUTES.ADMIN_DASHBOARD} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-white/10 focus:bg-white/10 cursor-pointer transition-all group outline-none">
                             <div className="p-1.5 rounded-md bg-white/5 group-hover:bg-primary/20 transition-colors">
-                              <Lock className="h-3.5 w-3.5 text-white/60 group-hover:text-primary transition-colors" />
+                              <ShieldCheck className="h-3.5 w-3.5 text-white/60 group-hover:text-primary transition-colors" />
                             </div>
-                            <span className="text-white/90 group-hover:text-white group-focus:text-white font-semibold">Manage Users</span>
+                            <span className="text-white/90 group-hover:text-white group-focus:text-white font-semibold">Admin Dashboard</span>
                           </Link>
                         </DropdownMenuItem>
                       </div>

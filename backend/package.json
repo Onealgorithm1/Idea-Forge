@@ -6,6 +6,7 @@
   "scripts": {
     "start": "npx -y tsx src/index.ts",
     "dev": "npx -y tsx watch src/index.ts",
+    "db:migrate": "npx -y tsx src/migrate.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

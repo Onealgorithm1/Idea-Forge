@@ -1,5 +1,15 @@
 const API_URL = 'http://localhost:5001/api';
 
+// Auto-inject tenant context from auth state
+function getTenantHeaders(): Record<string, string> {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user?.tenantId) return { 'X-Tenant-ID': user.tenantId };
+  } catch { /* ignore */ }
+  return {};
+}
+
+
 export const api = {
   async get(endpoint: string, token?: string) {
     const headers: any = {

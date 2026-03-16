@@ -9,5 +9,6 @@ export const ROUTES = {
   SIGNUP: "/signup",
   IDEA_DETAIL: "/ideas/:id",
   PROFILE: "/profile",
+  ADMIN_DASHBOARD: "/admin/dashboard",
   ADMIN_USERS: "/admin/users",
 } as const;
