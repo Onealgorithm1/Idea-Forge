@@ -6,40 +6,40 @@
 
 @layer base {
   :root {
-    --background: 220 14% 96%;
-    --foreground: 224 20% 10%;
+    --background: 220 33% 98%;
+    --foreground: 224 71% 4%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 20% 10%;
+    --card-foreground: 224 71% 4%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 20% 10%;
+    --popover-foreground: 224 71% 4%;
 
-    --primary: 220 60% 42%;
+    --primary: 242 82% 58%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 224 20% 10%;
+    --secondary: 220 33% 96%;
+    --secondary-foreground: 224 71% 4%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 220 33% 96%;
+    --muted-foreground: 220 14% 37%;
 
-    --accent: 220 60% 95%;
-    --accent-foreground: 220 60% 42%;
+    --accent: 242 82% 97%;
+    --accent-foreground: 242 82% 58%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 90%;
-    --input: 220 13% 90%;
-    --ring: 220 60% 42%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 242 82% 58%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --header-bg: 222 35% 28%;
+    --header-bg: 234 28% 14%;
     --header-foreground: 0 0% 100%;
 
-    --success: 142 71% 45%;
+    --success: 142 76% 45%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
@@ -47,13 +47,25 @@
     --info-foreground: 0 0% 100%;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 9% 46%;
-    --sidebar-primary: 220 60% 42%;
+    --sidebar-foreground: 220 14% 37%;
+    --sidebar-primary: 242 82% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 60% 95%;
-    --sidebar-accent-foreground: 220 60% 42%;
-    --sidebar-border: 220 13% 90%;
-    --sidebar-ring: 220 60% 42%;
+    --sidebar-accent: 242 82% 97%;
+    --sidebar-accent-foreground: 242 82% 58%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 242 82% 58%;
+
+    --glass-bg: 0 0% 100% / 0.75;
+    --glass-border: 0 0% 100% / 0.2;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
+  }
+  .glass-dark {
+    @apply bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)];
   }
 }
 

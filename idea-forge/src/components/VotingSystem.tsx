@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowBigUp, ArrowBigDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -28,7 +28,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
       <Button
         variant="ghost"
         size="icon"
-        className="h-8 w-8 rounded-lg hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors group"
+        className="h-8 w-8 rounded-lg hover:bg-emerald-500/20 hover:text-emerald-500 transition-all group"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -36,10 +36,10 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
         }}
       >
         <motion.div
-          whileHover={{ y: -2 }}
+          whileHover={{ scale: 1.15 }}
           whileTap={{ scale: 0.9 }}
         >
-          <ChevronUp className="h-5 w-5" />
+          <ArrowBigUp className="h-5 w-5 fill-current" />
         </motion.div>
       </Button>
 
