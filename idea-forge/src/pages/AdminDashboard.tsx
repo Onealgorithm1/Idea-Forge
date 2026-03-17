@@ -107,7 +107,7 @@ const AdminDashboard = () => {
               </div>
               <div className="flex gap-3">
                 <Button asChild variant="outline" className="rounded-xl border-slate-200 shadow-sm font-bold bg-white/50 backdrop-blur-sm">
-                  <Link to={ROUTES.ADMIN_USERS}>
+                  <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)}>
                     <Settings className="mr-2 h-4 w-4" />
                     Configure
                   </Link>
