@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, MessageSquare, Heart, Bookmark, Calendar, Target, User, ChevronUp, ChevronDown, Check, Loader2 } from "lucide-react";
 import Header from "@/components/Header";
@@ -33,6 +34,28 @@ const IdeaDetail = () => {
     queryFn: () => api.get(`/ideas/${id}/comments`),
     enabled: !!idea,
   });
+
+  const [newComment, setNewComment] = useState("");
+
+  const commentMutation = useMutation({
+    mutationFn: (content: string) => 
+      api.post(`/ideas/${id}/comments`, { content }, token!),
+    onSuccess: () => {
+      setNewComment("");
+      queryClient.invalidateQueries({ queryKey: ["comments", id] });
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      toast.success("Comment added");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to add comment");
+    }
+  });
+
+  const handleAddComment = () => {
+    if (!newComment.trim()) return;
+    if (!token) return toast.error("Please login to comment");
+    commentMutation.mutate(newComment);
+  };
 
   const voteMutation = useMutation({
     mutationFn: ({ type }: { type: "up" | "down" }) => 
@@ -213,6 +236,26 @@ const IdeaDetail = () => {
                 <MessageSquare className="h-5 w-5" />
                 Comments ({comments.length})
               </h3>
+
+              <div className="flex gap-3 mb-6">
+                <input
+                  type="text"
+                  placeholder="Share your thoughts or feedback..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddComment();
+                  }}
+                  className="flex-1 bg-background border border-border shadow-sm rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                />
+                <Button
+                  onClick={handleAddComment}
+                  disabled={!newComment.trim() || commentMutation.isPending}
+                  className="font-medium px-6 py-2.5 rounded-lg shadow-sm"
+                >
+                  {commentMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post"}
+                </Button>
+              </div>
               
               <div className="space-y-4">
                 {comments.map((c) => (

@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Plus, GripVertical, ArrowBigUp, MessageSquare, ChevronUp, ChevronDown, Bookmark, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ROUTES } from "@/lib/constants";
@@ -12,6 +11,7 @@ import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
 import { api } from "@/lib/api";
 import VotingSystem from "./VotingSystem";
+import { useNavigate } from "react-router-dom";
 
 const statusColor: Record<string, string> = {
   "Pending": "bg-muted text-muted-foreground",
@@ -22,9 +22,7 @@ const statusColor: Record<string, string> = {
 };
 
 const KanbanBoard = ({ category = "All" }: { category?: string }) => {
-  const [selectedIdea, setSelectedIdea] = useState<any>(null);
-  const [newComment, setNewComment] = useState("");
-  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { token } = useAuth();
   const queryClient = useQueryClient();
 
@@ -32,12 +30,6 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
     queryKey: ["ideas"],
     queryFn: () => api.get("/ideas"),
     staleTime: 1000 * 60, // 1 minute
-  });
-
-  const { data: comments = [], refetch: refetchComments } = useQuery({
-    queryKey: ["comments", selectedIdea?.id],
-    queryFn: () => api.get(`/ideas/${selectedIdea.id}/comments`),
-    enabled: !!selectedIdea,
   });
 
   const voteMutation = useMutation({
@@ -55,17 +47,6 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
     },
     onError: (error: any) => {
        toast.error(error.message || "Failed to vote");
-    }
-  });
-
-  const commentMutation = useMutation({
-    mutationFn: (content: string) =>
-      api.post(`/ideas/${selectedIdea.id}/comments`, { content }, token!),
-    onSuccess: () => {
-      setNewComment("");
-      queryClient.invalidateQueries({ queryKey: ["comments", selectedIdea.id] });
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
-      toast.success("Comment added");
     }
   });
 
@@ -88,30 +69,16 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
     }
   });
 
-  useEffect(() => {
-    const ideaId = searchParams.get("ideaId");
-    if (ideaId && ideas.length > 0) {
-      const idea = ideas.find((i: any) => String(i.id) === ideaId);
-      if (idea) setSelectedIdea(idea);
-    }
-  }, [ideas, searchParams]);
+
 
   const handleVote = (id: string, type: 'up' | 'down') => {
     if (!token) return toast.error("Please login to vote");
     voteMutation.mutate({ id, type });
   };
 
-  const handleSelectIdea = (idea: any) => {
-    setSelectedIdea(idea);
-  };
-
-  const handleAddComment = () => {
-    if (!newComment.trim() || !selectedIdea) return;
-    if (!token) return toast.error("Please login to comment");
-    commentMutation.mutate(newComment);
-  };
-
-  const handleBookmark = (id: string) => {
+  const handleSelectIdea = (id: string) => {
+    navigate(ROUTES.IDEA_DETAIL.replace(':id', id));
+  };  const handleBookmark = (id: string) => {
     if (!token) return toast.error("Please login to bookmark");
     bookmarkMutation.mutate(id);
   };
@@ -160,8 +127,8 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                 transition={{ delay: idx * 0.05 }}
                 key={item.id}
                 onMouseEnter={() => prefetchIdea(item.id)}
-                onClick={() => handleSelectIdea(item)}
-                className={`group bg-white rounded-xl border border-border/50 p-4 hover:shadow-premium-hover hover:-translate-y-1 transition-all duration-300 cursor-pointer relative ${selectedIdea?.id === item.id ? 'border-primary ring-2 ring-primary/10' : ''}`}
+                onClick={() => handleSelectIdea(item.id)}
+                className={`group bg-white rounded-xl border border-border/50 p-4 hover:shadow-premium-hover hover:-translate-y-1 transition-all duration-300 cursor-pointer relative`}
               >
                 <div className="flex flex-col h-full">
                   <div className="flex items-start justify-between gap-3 mb-4">
@@ -240,9 +207,8 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05 }}
                 key={item.id}
-                onMouseEnter={() => prefetchIdea(item.id)}
-                onClick={() => handleSelectIdea(item)}
-                className={`group bg-white rounded-xl border border-border/50 p-4 hover:shadow-premium-hover hover:-translate-y-1 transition-all duration-300 cursor-pointer relative ${selectedIdea?.id === item.id ? 'border-primary ring-2 ring-primary/10' : ''}`}
+                onClick={() => handleSelectIdea(item.id)}
+                className={`group bg-white rounded-xl border border-border/50 p-4 hover:shadow-premium-hover hover:-translate-y-1 transition-all duration-300 cursor-pointer relative`}
               >
                 <div className="flex flex-col h-full">
                   <div className="flex items-start justify-between gap-3 mb-4">
@@ -324,9 +290,8 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05 }}
                 key={item.id}
-                onMouseEnter={() => prefetchIdea(item.id)}
-                onClick={() => handleSelectIdea(item)}
-                className={`group bg-white rounded-xl border border-border/50 p-4 hover:shadow-premium-hover hover:-translate-y-1 transition-all duration-300 cursor-pointer relative ${selectedIdea?.id === item.id ? 'border-primary ring-2 ring-primary/10' : ''}`}
+                onClick={() => handleSelectIdea(item.id)}
+                className={`group bg-white rounded-xl border border-border/50 p-4 hover:shadow-premium-hover hover:-translate-y-1 transition-all duration-300 cursor-pointer relative`}
               >
                 <div className="flex flex-col h-full">
                   <div className="flex items-center justify-between gap-3 mb-4">
@@ -395,60 +360,6 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
           </div>
         </Card>
       </div>
-
-      {/* Selected Idea Details & Comments */}
-      {selectedIdea && (
-        <Card className="p-5 border-primary/20">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h2 className="text-lg font-bold mb-1">{selectedIdea.title}</h2>
-              <p className="text-sm text-muted-foreground">{selectedIdea.description}</p>
-            </div>
-            <button onClick={() => setSelectedIdea(null)} className="text-muted-foreground hover:text-foreground">
-              ✕
-            </button>
-          </div>
-
-          <div className="border-t pt-4">
-            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Comments ({comments.length})
-            </h4>
-
-            <div className="space-y-3 mb-4 max-h-60 overflow-y-auto pr-2">
-              {comments.map((c) => (
-                <div key={c.id} className="bg-accent/30 p-3 rounded-lg">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-xs font-bold">{c.author}</span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {new Date(c.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="text-sm">{c.content}</p>
-                </div>
-              ))}
-              {comments.length === 0 && <p className="text-xs text-muted-foreground italic">No comments yet.</p>}
-            </div>
-
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Add a comment..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className="flex-1 bg-background border rounded-md px-3 py-1.5 text-sm"
-              />
-              <button
-                onClick={handleAddComment}
-                disabled={!newComment.trim()}
-                className="bg-primary text-primary-foreground text-xs font-medium px-4 py-1.5 rounded-md hover:bg-primary/90 disabled:opacity-50"
-              >
-                Send
-              </button>
-            </div>
-          </div>
-        </Card>
-      )}
     </div>
   );
 };
