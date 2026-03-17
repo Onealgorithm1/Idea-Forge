@@ -38,7 +38,7 @@ const IdeaDetail = () => {
   const [newComment, setNewComment] = useState("");
 
   const commentMutation = useMutation({
-    mutationFn: (content: string) => 
+    mutationFn: (content: string) =>
       api.post(`/ideas/${id}/comments`, { content }, token!),
     onSuccess: () => {
       setNewComment("");
@@ -58,7 +58,7 @@ const IdeaDetail = () => {
   };
 
   const voteMutation = useMutation({
-    mutationFn: ({ type }: { type: "up" | "down" }) => 
+    mutationFn: ({ type }: { type: "up" | "down" }) =>
       api.post(`/ideas/${id}/vote`, { type }, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
@@ -87,7 +87,7 @@ const IdeaDetail = () => {
   };
 
   const statusMutation = useMutation({
-    mutationFn: (status: string) => 
+    mutationFn: (status: string) =>
       api.patch(`/ideas/${id}/status`, { status }, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
@@ -136,12 +136,12 @@ const IdeaDetail = () => {
       <div className="flex flex-1 overflow-hidden">
         <SidebarNav />
         <main className="flex-1 overflow-y-auto p-6 bg-muted/30">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             className="max-w-4xl mx-auto space-y-6"
           >
-            <Link to={ROUTES.ROOT} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-4 w-fit">
+            <Link to={`${ROUTES.IDEA_BOARD}?category=All`} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-4 w-fit">
               <ChevronLeft className="h-4 w-4" />
               Back to Board
             </Link>
@@ -189,20 +189,20 @@ const IdeaDetail = () => {
                     ))}
                   </div>
                 )}
-                
+
                 <div className="flex items-center bg-background border rounded-md overflow-hidden">
-                  <VotingSystem 
-                    ideaId={idea.id} 
-                    initialVotes={idea.votes_count} 
+                  <VotingSystem
+                    ideaId={idea.id}
+                    initialVotes={idea.votes_count}
                     onVote={(type) => handleVote(type)}
                     orientation="horizontal"
                     className="border-none bg-transparent shadow-none"
                   />
                 </div>
 
-                 <Button 
-                   variant="outline" 
-                   size="sm" 
+                 <Button
+                   variant="outline"
+                   size="sm"
                    className="gap-2"
                    onClick={handleBookmark}
                  >
@@ -256,13 +256,13 @@ const IdeaDetail = () => {
                   {commentMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post"}
                 </Button>
               </div>
-              
+
               <div className="space-y-4">
                 {comments.map((c) => (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    key={c.id} 
+                    key={c.id}
                     className="bg-background border rounded-lg p-4 shadow-sm"
                   >
                     <div className="flex justify-between items-center mb-2">
