@@ -1,0 +1,13 @@
+{
+  "name": "ideaforge-monorepo",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "npm start --prefix backend",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix idea-forge",
+    "build:frontend": "npm run build --prefix idea-forge"
+  }
+}
