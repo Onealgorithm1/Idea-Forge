@@ -10,15 +10,18 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
-import { ROUTES } from "@/lib/constants";
+import { getTenantPath, ROUTES } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { getInitials } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTenant } from "@/contexts/TenantContext";
 import VotingSystem from "@/components/VotingSystem";
 
 const Profile = () => {
   const { user, token } = useAuth();
+  const { tenant } = useTenant();
+  const tenantSlug = tenant?.slug || "default";
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
 
@@ -139,7 +142,7 @@ const Profile = () => {
                       exit={{ opacity: 0, scale: 0.9 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <Link to={ROUTES.IDEA_DETAIL.replace(':id', idea.id)}>
+                      <Link to={getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', idea.id), tenantSlug)}>
                         <Card className="h-full hover:border-primary/50 hover:shadow-md transition-all group p-5 flex flex-col justify-between">
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">

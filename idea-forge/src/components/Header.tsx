@@ -2,10 +2,10 @@ import { Bell, LogOut, User, TrendingUp, Users, ShieldCheck, ChevronDown } from 
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
-import { ROUTES } from "@/lib/constants";
+import { ROUTES, getTenantPath } from "@/lib/constants";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
@@ -19,24 +19,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const tabs = [
-  { name: "Dashboard", path: ROUTES.ROOT },
-  { name: "Idea Board", path: ROUTES.IDEA_BOARD },
-  { name: "Roadmap", path: ROUTES.ROADMAP },
-  { name: "Analytics", path: ROUTES.ANALYTICS },
-];
-
-function getNavLinkClass(isActive: boolean): string {
-  const base = "px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-300 relative";
-  return isActive
-    ? `${base} text-primary bg-primary/10`
-    : `${base} text-header-foreground/70 hover:text-header-foreground hover:bg-white/10`;
-}
-
 const Header = () => {
   const { user, logout, token } = useAuth();
   const location = useLocation();
+  const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const [notifications, setNotifications] = useState<any[]>([]);
+
+  const tabs = [
+    { name: "Dashboard", path: getTenantPath(ROUTES.ROOT, tenantSlug) },
+    { name: "Idea Board", path: getTenantPath(ROUTES.IDEA_BOARD, tenantSlug) },
+    { name: "Roadmap", path: getTenantPath(ROUTES.ROADMAP, tenantSlug) },
+    { name: "Analytics", path: getTenantPath(ROUTES.ANALYTICS, tenantSlug) },
+  ];
 
   const fetchNotifications = async () => {
     if (!token) return;
@@ -72,7 +66,7 @@ const Header = () => {
     <header className="sticky top-0 z-50 w-full bg-header text-header-foreground border-b border-white/5 shadow-lg">
       <div className="flex items-center justify-between px-6 h-16 max-w-[1600px] mx-auto w-full">
         
-        <Link to={ROUTES.ROOT} className="flex items-center gap-2.5 hover:opacity-90 transition-all group">
+        <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)} className="flex items-center gap-2.5 hover:opacity-90 transition-all group">
           <div className="bg-primary/20 p-1.5 rounded-lg group-hover:bg-primary/30 transition-colors">
             <Logo imageClassName="h-7 w-7" />
           </div>
@@ -146,7 +140,7 @@ const Header = () => {
           </Popover>
 
           {user ? (
-            <div className="flex items-center gap-3 ml-1 pl-3 border-l border-white/10">
+            <div className="flex items-center gap-3 ml-1 pr-1 border-l border-white/10 pl-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-white/10 transition-all group outline-none">
@@ -175,7 +169,7 @@ const Header = () => {
                   </div>
                   <div className="space-y-1">
                     <DropdownMenuItem asChild className="outline-none">
-                      <Link to={ROUTES.PROFILE} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-white/10 focus:bg-white/10 cursor-pointer transition-all group outline-none">
+                      <Link to={getTenantPath(ROUTES.PROFILE, tenantSlug)} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-white/10 focus:bg-white/10 cursor-pointer transition-all group outline-none">
                         <div className="p-1.5 rounded-md bg-white/5 group-hover:bg-primary/20 transition-colors">
                           <User className="h-3.5 w-3.5 text-white/60 group-hover:text-primary transition-colors" />
                         </div>
@@ -188,12 +182,6 @@ const Header = () => {
                       </div>
                       <span className="font-semibold">Trending Ideas</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-white/10 focus:bg-white/10 cursor-pointer transition-all group outline-none text-white/90 hover:text-white focus:text-white">
-                      <div className="p-1.5 rounded-md bg-white/5 group-hover:bg-primary/20 transition-colors">
-                        <Users className="h-3.5 w-3.5 text-white/60 group-hover:text-primary transition-colors" />
-                      </div>
-                      <span className="font-semibold">Team Ideas</span>
-                    </DropdownMenuItem>
                   </div>
 
                   {user.role === 'admin' && (
@@ -203,11 +191,19 @@ const Header = () => {
                       </div>
                       <div className="space-y-1">
                         <DropdownMenuItem asChild className="outline-none">
-                          <Link to={ROUTES.ADMIN_DASHBOARD} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-white/10 focus:bg-white/10 cursor-pointer transition-all group outline-none">
+                          <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug)} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-white/10 focus:bg-white/10 cursor-pointer transition-all group outline-none">
                             <div className="p-1.5 rounded-md bg-white/5 group-hover:bg-primary/20 transition-colors">
                               <ShieldCheck className="h-3.5 w-3.5 text-white/60 group-hover:text-primary transition-colors" />
                             </div>
                             <span className="text-white/90 group-hover:text-white group-focus:text-white font-semibold">Admin Dashboard</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="outline-none">
+                          <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-white/10 focus:bg-white/10 cursor-pointer transition-all group outline-none">
+                            <div className="p-1.5 rounded-md bg-white/5 group-hover:bg-primary/20 transition-colors">
+                              <Users className="h-3.5 w-3.5 text-white/60 group-hover:text-primary transition-colors" />
+                            </div>
+                            <span className="text-white/90 group-hover:text-white group-focus:text-white font-semibold">Manage Users</span>
                           </Link>
                         </DropdownMenuItem>
                       </div>
@@ -230,7 +226,7 @@ const Header = () => {
           ) : (
             <div className="flex items-center gap-2 ml-2">
               <Button asChild variant="default" size="sm" className="h-8 px-4 rounded-full text-xs font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
-                <Link to={ROUTES.LOGIN}>Login</Link>
+                <Link to={getTenantPath(ROUTES.LOGIN, tenantSlug)}>Login</Link>
               </Button>
             </div>
           )}

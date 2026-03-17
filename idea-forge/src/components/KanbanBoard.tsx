@@ -1,7 +1,8 @@
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useSearchParams, useParams, useNavigate } from "react-router-dom";
 import { Plus, GripVertical, ArrowBigUp, MessageSquare, ChevronUp, ChevronDown, Bookmark, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ROUTES } from "@/lib/constants";
+import { ROUTES, getTenantPath } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -11,7 +12,6 @@ import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
 import { api } from "@/lib/api";
 import VotingSystem from "./VotingSystem";
-import { useNavigate } from "react-router-dom";
 
 const statusColor: Record<string, string> = {
   "Pending": "bg-muted text-muted-foreground",
@@ -23,6 +23,10 @@ const statusColor: Record<string, string> = {
 
 const KanbanBoard = ({ category = "All" }: { category?: string }) => {
   const navigate = useNavigate();
+  const [selectedIdea, setSelectedIdea] = useState<any>(null);
+  const [newComment, setNewComment] = useState("");
+  const [searchParams] = useSearchParams();
+  const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { token } = useAuth();
   const queryClient = useQueryClient();
 
@@ -77,8 +81,10 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
   };
 
   const handleSelectIdea = (id: string) => {
-    navigate(ROUTES.IDEA_DETAIL.replace(':id', id));
-  };  const handleBookmark = (id: string) => {
+    navigate(getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', id), tenantSlug || "default"));
+  };
+
+  const handleBookmark = (id: string) => {
     if (!token) return toast.error("Please login to bookmark");
     bookmarkMutation.mutate(id);
   };
@@ -144,7 +150,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                         <Bookmark className="h-3.5 w-3.5 fill-current" />
                       </button>
                       <Link
-                        to={ROUTES.IDEA_DETAIL.replace(':id', item.id)}
+                        to={getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', item.id), tenantSlug)}
                         onClick={(e) => e.stopPropagation()}
                         className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-primary hover:scale-110 transition-all"
                       >
@@ -224,7 +230,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                         <Bookmark className="h-3.5 w-3.5 fill-current" />
                       </button>
                       <Link
-                        to={ROUTES.IDEA_DETAIL.replace(':id', item.id)}
+                        to={getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', item.id), tenantSlug)}
                         onClick={(e) => e.stopPropagation()}
                         className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-primary hover:scale-110 transition-all"
                       >

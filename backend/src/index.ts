@@ -8,6 +8,7 @@ import { createServer } from 'http';
 import { initSocket } from './lib/socket.js';
 import adminRoutes from './routes/adminRoutes.js';
 import superAdminRoutes from './routes/superAdminRoutes.js';
+import { getTenantBySlug } from './controllers/tenantController.js';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 // Routes
+app.get('/api/tenants/by-slug/:slug', getTenantBySlug);
 app.use('/api/auth', authRoutes);
 app.use('/api/ideas', ideaRoutes);
 app.use('/api/admin', adminRoutes);

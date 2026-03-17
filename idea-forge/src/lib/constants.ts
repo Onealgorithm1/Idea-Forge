@@ -1,5 +1,9 @@
 /** Typed route constants — use instead of raw string literals throughout the app. */
 export const ROUTES = {
+  // Non-tenant routes
+  SUPER_ADMIN: "/super-admin",
+  
+  // Tenant-scoped routes (relative)
   ROOT: "/",
   IDEA_BOARD: "/idea-board",
   ROADMAP: "/roadmap",
@@ -12,3 +16,10 @@ export const ROUTES = {
   ADMIN_DASHBOARD: "/admin/dashboard",
   ADMIN_USERS: "/admin/users",
 } as const;
+
+export const getTenantPath = (path: string, slug?: string) => {
+  if (!slug) return path;
+  // Ensure path starts with / but strip it for concatenation
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  return `/${slug}/${cleanPath}`;
+};

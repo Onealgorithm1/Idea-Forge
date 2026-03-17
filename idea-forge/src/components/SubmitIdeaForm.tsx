@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ROUTES, getTenantPath } from "@/lib/constants";
 import {
   Bold, Strikethrough, List, ListOrdered,
   AlignLeft, AlignCenter, Link2, ImageIcon, Type, Target,
@@ -67,7 +68,7 @@ interface SimilarIdeaItemProps {
   idea: SimilarIdea;
 }
 
-function SimilarIdeaItem({ idea }: SimilarIdeaItemProps) {
+function SimilarIdeaItem({ idea, tenantSlug }: SimilarIdeaItemProps & { tenantSlug?: string }) {
   const Icon = idea.icon;
   return (
     <div className="group pb-5 border-b border-gray-100 last:border-0 pt-5 first:pt-0">
@@ -77,7 +78,7 @@ function SimilarIdeaItem({ idea }: SimilarIdeaItemProps) {
         </div>
         <div className="space-y-1.5 flex-1 min-w-0">
           <Link
-            to="/"
+            to={getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', idea.id), tenantSlug)}
             className="font-medium text-[15px] leading-snug text-[#2e68c0] hover:underline hover:text-[#1e3a8a] block truncate"
           >
             {idea.title}
@@ -103,13 +104,13 @@ interface SimilarIdeasPanelProps {
   ideas: SimilarIdea[];
 }
 
-function SimilarIdeasPanel({ ideas }: SimilarIdeasPanelProps) {
+function SimilarIdeasPanel({ ideas, tenantSlug }: SimilarIdeasPanelProps & { tenantSlug?: string }) {
   return (
     <div className="w-full md:w-80 bg-white/95 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col h-fit">
       <h2 className="text-lg font-bold text-[#1e3a8a] mb-5 tracking-tight uppercase">Similar Ideas</h2>
       <div className="space-y-0">
         {ideas.map((idea) => (
-          <SimilarIdeaItem key={idea.id} idea={idea} />
+          <SimilarIdeaItem key={idea.id} idea={idea} tenantSlug={tenantSlug} />
         ))}
       </div>
     </div>
@@ -130,6 +131,7 @@ const SubmitIdeaForm = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const { token } = useAuth();
   const navigate = useNavigate();
+  const { tenantSlug } = useParams<{ tenantSlug: string }>();
 
   const { data: recentIdeas = [] } = useQuery({
     queryKey: ["recent-ideas"],
@@ -175,7 +177,7 @@ const SubmitIdeaForm = () => {
       setTitle("");
       setDescription("");
       setTags("");
-      navigate(`/?ideaId=${newIdea.id}`);
+      navigate(`${getTenantPath(ROUTES.ROOT, tenantSlug)}?ideaId=${newIdea.id}`);
     } catch (error: any) {
       toast.error(error.message);
     }
@@ -283,7 +285,7 @@ const SubmitIdeaForm = () => {
         </div>
       </div>
 
-      <SimilarIdeasPanel ideas={mappedRecentIdeas} />
+      <SimilarIdeasPanel ideas={mappedRecentIdeas} tenantSlug={tenantSlug} />
     </div>
   );
 };

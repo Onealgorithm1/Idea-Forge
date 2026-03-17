@@ -1,7 +1,8 @@
 import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, ShieldCheck, Activity, type LucideIcon } from "lucide-react";
-import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
-import { ROUTES } from "@/lib/constants";
+import { Link, useNavigate, useLocation, useSearchParams, useParams } from "react-router-dom";
+import { ROUTES, getTenantPath } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenant } from "@/contexts/TenantContext";
 import { Button } from "@/components/ui/button";
 
 interface SidebarItem {
@@ -71,6 +72,7 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
 
+  const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const selectedCategory = propCategory || searchParams.get("category") || "All";
 
   const handleCategoryClick = (label: string) => {
@@ -79,7 +81,7 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
     } else {
       const params = new URLSearchParams();
       if (label !== "All") params.set("category", label);
-      navigate(`${ROUTES.ROOT}${params.toString() ? '?' + params.toString() : ''}`);
+      navigate(`${getTenantPath(ROUTES.ROOT, tenantSlug)}${params.toString() ? '?' + params.toString() : ''}`);
     }
   };
 
@@ -95,25 +97,25 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
             </div>
           </div>
           <div className="space-y-0.5 px-2">
-            <Link to={ROUTES.ADMIN_DASHBOARD} className="block w-full">
+            <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug || "default")} className="block w-full">
               <SidebarButton
                 icon={Activity}
                 label="Admin Dashboard"
-                active={pathname === ROUTES.ADMIN_DASHBOARD}
+                active={pathname === getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug || "default")}
               />
             </Link>
-            <Link to={ROUTES.ADMIN_USERS} className="block w-full">
+            <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default")} className="block w-full">
               <SidebarButton
                 icon={Users}
                 label="Manage Users"
-                active={pathname === ROUTES.ADMIN_USERS}
+                active={pathname === getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default")}
               />
             </Link>
           </div>
         </div>
       )}
 
-      <div className="flex-1 flex flex-col min-h-0 space-y-2 mt-2">
+      <div className="flex-1 flex flex-col min-h-0 space-y-2 mt-2 overflow-hidden">
         <div className="px-5 mb-2">
           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
             <Tag className="h-3 w-3" />
@@ -127,16 +129,16 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
               key={cat.label}
               icon={cat.icon}
               label={cat.label}
-              active={selectedCategory === cat.label || (cat.label === "All" && !selectedCategory && pathname !== ROUTES.ADMIN_DASHBOARD && pathname !== ROUTES.ADMIN_USERS)}
+              active={selectedCategory === cat.label || (cat.label === "All" && !selectedCategory && pathname !== getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug || "default") && pathname !== getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default"))}
               onClick={() => handleCategoryClick(cat.label)}
             />
           ))}
         </div>
       </div>
 
-      <div className="pt-4 px-4">
+      <div className="pt-4 px-4 pb-2">
         <Button asChild className="w-full justify-start gap-3 shadow-premium hover:shadow-premium-hover transition-all duration-300 rounded-2xl h-12 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white font-semibold text-sm border border-white/20 group relative overflow-hidden">
-          <Link to={ROUTES.SUBMIT_IDEA}>
+          <Link to={getTenantPath(ROUTES.SUBMIT_IDEA, tenantSlug || "default")}>
             {/* Glossy overlay effect class */}
             <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="flex bg-white/20 items-center justify-center rounded-xl w-7 h-7 shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-300">

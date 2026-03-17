@@ -148,6 +148,10 @@ async function migrate() {
       )
     `, 'Table: idea_categories');
 
+    // Also support legacy 'categories' table if it exists
+    await runStatement(client, `ALTER TABLE categories ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id)`, 'Column: categories.tenant_id');
+    await runStatement(client, `UPDATE categories SET tenant_id = '00000000-0000-0000-0000-000000000001' WHERE tenant_id IS NULL`, 'Migrate: categories → default tenant');
+
     // === IDEAS — extend ===
     await runStatement(client, `ALTER TABLE ideas ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id)`, 'Column: ideas.tenant_id');
     await runStatement(client, `ALTER TABLE ideas ADD COLUMN IF NOT EXISTS idea_space_id UUID REFERENCES idea_spaces(id)`, 'Column: ideas.idea_space_id');
@@ -170,6 +174,13 @@ async function migrate() {
       )
     `, 'Table: idea_tags');
 
+    // Also support legacy 'tags' table if it exists
+    await runStatement(client, `ALTER TABLE tags ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id)`, 'Column: tags.tenant_id');
+    await runStatement(client, `UPDATE tags SET tenant_id = '00000000-0000-0000-0000-000000000001' WHERE tenant_id IS NULL`, 'Migrate: tags → default tenant');
+
+    await runStatement(client, `ALTER TABLE idea_tags ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id)`, 'Column: idea_tags.tenant_id');
+    await runStatement(client, `UPDATE idea_tags SET tenant_id = '00000000-0000-0000-0000-000000000001' WHERE tenant_id IS NULL`, 'Migrate: idea_tags → default tenant');
+
     await runStatement(client, `
       CREATE TABLE IF NOT EXISTS idea_tag_links (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -180,6 +191,21 @@ async function migrate() {
         UNIQUE (idea_id, tag_id)
       )
     `, 'Table: idea_tag_links');
+
+    // === BOOKMARKS ===
+    await runStatement(client, `
+      CREATE TABLE IF NOT EXISTS bookmarks (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tenant_id UUID NOT NULL REFERENCES tenants(id),
+        user_id UUID NOT NULL REFERENCES users(id),
+        idea_id UUID NOT NULL REFERENCES ideas(id),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE (user_id, idea_id)
+      )
+    `, 'Table: bookmarks');
+    
+    await runStatement(client, `ALTER TABLE bookmarks ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id)`, 'Column: bookmarks.tenant_id');
+    await runStatement(client, `UPDATE bookmarks SET tenant_id = '00000000-0000-0000-0000-000000000001' WHERE tenant_id IS NULL`, 'Migrate: bookmarks → default tenant');
 
     // === COMMENTS — extend ===
     await runStatement(client, `ALTER TABLE comments ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id)`, 'Column: comments.tenant_id');

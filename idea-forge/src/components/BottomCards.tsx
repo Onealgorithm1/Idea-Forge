@@ -2,8 +2,8 @@ import { Map, Trophy, ArrowRight, Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { ROUTES } from "@/lib/constants";
+import { useParams, Link } from "react-router-dom";
+import { ROUTES, getTenantPath } from "@/lib/constants";
 
 const topContributors = [
   { rank: 1, name: "Sarah M.", color: "text-amber-500", bg: "bg-amber-500/10" },
@@ -12,6 +12,7 @@ const topContributors = [
 ];
 
 const BottomCards = () => {
+  const { tenantSlug } = useParams<{ tenantSlug: string }>();
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Product Roadmap */}
@@ -35,7 +36,7 @@ const BottomCards = () => {
           </div>
           <div className="mt-6 relative z-10">
             <Button asChild variant="default" className="rounded-full px-6 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-white font-bold">
-              <Link to={ROUTES.ROADMAP} className="flex items-center gap-2">
+              <Link to={getTenantPath(ROUTES.ROADMAP, tenantSlug)} className="flex items-center gap-2">
                 Explore Journey <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>

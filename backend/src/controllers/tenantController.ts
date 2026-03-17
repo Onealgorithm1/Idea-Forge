@@ -41,6 +41,20 @@ export const getTenant = async (req: Request, res: Response) => {
   }
 };
 
+export const getTenantBySlug = async (req: Request, res: Response) => {
+  const { slug } = req.params;
+  try {
+    const result = await query('SELECT id, name, slug, status, settings_json FROM tenants WHERE slug = $1', [slug]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Tenant not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Get tenant by slug error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const createTenant = async (req: Request, res: Response) => {
   const { name, slug, plan_type = 'free' } = req.body;
   if (!name || !slug) return res.status(400).json({ message: 'Name and slug are required' });

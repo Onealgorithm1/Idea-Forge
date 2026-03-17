@@ -1,8 +1,11 @@
 import express from 'express';
 import { getIdeas, createIdea, getCategories, voteIdea, addComment, getComments, bookmarkIdea, getTags, getNotifications, markNotificationRead, getUserIdeas, updateIdeaStatus } from '../controllers/ideaController.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, extractTenant } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Apply extractTenant to all routes to handle X-Tenant-ID header
+router.use(extractTenant);
 
 router.get('/', getIdeas);
 router.post('/', authenticateToken, createIdea);

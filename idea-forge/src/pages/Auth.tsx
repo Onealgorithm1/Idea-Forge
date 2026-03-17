@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Zap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { ROUTES, getTenantPath } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,19 +24,20 @@ export default function AuthPage() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { tenantSlug } = useParams<{ tenantSlug: string }>();
 
-  const isLogin = location.pathname === "/login";
+  const isLogin = location.pathname.endsWith("/login");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       if (isLogin) {
-        await login(email, password);
+        await login(email, password, tenantSlug);
       } else {
         const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
-        await register(fullName, email, password);
+        await register(fullName, email, password, tenantSlug);
       }
-      navigate("/");
+      navigate(getTenantPath(ROUTES.ROOT, tenantSlug));
     } catch (error) {
       // Error is handled in context/toast
     }
@@ -55,7 +57,7 @@ export default function AuthPage() {
 
       <div className="w-full max-w-[400px] z-10">
         <div className="flex justify-center mb-8">
-          <Link to="/" className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
+          <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)} className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
             <Logo imageClassName="h-14 w-14" />
             <span>IdeaForge</span>
           </Link>
@@ -140,7 +142,7 @@ export default function AuthPage() {
               <div className="text-center text-sm">
                 {isLogin ? "Don't have an account? " : "Already have an account? "}
                 <Link
-                  to={isLogin ? "/signup" : "/login"}
+                  to={isLogin ? getTenantPath(ROUTES.SIGNUP, tenantSlug) : getTenantPath(ROUTES.LOGIN, tenantSlug)}
                   className="font-medium text-primary hover:underline hover:text-primary/90"
                 >
                   {isLogin ? "Sign up" : "Log in"}

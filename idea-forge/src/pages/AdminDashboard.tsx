@@ -21,11 +21,12 @@ import {
   Loader2,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { ROUTES } from "@/lib/constants";
+import { useNavigate, useLocation, useParams, Link } from "react-router-dom";
+import { ROUTES, getTenantPath } from "@/lib/constants";
 import { formatDistanceToNow } from "date-fns";
 
 const AdminDashboard = () => {
+  const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { token } = useAuth();
 
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -163,14 +164,14 @@ const AdminDashboard = () => {
                     <h2 className="text-xl font-black tracking-tight">Management Suite</h2>
                   </div>
                   <Button asChild variant="ghost" size="sm" className="font-bold text-primary group">
-                    <Link to={ROUTES.ADMIN_USERS}>
+                    <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)}>
                       View All <ChevronRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </Link>
                   </Button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Link to={ROUTES.ADMIN_USERS} className="group p-5 bg-slate-50/50 hover:bg-primary/5 border border-slate-100 hover:border-primary/20 rounded-[1.5rem] transition-all duration-300">
+                  <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)} className="group p-5 bg-slate-50/50 hover:bg-primary/5 border border-slate-100 hover:border-primary/20 rounded-[1.5rem] transition-all duration-300">
                     <div className="flex items-center gap-4">
                       <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
                         <Users className="h-6 w-6 text-primary" />

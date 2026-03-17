@@ -6,6 +6,14 @@ interface AuthRequest extends Request {
   tenantId?: string;
 }
 
+export const extractTenant = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const tenantId = req.headers['x-tenant-id'] as string;
+  if (tenantId) {
+    req.tenantId = tenantId;
+  }
+  next();
+};
+
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -19,8 +27,8 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
     req.user = user;
-    // Extract tenant_id from token payload or from X-Tenant-ID header
-    req.tenantId = user.tenantId || req.headers['x-tenant-id'] as string;
+    // Extract tenant_id from token payload or fallback to X-Tenant-ID header
+    req.tenantId = user.tenantId || (req.headers['x-tenant-id'] as string);
     next();
   });
 };

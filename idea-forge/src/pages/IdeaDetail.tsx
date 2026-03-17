@@ -10,14 +10,14 @@ import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
-import { ROUTES } from "@/lib/constants";
+import { ROUTES, getTenantPath } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import VotingSystem from "@/components/VotingSystem";
 
 const IdeaDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, tenantSlug } = useParams<{ id: string; tenantSlug: string }>();
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -123,7 +123,7 @@ const IdeaDetail = () => {
         <div className="flex flex-1 items-center justify-center flex-col gap-4">
           <h2 className="text-2xl font-bold">Idea not found</h2>
           <Button asChild variant="outline">
-            <Link to={ROUTES.ROOT}>Back to Dashboard</Link>
+            <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)}>Back to Dashboard</Link>
           </Button>
         </div>
       </div>
@@ -141,7 +141,7 @@ const IdeaDetail = () => {
             animate={{ opacity: 1, x: 0 }}
             className="max-w-4xl mx-auto space-y-6"
           >
-            <Link to={`${ROUTES.IDEA_BOARD}?category=All`} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-4 w-fit">
+            <Link to={`${getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)}?category=All`} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-4 w-fit">
               <ChevronLeft className="h-4 w-4" />
               Back to Board
             </Link>

@@ -5,8 +5,8 @@ import KanbanBoard from "@/components/KanbanBoard";
 import BottomCards from "@/components/BottomCards";
 import DeveloperBriefs from "@/components/DeveloperBriefs";
 import { useEffect } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
-import { ROUTES } from "@/lib/constants";
+import { useLocation, useSearchParams, useParams } from "react-router-dom";
+import { ROUTES, getTenantPath } from "@/lib/constants";
 import { LayoutGrid, Sparkles, Activity, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Logo } from "@/components/Logo";
@@ -15,8 +15,15 @@ import StatsOverview from "@/components/StatsOverview";
 
 const Index = () => {
   const { pathname } = useLocation();
+  const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedCategory = searchParams.get("category") || "All";
+
+  // Pre-calculate tenant paths for comparison
+  const tenantRoot = getTenantPath(ROUTES.ROOT, tenantSlug);
+  const tenantIdeaBoard = getTenantPath(ROUTES.IDEA_BOARD, tenantSlug);
+  const tenantRoadmap = getTenantPath(ROUTES.ROADMAP, tenantSlug);
+  const tenantAnalytics = getTenantPath(ROUTES.ANALYTICS, tenantSlug);
 
   const setSelectedCategory = (category: string) => {
     if (category === "All") {
@@ -44,14 +51,14 @@ const Index = () => {
       <Header />
 
       <div className="flex flex-1 overflow-hidden relative z-10 w-full max-w-[1600px] mx-auto">
-        {pathname !== ROUTES.ROOT && (
+        {pathname !== tenantRoot && (
           <SidebarNav
             selectedCategory={selectedCategory}
             onCategorySelect={setSelectedCategory}
           />
         )}
 
-        <main className={`flex-1 overflow-y-auto px-6 py-8 md:px-10 ${pathname === ROUTES.ROOT ? 'max-w-[1600px] mx-auto w-full' : ''}`}>
+        <main className={`flex-1 overflow-y-auto px-6 py-8 md:px-10 ${pathname === tenantRoot ? 'max-w-[1600px] mx-auto w-full' : ''}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={`${pathname}-${selectedCategory}`}
@@ -61,7 +68,7 @@ const Index = () => {
               transition={{ duration: 0.4, ease: "easeOut" }}
               className="space-y-10"
             >
-              {pathname === ROUTES.ROOT && (
+              {pathname === tenantRoot && (
                 <div className="space-y-12">
                   {selectedCategory === "All" && (
                     <section className="animate-fade-in-up">
@@ -183,7 +190,7 @@ const Index = () => {
                 </div>
               )}
 
-              {pathname === ROUTES.IDEA_BOARD && (
+              {pathname === tenantIdeaBoard && (
                 <div className="space-y-8 relative">
                   <div className="absolute inset-x-[-3rem] top-[-3rem] bottom-[-3rem] bg-gradient-to-b from-slate-100/60 via-slate-50/20 to-transparent -z-10 pointer-events-none rounded-[3rem]" />
                   <div className="flex items-center justify-between">
@@ -201,9 +208,9 @@ const Index = () => {
                 </div>
               )}
 
-              {pathname === ROUTES.ROADMAP && <DeveloperBriefs />}
+              {pathname === tenantRoadmap && <DeveloperBriefs />}
 
-              {pathname === ROUTES.ANALYTICS && (
+              {pathname === tenantAnalytics && (
                 <div className="text-center py-16 text-muted-foreground font-medium">
                   <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                     <div className="h-8 w-8 border-4 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />

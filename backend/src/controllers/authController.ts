@@ -5,10 +5,16 @@ import { query } from '../config/db.js';
 
 // ─── Regular User Login ──────────────────────────────────────────────────────
 export const login = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { email, password, tenantSlug = 'default' } = req.body;
   try {
-    const user = await query('SELECT * FROM users WHERE email = $1', [email]);
-    if (user.rows.length === 0) return res.status(400).json({ message: 'Invalid credentials' });
+    // 1. Get tenant details by slug first
+    const tenantResult = await query('SELECT id FROM tenants WHERE slug = $1 AND status = $2', [tenantSlug, 'active']);
+    if (tenantResult.rows.length === 0) return res.status(404).json({ message: 'Organization not found' });
+    const tenantId = tenantResult.rows[0].id;
+
+    // 2. Find user within this tenant only
+    const user = await query('SELECT * FROM users WHERE email = $1 AND tenant_id = $2', [email, tenantId]);
+    if (user.rows.length === 0) return res.status(400).json({ message: 'Invalid credentials for this organization' });
 
     const isMatch = await bcrypt.compare(password, user.rows[0].password_hash);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
@@ -48,13 +54,14 @@ export const login = async (req: Request, res: Response) => {
 export const register = async (req: Request, res: Response) => {
   const { name, email, password, tenantSlug = 'default' } = req.body;
   try {
-    const userExists = await query('SELECT * FROM users WHERE email = $1', [email]);
-    if (userExists.rows.length > 0) return res.status(400).json({ message: 'User already exists' });
-
-    // Get tenant by slug
+    // 1. Get tenant by slug
     const tenantResult = await query('SELECT * FROM tenants WHERE slug = $1 AND status = $2', [tenantSlug, 'active']);
-    if (tenantResult.rows.length === 0) return res.status(404).json({ message: 'Tenant not found or inactive' });
+    if (tenantResult.rows.length === 0) return res.status(404).json({ message: 'Organization not found' });
     const tenant = tenantResult.rows[0];
+
+    // 2. Check if user already exists IN THIS TENANT
+    const userExists = await query('SELECT * FROM users WHERE email = $1 AND tenant_id = $2', [email, tenant.id]);
+    if (userExists.rows.length > 0) return res.status(400).json({ message: 'User already exists in this organization' });
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
