@@ -196,10 +196,13 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
 
                   <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded-lg group/vote transition-colors hover:bg-primary/5">
-                        <ArrowBigUp className="h-4 w-4 text-slate-400 group-hover/vote:text-primary transition-colors fill-primary/10" />
-                        <span className="text-xs font-bold text-slate-600 group-hover/vote:text-primary transition-colors">{item.votes_count}</span>
-                      </div>
+                      <VotingSystem
+                        ideaId={item.id}
+                        initialVotes={item.votes_count}
+                        onVote={(type: any) => handleVote(item.id, type)}
+                        orientation="horizontal"
+                        className="scale-95 origin-left"
+                      />
                       <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded-lg">
                         <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
                         <span className="text-xs font-bold text-slate-600">{item.comments_count || 0}</span>
@@ -279,26 +282,9 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                         initialVotes={item.votes_count}
                         onVote={(type: any) => handleVote(item.id, type)}
                         orientation="horizontal"
-                        className="scale-90 origin-left border-none bg-transparent shadow-none p-0"
+                        className="scale-95 origin-left"
                       />
-                      {useAuth().user?.role === 'admin' && (
-                        <div className="flex items-center gap-1 border-l pl-2 border-primary/10 ml-1">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleStatusChange(item.id, item.status === 'In Progress' ? 'Under Review' : 'Pending'); }}
-                            className="p-1 hover:bg-primary/10 rounded-lg text-primary/60 hover:text-primary transition-colors"
-                            title="Revert"
-                          >
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleStatusChange(item.id, item.status === 'Under Review' ? 'In Progress' : 'In Development'); }}
-                            className="p-1 hover:bg-primary/10 rounded-lg text-primary/60 hover:text-primary transition-colors"
-                            title="Advance"
-                          >
-                            <ChevronUp className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      )}
+
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -385,10 +371,13 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
 
                   <div className="flex items-center justify-between mt-auto pt-4 border-t border-success/10">
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1 px-2 py-1 bg-success/5 rounded-lg">
-                        <ArrowBigUp className="h-3.5 w-3.5 text-success/60 fill-none" />
-                        <span className="text-[10px] font-bold text-success">{item.votes_count}</span>
-                      </div>
+                      <VotingSystem
+                        ideaId={item.id}
+                        initialVotes={item.votes_count}
+                        onVote={(type: any) => handleVote(item.id, type)}
+                        orientation="horizontal"
+                        className="scale-95 origin-left"
+                      />
                       <div className="flex items-center gap-1.5 px-2 py-1 bg-success/5 rounded-lg">
                         <MessageSquare className="h-3 w-3 text-success/60" />
                         <span className="text-[10px] font-bold text-success">{item.comments_count || 0}</span>
