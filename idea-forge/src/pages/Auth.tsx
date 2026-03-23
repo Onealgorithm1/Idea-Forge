@@ -57,8 +57,8 @@ export default function AuthPage() {
 
       <div className="w-full max-w-[400px] z-10">
         <div className="flex justify-center mb-12">
-          <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)} className="flex items-center gap-6 text-7xl font-black tracking-tighter text-foreground drop-shadow-md">
-            <Logo imageClassName="h-28 w-28 transition-all duration-500 hover:rotate-12 hover:scale-110" />
+          <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)} className="flex items-center gap-1 text-5xl font-black tracking-tighter text-foreground drop-shadow-md">
+            <Logo imageClassName="h-32 w-32 transition-all duration-500 hover:scale-110" />
             <span>IdeaForge</span>
           </Link>
         </div>
