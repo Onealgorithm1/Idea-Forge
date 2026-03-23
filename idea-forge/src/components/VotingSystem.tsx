@@ -8,6 +8,7 @@ interface VotingSystemProps {
   ideaId: string;
   initialVotes: number;
   onVote: (type: 'up' | 'down') => void;
+  hasVoted?: boolean;
   orientation?: 'vertical' | 'horizontal';
   className?: string;
 }
@@ -16,6 +17,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
   ideaId,
   initialVotes,
   onVote,
+  hasVoted = false,
   orientation = 'horizontal',
   className
 }) => {
@@ -29,7 +31,10 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
         type="button"
         variant="ghost"
         size="icon"
-        className="h-7 w-7 rounded-lg hover:bg-emerald-500/20 hover:text-emerald-600 text-slate-500 transition-all group"
+        className={cn(
+          "h-7 w-7 rounded-lg hover:bg-emerald-500/20 hover:text-emerald-600 transition-all group",
+          hasVoted ? "bg-emerald-500/20 text-emerald-600" : "text-slate-500"
+        )}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();

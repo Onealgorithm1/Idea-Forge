@@ -31,13 +31,13 @@ export default function AuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (isLogin) {
-        await login(email, password, tenantSlug);
-      } else {
-        const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
-        await register(fullName, email, password, tenantSlug);
-      }
-      navigate(getTenantPath(ROUTES.ROOT, tenantSlug));
+        if (isLogin) {
+          await login(email, password, tenantSlug);
+        } else {
+          const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+          await register(fullName, email, password, tenantSlug);
+        }
+        navigate(getTenantPath(ROUTES.IDEA_BOARD, tenantSlug));
     } catch (error) {
       // Error is handled in context/toast
     }
@@ -56,9 +56,9 @@ export default function AuthPage() {
       </div>
 
       <div className="w-full max-w-[400px] z-10">
-        <div className="flex justify-center mb-8">
-          <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)} className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
-            <Logo imageClassName="h-14 w-14" />
+        <div className="flex justify-center mb-12">
+          <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)} className="flex items-center gap-6 text-7xl font-black tracking-tighter text-foreground drop-shadow-md">
+            <Logo imageClassName="h-28 w-28 transition-all duration-500 hover:rotate-12 hover:scale-110" />
             <span>IdeaForge</span>
           </Link>
         </div>

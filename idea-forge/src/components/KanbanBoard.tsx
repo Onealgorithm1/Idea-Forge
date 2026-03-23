@@ -173,6 +173,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                         ideaId={item.id}
                         initialVotes={item.votes_count}
                         onVote={(type: any) => handleVote(item.id, type)}
+                        hasVoted={item.has_voted}
                         orientation="horizontal"
                         className="scale-95 origin-left"
                       />
@@ -253,6 +254,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                         ideaId={item.id}
                         initialVotes={item.votes_count}
                         onVote={(type: any) => handleVote(item.id, type)}
+                        hasVoted={item.has_voted}
                         orientation="horizontal"
                         className="scale-95 origin-left"
                       />
@@ -346,6 +348,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                         ideaId={item.id}
                         initialVotes={item.votes_count}
                         onVote={(type: any) => handleVote(item.id, type)}
+                        hasVoted={item.has_voted}
                         orientation="horizontal"
                         className="scale-95 origin-left"
                       />

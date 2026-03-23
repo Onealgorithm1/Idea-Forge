@@ -195,6 +195,7 @@ const IdeaDetail = () => {
                     ideaId={idea.id}
                     initialVotes={idea.votes_count}
                     onVote={(type) => handleVote(type)}
+                    hasVoted={idea.has_voted}
                     orientation="horizontal"
                     className="border-none bg-transparent shadow-none"
                   />

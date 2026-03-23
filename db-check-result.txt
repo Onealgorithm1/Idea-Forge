@@ -1,0 +1,6 @@
+--- DB CHECK START ---
+Categories count: 7
+Ideas count: 5
+--- DB CHECK ERROR ---
+error: column "tenant_id" does not exist
+--- DB CHECK END ---

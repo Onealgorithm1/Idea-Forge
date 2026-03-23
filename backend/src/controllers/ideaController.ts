@@ -1,20 +1,36 @@
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { query } from '../config/db.js';
 
 export const getIdeas = async (req: any, res: Response) => {
   const tenantId = req.tenantId;
+  let userId = req.user?.id;
+
+  // If userId is not already set (e.g. via optional middleware), try to get it from header
+  if (!userId) {
+    const authHeader = req.headers['authorization'];
+    if (authHeader) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
+        userId = decoded.id;
+      } catch (e) { /* ignore */ }
+    }
+  }
+
   try {
     const result = await query(`
       SELECT i.*, u.name as author, c.name as category,
              (SELECT json_agg(t.name) FROM tags t 
               JOIN idea_tags it ON t.id = it.tag_id 
-              WHERE it.idea_id = i.id) as tags
+              WHERE it.idea_id = i.id) as tags,
+             EXISTS(SELECT 1 FROM votes WHERE idea_id = i.id AND user_id = $2) as has_voted
       FROM ideas i 
       LEFT JOIN users u ON i.author_id = u.id 
       LEFT JOIN categories c ON i.category_id = c.id
       WHERE i.tenant_id = $1
       ORDER BY i.created_at DESC
-    `, [tenantId]);
+    `, [tenantId, userId || '00000000-0000-0000-0000-000000000000']);
     res.json(result.rows);
   } catch (error) {
     console.error('Get ideas error:', error);
@@ -85,8 +101,7 @@ export const voteIdea = async (req: any, res: Response) => {
     const existingVote = await query('SELECT * FROM votes WHERE idea_id = $1 AND user_id = $2', [id, user_id]);
     
     if (existingVote.rows.length > 0) {
-      // If vote exists, remove it (toggle behavior)
-      await query('DELETE FROM votes WHERE idea_id = $1 AND user_id = $2 AND tenant_id = $3', [id, user_id, req.tenantId]);
+      return res.status(400).json({ message: 'You already have done that' });
     } else {
       // Create new 'up' vote
       await query('INSERT INTO votes (idea_id, user_id, type, tenant_id) VALUES ($1, $2, \'up\', $3)', [id, user_id, req.tenantId]);
@@ -230,7 +245,8 @@ export const getUserIdeas = async (req: any, res: Response) => {
       SELECT i.*, u.name as author, c.name as category,
       (SELECT json_agg(t.name) FROM tags t 
        JOIN idea_tags it ON t.id = it.tag_id 
-       WHERE it.idea_id = i.id) as tags
+       WHERE it.idea_id = i.id) as tags,
+      EXISTS(SELECT 1 FROM votes WHERE idea_id = i.id AND user_id = $1) as has_voted
       FROM ideas i
       JOIN users u ON i.author_id = u.id
       LEFT JOIN categories c ON i.category_id = c.id

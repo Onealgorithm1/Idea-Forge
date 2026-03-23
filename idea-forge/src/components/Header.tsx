@@ -66,11 +66,11 @@ const Header = () => {
     <header className="sticky top-0 z-50 w-full bg-header text-header-foreground border-b border-white/5 shadow-lg">
       <div className="flex items-center justify-between px-6 h-16 max-w-[1600px] mx-auto w-full">
         
-        <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)} className="flex items-center gap-2.5 hover:opacity-90 transition-all group">
-          <div className="bg-primary/20 p-1.5 rounded-lg group-hover:bg-primary/30 transition-colors">
-            <Logo imageClassName="h-7 w-7" />
+        <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)} className="flex items-center gap-3.5 hover:opacity-90 transition-all group">
+          <div className="bg-primary/20 p-2.5 rounded-xl group-hover:bg-primary/30 transition-colors">
+            <Logo imageClassName="h-10 w-10" />
           </div>
-          <span className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
+          <span className="font-black text-3xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
             IdeaForge
           </span>
         </Link>

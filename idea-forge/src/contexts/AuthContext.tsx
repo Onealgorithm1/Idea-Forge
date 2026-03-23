@@ -7,6 +7,7 @@ interface User {
   name: string;
   email: string;
   role: string;
+  tenantId: string;
 }
 
 interface AuthContextType {
@@ -43,6 +44,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setToken(data.token);
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.user.tenantId) {
+        localStorage.setItem("tenantId", data.user.tenantId);
+      }
       toast.success(`Welcome back, ${data.user.name}!`);
     } catch (error: any) {
       toast.error(error.message);
@@ -57,6 +61,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setToken(data.token);
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.user.tenantId) {
+        localStorage.setItem("tenantId", data.user.tenantId);
+      }
       toast.success(`Account created successfully!`);
     } catch (error: any) {
       toast.error(error.message);
@@ -69,6 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("tenantId");
     toast.info("You have been logged out");
   };
 

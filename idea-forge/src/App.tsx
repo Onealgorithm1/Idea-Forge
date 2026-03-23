@@ -18,11 +18,13 @@ import SuperAdminLogin from "./pages/SuperAdmin/Login";
 import SuperAdminDashboard from "./pages/SuperAdmin/Dashboard";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ROUTES } from "./lib/constants";
+import FloatingSubmitIdea from "./components/FloatingSubmitIdea";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => (
-  <Routes>
+  <>
+    <Routes>
     {/* Super Admin Portal — standalone */}
     <Route path="/super-admin" element={<SuperAdminLogin />} />
     <Route path="/super-admin/login" element={<SuperAdminLogin />} />
@@ -55,7 +57,9 @@ const AppContent = () => (
 
     {/* Catch-all for very deep unknown paths */}
     <Route path="*" element={<NotFound />} />
-  </Routes>
+    </Routes>
+    <FloatingSubmitIdea />
+  </>
 );
 
 const App = () => (

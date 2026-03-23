@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import {
   Bold, Strikethrough, List, ListOrdered,
-  AlignLeft, AlignCenter, Link2, ImageIcon, Type, Target,
+  AlignLeft, AlignCenter, Link2, ImageIcon, Type, Target, Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -129,6 +129,7 @@ const SubmitIdeaForm = () => {
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
   const [categories, setCategories] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { token } = useAuth();
   const navigate = useNavigate();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
@@ -166,6 +167,9 @@ const SubmitIdeaForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!title.trim() || !description.trim() || !category || isSubmitting) return;
+
+    setIsSubmitting(true);
     try {
       const newIdea = await api.post("/ideas", {
         title,
@@ -177,9 +181,11 @@ const SubmitIdeaForm = () => {
       setTitle("");
       setDescription("");
       setTags("");
-      navigate(`${getTenantPath(ROUTES.ROOT, tenantSlug)}?ideaId=${newIdea.id}`);
+      navigate(`${getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)}`);
     } catch (error: any) {
       toast.error(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -276,9 +282,17 @@ const SubmitIdeaForm = () => {
               </Button>
               <Button
                 type="submit"
-                className="bg-[#2e68c0] hover:bg-[#25549e] text-white px-10 h-11 shadow-sm focus:ring-2 focus:ring-[#2e68c0] focus:ring-offset-2 font-semibold"
+                className="bg-[#2e68c0] hover:bg-[#25549e] text-white px-10 h-11 shadow-sm focus:ring-2 focus:ring-[#2e68c0] focus:ring-offset-2 font-semibold flex items-center justify-center min-w-[140px]"
+                disabled={isSubmitting}
               >
-                Post Idea
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Posting...
+                  </>
+                ) : (
+                  "Post Idea"
+                )}
               </Button>
             </div>
           </form>

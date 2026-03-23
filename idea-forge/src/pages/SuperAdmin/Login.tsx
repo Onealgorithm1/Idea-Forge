@@ -52,7 +52,7 @@ const SuperAdminLogin = () => {
           <div className="flex flex-col items-center mb-10">
             <div className="flex items-center gap-3 mb-3">
               <div className="bg-primary/20 p-2 rounded-xl">
-                <Logo imageClassName="h-7 w-7" />
+                <Logo imageClassName="h-12 w-12" />
               </div>
               <span className="font-black text-2xl tracking-tight">IdeaForge</span>
             </div>
