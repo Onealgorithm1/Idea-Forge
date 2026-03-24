@@ -9,5 +9,9 @@
     "dev:backend": "npm run dev --prefix backend",
     "dev:frontend": "npm run dev --prefix idea-forge",
     "build:frontend": "npm run build --prefix idea-forge"
-  }
+  },
+  "workspaces": [
+    "backend",
+    "idea-forge"
+  ]
 }

@@ -1,5 +1,6 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import multer from 'multer';
+import type { Request, Response } from 'express';
 import path from 'path';
 import { updateProfile, uploadAvatar, getProfile } from '../controllers/userController.js';
 import { authenticateToken } from '../middleware/auth.js';
