@@ -19,8 +19,8 @@ export const updateUserRole = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { role } = req.body;
 
-  if (!['user', 'admin'].includes(role)) {
-    return res.status(400).json({ message: 'Invalid role' });
+  if (!['user', 'admin', 'reviewer', 'contributor'].includes(role)) {
+    return res.status(400).json({ message: 'Invalid role. Must be one of: user, admin, reviewer, contributor' });
   }
 
   try {
@@ -143,6 +143,96 @@ export const getRecentActivity = async (req: any, res: Response) => {
     res.json(fallback.rows);
   } catch (error) {
     console.error('Get recent activity error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ─── Categories ───────────────────────────────────────────────────────────────
+
+export const getAdminCategories = async (req: any, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT * FROM categories WHERE tenant_id = $1 OR tenant_id IS NULL ORDER BY name',
+      [req.tenantId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get admin categories error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const createCategory = async (req: any, res: Response) => {
+  const { name, description } = req.body;
+  if (!name || name.trim().length < 2) {
+    return res.status(400).json({ message: 'Category name must be at least 2 characters' });
+  }
+  const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  try {
+    const result = await query(
+      'INSERT INTO categories (name, description, slug, tenant_id) VALUES ($1, $2, $3, $4) RETURNING *',
+      [name, description || '', slug, req.tenantId]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error: any) {
+    if (error.code === '23505') return res.status(409).json({ message: 'Category already exists' });
+    console.error('Create category error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const deleteCategory = async (req: any, res: Response) => {
+  const { id } = req.params;
+  try {
+    await query('DELETE FROM categories WHERE id = $1 AND tenant_id = $1', [id, req.tenantId]);
+    res.json({ message: 'Category deleted' });
+  } catch (error) {
+    console.error('Delete category error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ─── Idea Spaces ──────────────────────────────────────────────────────────────
+
+export const getIdeaSpaces = async (req: any, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT * FROM idea_spaces WHERE tenant_id = $1 ORDER BY name',
+      [req.tenantId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get idea spaces error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const createIdeaSpace = async (req: any, res: Response) => {
+  const { name, description } = req.body;
+  if (!name || name.trim().length < 2) {
+    return res.status(400).json({ message: 'Space name must be at least 2 characters' });
+  }
+  const key = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  try {
+    const result = await query(
+      'INSERT INTO idea_spaces (tenant_id, name, key, description) VALUES ($1, $2, $3, $4) RETURNING *',
+      [req.tenantId, name, key, description || '']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error: any) {
+    if (error.code === '23505') return res.status(409).json({ message: 'Space already exists' });
+    console.error('Create idea space error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const deleteIdeaSpace = async (req: any, res: Response) => {
+  const { id } = req.params;
+  try {
+    await query('DELETE FROM idea_spaces WHERE id = $1 AND tenant_id = $2', [id, req.tenantId]);
+    res.json({ message: 'Idea space deleted' });
+  } catch (error) {
+    console.error('Delete idea space error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

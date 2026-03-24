@@ -89,4 +89,23 @@ export const api = {
     }
     return response.json();
   },
+
+  async upload(endpoint: string, formData: FormData, token?: string) {
+    const headers: any = {
+        ...getTenantHeaders(),
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Something went wrong');
+    }
+    return response.json();
+  },
 };

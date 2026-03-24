@@ -130,6 +130,7 @@ const SubmitIdeaForm = () => {
   const [tags, setTags] = useState("");
   const [categories, setCategories] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const { token } = useAuth();
   const navigate = useNavigate();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
@@ -165,25 +166,44 @@ const SubmitIdeaForm = () => {
     fetchCategories();
   }, []);
 
+  const validate = () => {
+    const newErrors: { [key: string]: string } = {};
+    if (!title.trim()) newErrors.title = "Title is required";
+    else if (title.trim().length < 5) newErrors.title = "Title must be at least 5 characters";
+    
+    if (!category) newErrors.category = "Please select a category";
+    
+    if (!description.trim()) newErrors.description = "Description is required";
+    else if (description.trim().length < 20) newErrors.description = "Description must be at least 20 characters";
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim() || !category || isSubmitting) return;
+    if (!validate() || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
-      const newIdea = await api.post("/ideas", {
+      await api.post("/ideas", {
         title,
         description,
         category_id: category,
         tags: tags.split(',').map(t => t.trim()).filter(t => t !== "")
       }, token || undefined);
+      
       toast.success("Idea posted successfully!");
       setTitle("");
       setDescription("");
       setTags("");
+      setErrors({});
       navigate(`${getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)}`);
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || "Failed to post idea");
+      if (error.message?.toLowerCase().includes("category")) {
+        setErrors(prev => ({ ...prev, category: error.message }));
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -212,11 +232,15 @@ const SubmitIdeaForm = () => {
               <Input
                 id="title"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  if (errors.title) setErrors(prev => ({ ...prev, title: "" }));
+                }}
                 placeholder="Celebrate the closing of an opportunity with an in-app animation"
-                className="focus-visible:ring-1 focus-visible:ring-blue-400 h-11"
+                className={`focus-visible:ring-1 h-11 ${errors.title ? 'border-red-500 focus-visible:ring-red-400' : 'focus-visible:ring-blue-400'}`}
                 maxLength={80}
               />
+              {errors.title && <p className="text-xs text-red-500 font-medium">{errors.title}</p>}
               <CharacterCount value={title} max={80} />
             </div>
 
@@ -239,8 +263,14 @@ const SubmitIdeaForm = () => {
               <Label className="text-gray-500 font-normal">
                 <span className="text-orange-400 mr-1">*</span>Category
               </Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-full focus:ring-1 focus:ring-blue-400 h-11">
+              <Select 
+                value={category} 
+                onValueChange={(val) => {
+                  setCategory(val);
+                  if (errors.category) setErrors(prev => ({ ...prev, category: "" }));
+                }}
+              >
+                <SelectTrigger className={`w-full h-11 focus:ring-1 ${errors.category ? 'border-red-500 focus:ring-red-400' : 'focus:ring-blue-400'}`}>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -249,6 +279,7 @@ const SubmitIdeaForm = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {errors.category && <p className="text-xs text-red-500 font-medium">{errors.category}</p>}
             </div>
 
             {/* Description */}
@@ -256,17 +287,21 @@ const SubmitIdeaForm = () => {
               <Label htmlFor="description" className="text-gray-500 font-normal">
                 <span className="text-orange-400 mr-1">*</span>Description
               </Label>
-              <div className="border rounded-md flex flex-col overflow-hidden focus-within:ring-1 focus-within:ring-blue-400 border-gray-200">
+              <div className={`border rounded-md flex flex-col overflow-hidden focus-within:ring-1 border-gray-200 ${errors.description ? 'border-red-500 focus-within:ring-red-400' : 'focus-within:ring-blue-400'}`}>
                 <RichTextToolbar />
                 <Textarea
                   id="description"
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    if (errors.description) setErrors(prev => ({ ...prev, description: "" }));
+                  }}
                   placeholder="When tracking an opportunity in Sales Cloud, there isn't much of a visual cue to represent the closing of an opportunity. By incorporating an in-app animation, sales team members can visually see that they've achieved their goal of closing an opportunity."
                   className="w-full p-4 border-0 focus-visible:ring-0 resize-none text-gray-700 placeholder:text-gray-400 bg-gray-50/30 h-56"
                   maxLength={20000}
                 />
               </div>
+              {errors.description && <p className="text-xs text-red-500 font-medium">{errors.description}</p>}
               <CharacterCount value={description} max={20000} />
             </div>
 

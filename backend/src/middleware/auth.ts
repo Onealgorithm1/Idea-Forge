@@ -41,6 +41,14 @@ export const isAdmin = (req: AuthRequest, res: Response, next: NextFunction) => 
   }
 };
 
+export const isAdminOrReviewer = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (req.user && ['admin', 'reviewer'].includes(req.user.role)) {
+    next();
+  } else {
+    res.status(403).json({ message: 'Access denied: Admin or Reviewer role required' });
+  }
+};
+
 export const isSuperAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
   if (req.user && req.user.isSuperAdmin === true) {
     next();

@@ -2,6 +2,18 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/db.js';
 
+// ─── Audit log helper ─────────────────────────────────────────────────────────
+async function logAudit(tenantId: string, actorUserId: string | null, entityType: string, entityId: string, action: string, oldValues?: any, newValues?: any) {
+  try {
+    await query(
+      'INSERT INTO audit_logs (tenant_id, actor_user_id, entity_type, entity_id, action, old_values, new_values) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      [tenantId, actorUserId, entityType, entityId, action, oldValues ? JSON.stringify(oldValues) : null, newValues ? JSON.stringify(newValues) : null]
+    );
+  } catch (e) {
+    console.error('Audit log error:', e);
+  }
+}
+
 export const getIdeas = async (req: any, res: Response) => {
   const tenantId = req.tenantId;
   let userId = req.user?.id;
@@ -43,7 +55,21 @@ export const createIdea = async (req: any, res: Response) => {
   const author_id = req.user.id;
   const tenant_id = req.tenantId;
 
+  if (!title || title.trim().length < 5) {
+    return res.status(400).json({ message: 'Title must be at least 5 characters long' });
+  }
+  if (!category_id) {
+    return res.status(400).json({ message: 'Category is required' });
+  }
+
   try {
+    // Check if category exists
+    const categoryCheck = await query('SELECT id FROM categories WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)', [category_id, tenant_id]);
+    if (categoryCheck.rows.length === 0) {
+      return res.status(400).json({ message: 'Invalid category' });
+    }
+
+    // Start a transaction block conceptually (though we use pool.query normally, we'll keep it simple but safe)
     const result = await query(
       'INSERT INTO ideas (title, description, author_id, category_id, tenant_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [title, description, author_id, category_id, tenant_id]
@@ -53,7 +79,73 @@ export const createIdea = async (req: any, res: Response) => {
     // Handle tags if provided
     if (tags && Array.isArray(tags)) {
       for (const tagName of tags) {
-        // Find or create tag WITHIN tenant
+        try {
+          // Find or create tag WITHIN tenant
+          let tagResult = await query('SELECT id FROM tags WHERE name = $1 AND tenant_id = $2', [tagName, tenant_id]);
+          let tagId;
+          if (tagResult.rows.length === 0) {
+            const newTag = await query('INSERT INTO tags (name, slug, tenant_id) VALUES ($1, $2, $3) RETURNING id', [tagName, tagName.toLowerCase().replace(/\s+/g, '-'), tenant_id]);
+            tagId = newTag.rows[0].id;
+          } else {
+            tagId = tagResult.rows[0].id;
+          }
+          // Link to idea
+          await query('INSERT INTO idea_tags (idea_id, tag_id, tenant_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING', [idea.id, tagId, tenant_id]);
+        } catch (tagError) {
+          console.error('Tag processing error (non-fatal):', tagError);
+        }
+      }
+    }
+
+    // Log Audit (Don't let it crash the response)
+    logAudit(tenant_id, author_id, 'idea', idea.id, 'idea_created', null, { title: idea.title }).catch(e => console.error('Delayed audit log error:', e));
+
+    // Send response AT THE END
+    return res.status(201).json(idea);
+  } catch (error) {
+    console.error('Create idea error:', error);
+    // Only send if headers not already sent
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Server error' });
+    }
+  }
+};
+
+export const editIdea = async (req: any, res: Response) => {
+  const { id } = req.params;
+  const { title, description, category_id, tags } = req.body;
+  const user_id = req.user.id;
+  const tenant_id = req.tenantId;
+
+  if (title !== undefined && (!title || title.trim().length < 5)) {
+    return res.status(400).json({ message: 'Title must be at least 5 characters long' });
+  }
+
+  try {
+    // Verify idea belongs to this user and tenant
+    const existing = await query('SELECT * FROM ideas WHERE id = $1 AND tenant_id = $2', [id, tenant_id]);
+    if (existing.rows.length === 0) return res.status(404).json({ message: 'Idea not found' });
+    const idea = existing.rows[0];
+
+    // If category is being updated, check if it exists
+    if (category_id && category_id !== idea.category_id) {
+      const categoryCheck = await query('SELECT id FROM categories WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)', [category_id, tenant_id]);
+      if (categoryCheck.rows.length === 0) {
+        return res.status(400).json({ message: 'Invalid category' });
+      }
+    }
+    const isAdmin = req.user.role === 'admin';
+    if (idea.author_id !== user_id && !isAdmin) return res.status(403).json({ message: 'Not authorized to edit this idea' });
+
+    const updated = await query(
+      'UPDATE ideas SET title = $1, description = $2, category_id = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 AND tenant_id = $5 RETURNING *',
+      [title ?? idea.title, description ?? idea.description, category_id ?? idea.category_id, id, tenant_id]
+    );
+
+    // Update tags: clear and re-add
+    if (tags && Array.isArray(tags)) {
+      await query('DELETE FROM idea_tags WHERE idea_id = $1 AND tenant_id = $2', [id, tenant_id]);
+      for (const tagName of tags) {
         let tagResult = await query('SELECT id FROM tags WHERE name = $1 AND tenant_id = $2', [tagName, tenant_id]);
         let tagId;
         if (tagResult.rows.length === 0) {
@@ -62,14 +154,14 @@ export const createIdea = async (req: any, res: Response) => {
         } else {
           tagId = tagResult.rows[0].id;
         }
-        // Link to idea
-        await query('INSERT INTO idea_tags (idea_id, tag_id, tenant_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING', [idea.id, tagId, tenant_id]);
+        await query('INSERT INTO idea_tags (idea_id, tag_id, tenant_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING', [id, tagId, tenant_id]);
       }
     }
 
-    res.status(201).json(idea);
+    res.json(updated.rows[0]);
+    await logAudit(tenant_id, user_id, 'idea', id, 'idea_updated', { title: idea.title }, { title });
   } catch (error) {
-    console.error('Create idea error:', error);
+    console.error('Edit idea error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -85,6 +177,7 @@ export const getCategories = async (req: any, res: Response) => {
   }
 };
 import { emitVoteUpdate, emitStatusUpdate } from '../lib/socket.js';
+
 
 export const voteIdea = async (req: any, res: Response) => {
   const { id } = req.params;
@@ -117,6 +210,7 @@ export const voteIdea = async (req: any, res: Response) => {
     emitVoteUpdate(id, totalVotes);
 
     res.json({ message: 'Vote recorded', id, votes_count: totalVotes });
+    await logAudit(req.tenantId, user_id, 'idea', id, 'vote_submitted', null, { type: 'up' });
 
     // Trigger Notification for author - only for new votes
     if (existingVote.rows.length === 0) {
@@ -138,6 +232,13 @@ export const addComment = async (req: any, res: Response) => {
   const { id } = req.params;
   const { content } = req.body;
   const user_id = req.user.id;
+
+  if (!content || content.trim().length < 2) {
+    return res.status(400).json({ message: 'Comment must be at least 2 characters long' });
+  }
+  if (content.length > 500) {
+    return res.status(400).json({ message: 'Comment is too long (max 500 characters)' });
+  }
 
   try {
     const result = await query(
@@ -265,7 +366,7 @@ export const updateIdeaStatus = async (req: any, res: Response) => {
   const { status } = req.body;
   const tenant_id = req.tenantId;
 
-  const validStatuses = ['Pending', 'Under Review', 'In Progress', 'In Development', 'Shipped'];
+  const validStatuses = ['Pending', 'Under Review', 'In Progress', 'In Development', 'QA', 'Shipped'];
   if (!validStatuses.includes(status)) {
     return res.status(400).json({ message: 'Invalid status' });
   }
@@ -284,8 +385,46 @@ export const updateIdeaStatus = async (req: any, res: Response) => {
     emitStatusUpdate(id as string, status);
 
     res.json(result.rows[0]);
+    await logAudit(tenant_id, req.user?.id || null, 'idea', id, 'status_changed', { status: result.rows[0].status }, { status });
   } catch (error) {
     console.error('Update idea status error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const deleteIdea = async (req: any, res: Response) => {
+  const { id } = req.params;
+  const tenant_id = req.tenantId;
+  const user_id = req.user.id;
+  const user_role = req.user.role;
+
+  try {
+    // 1. Check if idea exists and user has permission
+    const ideaResult = await query('SELECT author_id, title FROM ideas WHERE id = $1 AND tenant_id = $2', [id, tenant_id]);
+    if (ideaResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Idea not found' });
+    }
+
+    const idea = ideaResult.rows[0];
+    if (idea.author_id !== user_id && user_role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to delete this idea' });
+    }
+
+    // 2. Cascade delete related data
+    await query('DELETE FROM idea_tags WHERE idea_id = $1', [id]);
+    await query('DELETE FROM votes WHERE idea_id = $1', [id]);
+    await query('DELETE FROM comments WHERE idea_id = $1', [id]);
+    await query('DELETE FROM bookmarks WHERE idea_id = $1', [id]);
+    await query('DELETE FROM idea_scores WHERE idea_id = $1', [id]);
+    await query('DELETE FROM notifications WHERE reference_id = $1 AND type IN (\'vote\', \'comment\', \'idea\')', [id]);
+    
+    // Finally delete the idea
+    await query('DELETE FROM ideas WHERE id = $1 AND tenant_id = $2', [id, tenant_id]);
+
+    res.json({ message: 'Idea deleted successfully' });
+    await logAudit(tenant_id, user_id, 'idea', id, 'idea_deleted', { title: idea.title }, null);
+  } catch (error) {
+    console.error('Delete idea error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

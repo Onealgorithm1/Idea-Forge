@@ -2,12 +2,14 @@ import Header from "@/components/Header";
 import SidebarNav from "@/components/SidebarNav";
 import CtaBanner from "@/components/CtaBanner";
 import KanbanBoard from "@/components/KanbanBoard";
+import RoadmapBoard from "@/components/RoadmapBoard";
+import AnalyticsView from "@/components/AnalyticsView";
 import BottomCards from "@/components/BottomCards";
 import DeveloperBriefs from "@/components/DeveloperBriefs";
 import { useEffect } from "react";
 import { useLocation, useSearchParams, useParams } from "react-router-dom";
 import { ROUTES, getTenantPath } from "@/lib/constants";
-import { LayoutGrid, Sparkles, Activity, Users } from "lucide-react";
+import { LayoutGrid, Sparkles, Activity, Users, BarChart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
@@ -208,14 +210,33 @@ const Index = () => {
                 </div>
               )}
 
-              {pathname === tenantRoadmap && <DeveloperBriefs />}
+              {pathname === tenantRoadmap && (
+                <div className="space-y-8 relative">
+                   <div className="flex items-center gap-4 mb-2">
+                    <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                      <Activity className="h-7 w-7 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-black tracking-tight text-slate-900">Project Roadmap</h2>
+                      <p className="text-slate-500 font-medium">Tracking ideas from conception to delivery.</p>
+                    </div>
+                  </div>
+                  <RoadmapBoard />
+                </div>
+              )}
 
               {pathname === tenantAnalytics && (
-                <div className="text-center py-16 text-muted-foreground font-medium">
-                  <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <div className="h-8 w-8 border-4 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+                <div className="space-y-8 relative">
+                   <div className="flex items-center gap-4 mb-2">
+                    <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                      <BarChart className="h-7 w-7 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-black tracking-tight text-slate-900">Platform Analytics</h2>
+                      <p className="text-slate-500 font-medium">Data-driven insights into your innovation pipeline.</p>
+                    </div>
                   </div>
-                  Analytics coming soon
+                  <AnalyticsView />
                 </div>
               )}
             </motion.div>

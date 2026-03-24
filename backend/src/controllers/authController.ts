@@ -6,6 +6,11 @@ import { query } from '../config/db.js';
 // ─── Regular User Login ──────────────────────────────────────────────────────
 export const login = async (req: Request, res: Response) => {
   const { email, password, tenantSlug = 'default' } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required' });
+  }
+
   try {
     // 1. Get tenant details by slug first
     const tenantResult = await query('SELECT id FROM tenants WHERE slug = $1 AND status = $2', [tenantSlug, 'active']);
@@ -53,6 +58,17 @@ export const login = async (req: Request, res: Response) => {
 // ─── Regular User Register ───────────────────────────────────────────────────
 export const register = async (req: Request, res: Response) => {
   const { name, email, password, tenantSlug = 'default' } = req.body;
+
+  if (!name || name.trim().length < 2) {
+    return res.status(400).json({ message: 'Name must be at least 2 characters long' });
+  }
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ message: 'Valid email is required' });
+  }
+  if (!password || password.length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+  }
+
   try {
     // 1. Get tenant by slug
     const tenantResult = await query('SELECT * FROM tenants WHERE slug = $1 AND status = $2', [tenantSlug, 'active']);

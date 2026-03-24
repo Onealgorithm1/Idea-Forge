@@ -4,10 +4,13 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import ideaRoutes from './routes/ideaRoutes.js';
+import scoringRoutes from './routes/scoringRoutes.js';
 import { createServer } from 'http';
 import { initSocket } from './lib/socket.js';
 import adminRoutes from './routes/adminRoutes.js';
 import superAdminRoutes from './routes/superAdminRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 import { getTenantBySlug } from './controllers/tenantController.js';
 
 dotenv.config();
@@ -23,13 +26,17 @@ initSocket(server);
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+app.use('/uploads', express.static('uploads'));
 
 // Routes
 app.get('/api/tenants/by-slug/:slug', getTenantBySlug);
 app.use('/api/auth', authRoutes);
 app.use('/api/ideas', ideaRoutes);
+app.use('/api/scoring', scoringRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/super-admin', superAdminRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/users', userRoutes);
 
 import { query } from './config/db.js';
 

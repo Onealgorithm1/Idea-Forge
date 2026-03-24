@@ -22,14 +22,33 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login, register } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const navigate = useNavigate();
   const location = useLocation();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
 
   const isLogin = location.pathname.endsWith("/login");
 
+  const validate = () => {
+    const newErrors: { [key: string]: string } = {};
+    if (!email || !email.includes("@")) newErrors.email = "Valid email is required";
+    if (!password || password.length < 6) newErrors.password = "Password must be at least 6 characters";
+    
+    if (!isLogin) {
+      if (!firstName.trim()) newErrors.firstName = "First name is required";
+      if (!lastName.trim()) newErrors.lastName = "Last name is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate() || isLoading) return;
+
+    setIsLoading(true);
     try {
         if (isLogin) {
           await login(email, password, tenantSlug);
@@ -38,8 +57,12 @@ export default function AuthPage() {
           await register(fullName, email, password, tenantSlug);
         }
         navigate(getTenantPath(ROUTES.IDEA_BOARD, tenantSlug));
-    } catch (error) {
+    } catch (error: any) {
       // Error is handled in context/toast
+      // We can also set backend errors here if needed
+      setErrors(prev => ({ ...prev, form: error.message || "Authentication failed" }));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -84,10 +107,14 @@ export default function AuthPage() {
                       id="firstName"
                       type="text"
                       placeholder="John"
-                      required
                       value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
+                      onChange={(e) => {
+                        setFirstName(e.target.value);
+                        if (errors.firstName) setErrors(prev => ({ ...prev, firstName: "" }));
+                      }}
+                      className={errors.firstName ? "border-red-500" : ""}
                     />
+                    {errors.firstName && <p className="text-[10px] text-red-500 font-medium">{errors.firstName}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last Name</Label>
@@ -95,10 +122,14 @@ export default function AuthPage() {
                       id="lastName"
                       type="text"
                       placeholder="Doe"
-                      required
                       value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
+                      onChange={(e) => {
+                        setLastName(e.target.value);
+                        if (errors.lastName) setErrors(prev => ({ ...prev, lastName: "" }));
+                      }}
+                      className={errors.lastName ? "border-red-500" : ""}
                     />
+                    {errors.lastName && <p className="text-[10px] text-red-500 font-medium">{errors.lastName}</p>}
                   </div>
                 </div>
               )}
@@ -108,10 +139,14 @@ export default function AuthPage() {
                   id="email"
                   type="email"
                   placeholder="name@example.com"
-                  required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email) setErrors(prev => ({ ...prev, email: "" }));
+                  }}
+                  className={errors.email ? "border-red-500" : ""}
                 />
+                {errors.email && <p className="text-[10px] text-red-500 font-medium">{errors.email}</p>}
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -128,16 +163,27 @@ export default function AuthPage() {
                 <Input
                   id="password"
                   type="password"
-                  required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password) setErrors(prev => ({ ...prev, password: "" }));
+                  }}
                   placeholder="••••••••"
+                  className={errors.password ? "border-red-500" : ""}
                 />
+                {errors.password && <p className="text-[10px] text-red-500 font-medium">{errors.password}</p>}
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full">
-                {isLogin ? "Log in" : "Sign up"}
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    {isLogin ? "Logging in..." : "Signing up..."}
+                  </div>
+                ) : (
+                  isLogin ? "Log in" : "Sign up"
+                )}
               </Button>
               <div className="text-center text-sm">
                 {isLogin ? "Don't have an account? " : "Already have an account? "}

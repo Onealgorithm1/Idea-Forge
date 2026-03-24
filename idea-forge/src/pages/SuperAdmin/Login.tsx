@@ -18,6 +18,9 @@ const SuperAdminLogin = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !email.includes("@")) return toast.error("Valid email is required");
+    if (!password || password.length < 6) return toast.error("Password must be at least 6 characters");
+    
     setIsLoading(true);
     try {
       const data = await api.post("/auth/super-admin/login", { email, password });

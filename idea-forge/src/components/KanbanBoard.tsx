@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams, useParams, useNavigate } from "react-router-dom";
-import { Plus, GripVertical, ArrowBigUp, MessageSquare, ChevronUp, ChevronDown, Bookmark, ExternalLink } from "lucide-react";
+import { Plus, GripVertical, ArrowBigUp, MessageSquare, ChevronUp, ChevronDown, Bookmark, ExternalLink, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ const statusColor: Record<string, string> = {
   "Under Review": "bg-warning/15 text-warning border-warning/20",
   "In Progress": "bg-info/15 text-info border-info/20",
   "In Development": "bg-primary/15 text-primary border-primary/20",
+  "QA": "bg-warning/15 text-warning border-warning/20",
   "Shipped": "bg-success/15 text-success border-success/20",
 };
 
@@ -27,7 +28,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
   const [newComment, setNewComment] = useState("");
   const [searchParams] = useSearchParams();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: ideas = [], isLoading } = useQuery({
@@ -59,6 +60,15 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
     }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/ideas/${id}`, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      toast.success("Idea deleted");
+    },
+    onError: (error: any) => toast.error(error.message || "Failed to delete idea"),
   });
 
   const statusMutation = useMutation({
@@ -149,6 +159,15 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                       <button onClick={(e) => { e.stopPropagation(); handleBookmark(item.id); }} className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-amber-500 hover:scale-110 transition-all">
                         <Bookmark className="h-3.5 w-3.5 fill-current" />
                       </button>
+                      {(user?.role === 'admin' || user?.id === item.author_id) && (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); if (window.confirm("Delete this idea?")) deleteMutation.mutate(item.id); }} 
+                          className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-red-500 hover:scale-110 transition-all"
+                          title="Delete Idea"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                       <Link
                         to={getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', item.id), tenantSlug)}
                         onClick={(e) => e.stopPropagation()}
@@ -230,6 +249,15 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                       <button onClick={(e) => { e.stopPropagation(); handleBookmark(item.id); }} className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-amber-500 hover:scale-110 transition-all">
                         <Bookmark className="h-3.5 w-3.5 fill-current" />
                       </button>
+                      {(user?.role === 'admin' || user?.id === item.author_id) && (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); if (window.confirm("Delete this idea?")) deleteMutation.mutate(item.id); }} 
+                          className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-red-500 hover:scale-110 transition-all"
+                          title="Delete Idea"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                       <Link
                         to={getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', item.id), tenantSlug)}
                         onClick={(e) => e.stopPropagation()}

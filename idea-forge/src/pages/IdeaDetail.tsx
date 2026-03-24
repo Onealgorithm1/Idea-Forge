@@ -1,7 +1,7 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, MessageSquare, Heart, Bookmark, Calendar, Target, User, ChevronUp, ChevronDown, Check, Loader2 } from "lucide-react";
+import { ChevronLeft, MessageSquare, Bookmark, Calendar, Target, User, Loader2, Pencil, Star, X, Check, Trash2 } from "lucide-react";
 import Header from "@/components/Header";
 import SidebarNav from "@/components/SidebarNav";
 import { Button } from "@/components/ui/button";
@@ -15,47 +15,146 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import VotingSystem from "@/components/VotingSystem";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
+const STATUSES = ['Pending', 'Under Review', 'In Progress', 'In Development', 'Shipped'];
+
+// ─── Scoring Panel ────────────────────────────────────────────────────────────
+const ScoringPanel = ({ ideaId, token, tenantSlug }: { ideaId: string; token: string | null; tenantSlug: string }) => {
+  const queryClient = useQueryClient();
+  const { data: scoreData } = useQuery({
+    queryKey: ["scores", ideaId],
+    queryFn: () => api.get(`/scoring/ideas/${ideaId}/scores`),
+  });
+  const { data: scorecards = [] } = useQuery({
+    queryKey: ["scorecards"],
+    queryFn: () => api.get("/scoring/scorecards"),
+  });
+
+  const scorecard = scorecards[0];
+  const criteria = scorecard?.criteria || [];
+  const [localScores, setLocalScores] = useState<Record<string, number>>({});
+
+  const scoreMutation = useMutation({
+    mutationFn: ({ criterion_id, score }: { criterion_id: string; score: number }) =>
+      api.post(`/scoring/ideas/${ideaId}/scores`, { criterion_id, score, scorecard_id: scorecard?.id || 'default' }, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["scores", ideaId] });
+      toast.success("Score submitted");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold flex items-center gap-2">
+          <Star className="h-5 w-5 text-amber-500" />
+          Scoring
+        </h3>
+        {scoreData?.overall_avg > 0 && (
+          <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-sm font-bold">
+            Avg: {scoreData.overall_avg} / 10
+          </Badge>
+        )}
+      </div>
+
+      {criteria.length === 0 ? (
+        <p className="text-sm text-muted-foreground italic">No scorecard criteria found.</p>
+      ) : (
+        <div className="space-y-4">
+          {criteria.map((c: any) => {
+            const avg = scoreData?.averages?.find((a: any) => a.criterion_id === c.id || a.criterion_name === c.name);
+            return (
+              <div key={c.id} className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">{c.name}</span>
+                  {avg && <span className="text-xs text-muted-foreground">Avg: {avg.avg_score} ({avg.count} scores)</span>}
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min={c.min_score ?? 0}
+                    max={c.max_score ?? 10}
+                    step="1"
+                    value={localScores[c.id] ?? 5}
+                    onChange={(e) => setLocalScores(prev => ({ ...prev, [c.id]: Number(e.target.value) }))}
+                    className="flex-1 accent-primary"
+                    disabled={!token}
+                  />
+                  <span className="w-8 text-center font-bold text-sm">{localScores[c.id] ?? 5}</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-3 text-xs"
+                    disabled={!token || scoreMutation.isPending}
+                    onClick={() => scoreMutation.mutate({ criterion_id: c.id, score: localScores[c.id] ?? 5 })}
+                  >
+                    {scoreMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Submit"}
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {!token && <p className="text-xs text-muted-foreground mt-3 italic">Login to score this idea.</p>}
+    </Card>
+  );
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 const IdeaDetail = () => {
   const { id, tenantSlug } = useParams<{ id: string; tenantSlug: string }>();
+  const navigate = useNavigate();
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: allIdeas = [] } = useQuery({
     queryKey: ["ideas"],
     queryFn: () => api.get("/ideas"),
-    staleTime: 1000 * 5, // 5 seconds
+    staleTime: 1000 * 5,
   });
 
   const idea = allIdeas.find((i: any) => String(i.id) === id);
 
-  const { data: comments = [], isLoading: isLoadingComments } = useQuery({
+  const { data: comments = [] } = useQuery({
     queryKey: ["comments", id],
     queryFn: () => api.get(`/ideas/${id}/comments`),
     enabled: !!idea,
   });
 
+  // Edit state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const [newComment, setNewComment] = useState("");
 
   const commentMutation = useMutation({
-    mutationFn: (content: string) =>
-      api.post(`/ideas/${id}/comments`, { content }, token!),
+    mutationFn: (content: string) => {
+      if (!content || content.trim().length < 2) throw new Error("Comment must be at least 2 characters");
+      if (content.length > 500) throw new Error("Comment is too long (max 500)");
+      return api.post(`/ideas/${id}/comments`, { content }, token!);
+    },
     onSuccess: () => {
       setNewComment("");
       queryClient.invalidateQueries({ queryKey: ["comments", id] });
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
       toast.success("Comment added");
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to add comment");
-    }
+    onError: (error: any) => toast.error(error.message || "Failed to add comment"),
   });
 
-  const handleAddComment = () => {
-    if (!newComment.trim()) return;
-    if (!token) return toast.error("Please login to comment");
-    commentMutation.mutate(newComment);
-  };
+  const editMutation = useMutation({
+    mutationFn: (data: any) => api.patch(`/ideas/${id}`, data, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      setIsEditing(false);
+      toast.success("Idea updated");
+    },
+    onError: (e: any) => toast.error(e.message || "Failed to update idea"),
+  });
 
   const voteMutation = useMutation({
     mutationFn: ({ type }: { type: "up" | "down" }) =>
@@ -64,27 +163,13 @@ const IdeaDetail = () => {
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
       toast.success("Vote recorded");
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to vote");
-    }
+    onError: (error: any) => toast.error(error.message || "Failed to vote"),
   });
 
   const bookmarkMutation = useMutation({
     mutationFn: () => api.post(`/ideas/${id}/bookmark`, {}, token!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
-    }
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ideas"] }),
   });
-
-  const handleVote = (type: 'up' | 'down') => {
-    if (!token) return toast.error("Please login to vote");
-    voteMutation.mutate({ type });
-  };
-
-  const handleBookmark = () => {
-    if (!token) return toast.error("Please login to bookmark");
-    bookmarkMutation.mutate();
-  };
 
   const statusMutation = useMutation({
     mutationFn: (status: string) =>
@@ -93,14 +178,39 @@ const IdeaDetail = () => {
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
       toast.success("Status updated");
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to update status");
-    }
+    onError: (error: any) => toast.error(error.message || "Failed to update status"),
+  });
+  
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete(`/ideas/${id}`, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      toast.success("Idea deleted");
+      navigate(getTenantPath(ROUTES.IDEA_BOARD, tenantSlug));
+    },
+    onError: (error: any) => toast.error(error.message || "Failed to delete idea"),
   });
 
-  const handleStatusChange = (status: string) => {
-    if (!token) return toast.error("Please login to change status");
-    statusMutation.mutate(status);
+  const isAuthor = idea?.author_id === user?.id;
+  const canEdit = isAuthor || user?.role === 'admin';
+  const canChangeStatus = ['admin', 'reviewer'].includes(user?.role ?? '');
+
+  const startEdit = () => {
+    setEditTitle(idea?.title || "");
+    setEditDescription(idea?.description || "");
+    setIsEditing(true);
+  };
+
+  const cancelEdit = () => setIsEditing(false);
+
+  const saveEdit = () => {
+    if (!editTitle.trim() || editTitle.trim().length < 5) {
+      return toast.error("Title must be at least 5 characters long");
+    }
+    if (!editDescription.trim() || editDescription.trim().length < 20) {
+      return toast.error("Description must be at least 20 characters long");
+    }
+    editMutation.mutate({ title: editTitle, description: editDescription });
   };
 
   const isLoading = !idea && !allIdeas.length;
@@ -146,21 +256,28 @@ const IdeaDetail = () => {
               Back to Board
             </Link>
 
+            {/* Header row */}
             <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-              <div className="space-y-2">
+              <div className="space-y-2 flex-1">
                 <div className="flex items-center gap-2">
-                   <Badge variant="outline" className={cn("bg-primary/5 text-primary border-primary/20", idea.status === 'Shipped' && "bg-success/10 text-success border-success/20")}>
-                     {idea.status}
-                   </Badge>
-                   <span className="text-xs text-muted-foreground">•</span>
-                   <span className="text-xs text-muted-foreground">{idea.category}</span>
-                   <span className="text-xs text-muted-foreground">•</span>
-                   <span className="text-xs text-muted-foreground flex items-center gap-1">
-                     <Calendar className="h-3 w-3" />
-                     {format(new Date(idea.created_at), "MMM d, yyyy")}
-                   </span>
+                  <Badge variant="outline" className={cn("bg-primary/5 text-primary border-primary/20", idea.status === 'Shipped' && "bg-green-100 text-green-700 border-green-200")}>
+                    {idea.status}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">•</span>
+                  <span className="text-xs text-muted-foreground">{idea.category}</span>
+                  <span className="text-xs text-muted-foreground">•</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {format(new Date(idea.created_at), "MMM d, yyyy")}
+                  </span>
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight">{idea.title}</h1>
+
+                {isEditing ? (
+                  <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="text-2xl font-bold h-12 text-2xl" />
+                ) : (
+                  <h1 className="text-3xl font-bold tracking-tight">{idea.title}</h1>
+                )}
+
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <User className="h-3.5 w-3.5" />
@@ -170,16 +287,17 @@ const IdeaDetail = () => {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                {user?.role === 'admin' && (
+                {/* Admin/Reviewer Status Controls */}
+                {canChangeStatus && (
                   <div className="flex items-center gap-1 mr-2 bg-muted/50 p-1 rounded-md border border-dashed">
-                    <span className="text-[10px] font-bold uppercase text-muted-foreground px-2">Admin Status:</span>
-                    {['In Progress', 'In Development', 'Shipped'].map((s) => (
+                    <span className="text-[10px] font-bold uppercase text-muted-foreground px-2">Status:</span>
+                    {STATUSES.map((s) => (
                       <Button
                         key={s}
                         variant={idea.status === s ? "default" : "ghost"}
                         size="sm"
                         className="h-7 text-[10px] px-2"
-                        onClick={() => handleStatusChange(s)}
+                        onClick={() => statusMutation.mutate(s)}
                         disabled={statusMutation.isPending}
                       >
                         {statusMutation.isPending && statusMutation.variables === s ? (
@@ -194,30 +312,67 @@ const IdeaDetail = () => {
                   <VotingSystem
                     ideaId={idea.id}
                     initialVotes={idea.votes_count}
-                    onVote={(type) => handleVote(type)}
+                    onVote={(type) => { if (!token) return toast.error("Please login to vote"); voteMutation.mutate({ type }); }}
                     hasVoted={idea.has_voted}
                     orientation="horizontal"
                     className="border-none bg-transparent shadow-none"
                   />
                 </div>
 
-                 <Button
-                   variant="outline"
-                   size="sm"
-                   className="gap-2"
-                   onClick={handleBookmark}
-                 >
-                   <Bookmark className="h-4 w-4" />
-                   Save
-                 </Button>
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => { if (!token) return toast.error("Please login"); bookmarkMutation.mutate(); }}>
+                  <Bookmark className="h-4 w-4" />
+                  Save
+                </Button>
+
+                {canEdit && !isEditing && (
+                  <Button variant="outline" size="sm" className="gap-2" onClick={startEdit}>
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </Button>
+                )}
+                
+                {canEdit && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="gap-2 text-destructive hover:text-white hover:bg-destructive transition-all" 
+                    disabled={deleteMutation.isPending}
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to delete this idea? This action cannot be undone.")) {
+                        deleteMutation.mutate();
+                      }
+                    }}
+                  >
+                    {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    Delete
+                  </Button>
+                )}
+                {isEditing && (
+                  <>
+                    <Button size="sm" className="gap-2" onClick={saveEdit} disabled={editMutation.isPending}>
+                      {editMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-4 w-4" />}
+                      Save
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
+                  </>
+                )}
               </div>
             </div>
 
+            {/* Description card */}
             <Card className="p-8">
               <div className="prose prose-sm max-w-none">
-                <p className="text-lg leading-relaxed text-muted-foreground">
-                  {idea.description}
-                </p>
+                {isEditing ? (
+                  <Textarea 
+                    value={editDescription} 
+                    onChange={(e) => setEditDescription(e.target.value)} 
+                    rows={8} 
+                    className="w-full text-base" 
+                    maxLength={2000}
+                  />
+                ) : (
+                  <p className="text-lg leading-relaxed text-muted-foreground">{idea.description}</p>
+                )}
               </div>
 
               {idea.tags && idea.tags.length > 0 && (
@@ -232,6 +387,12 @@ const IdeaDetail = () => {
               )}
             </Card>
 
+            {/* Scoring Panel — admin only */}
+            {user?.role === 'admin' && (
+              <ScoringPanel ideaId={id!} token={token} tenantSlug={tenantSlug!} />
+            )}
+
+            {/* Comments */}
             <div className="space-y-4">
               <h3 className="text-xl font-bold flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
@@ -244,13 +405,11 @@ const IdeaDetail = () => {
                   placeholder="Share your thoughts or feedback..."
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleAddComment();
-                  }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { if (!newComment.trim()) return; if (!token) return toast.error("Please login to comment"); commentMutation.mutate(newComment); }}}
                   className="flex-1 bg-background border border-border shadow-sm rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                 />
                 <Button
-                  onClick={handleAddComment}
+                  onClick={() => { if (!newComment.trim()) return; if (!token) return toast.error("Please login to comment"); commentMutation.mutate(newComment); }}
                   disabled={!newComment.trim() || commentMutation.isPending}
                   className="font-medium px-6 py-2.5 rounded-lg shadow-sm"
                 >
@@ -259,7 +418,7 @@ const IdeaDetail = () => {
               </div>
 
               <div className="space-y-4">
-                {comments.map((c) => (
+                {comments.map((c: any) => (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}

@@ -34,6 +34,13 @@ const AppContent = () => (
     {/* For this MVP, we redirect to 'default' tenant */}
     <Route path="/" element={<Navigate to="/default" replace />} />
     <Route path="/login" element={<Navigate to="/default/login" replace />} />
+    <Route path="/signup" element={<Navigate to="/default/signup" replace />} />
+    <Route path="/idea-board" element={<Navigate to="/default/idea-board" replace />} />
+    <Route path="/roadmap" element={<Navigate to="/default/roadmap" replace />} />
+    <Route path="/analytics" element={<Navigate to="/default/analytics" replace />} />
+    <Route path="/submit-idea" element={<Navigate to="/default/submit-idea" replace />} />
+    <Route path="/profile" element={<Navigate to="/default/profile" replace />} />
+    <Route path="/admin/*" element={<Navigate to="/default/admin/dashboard" replace />} />
 
     {/* Tenant specific routes: /:tenantSlug/... */}
     <Route path="/:tenantSlug/*" element={<TenantProvider>
