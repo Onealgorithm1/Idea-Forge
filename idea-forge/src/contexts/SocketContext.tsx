@@ -17,8 +17,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    // In production, this would be your server URL
-    const newSocket = io('http://localhost:5001');
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || 
+                      (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') : 'http://localhost:5001');
+    const newSocket = io(socketUrl);
 
     newSocket.on('connect', () => {
       console.log('Socket connected');
