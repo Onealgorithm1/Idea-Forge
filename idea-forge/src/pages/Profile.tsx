@@ -31,7 +31,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
-import { getTenantPath, ROUTES } from "@/lib/constants";
+import { getTenantPath, ROUTES, PLATFORM_STATUS_LABELS } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { getInitials } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -298,7 +298,7 @@ const IdeaCard = ({ idea, tenantSlug, onBookmark }: { idea: any; tenantSlug: str
             variant="secondary"
             className="text-[8px] px-2 py-0.5 h-5 bg-slate-100 text-slate-500 border-0 font-bold uppercase tracking-tighter rounded-md"
           >
-            {idea.status}
+            {PLATFORM_STATUS_LABELS[idea.status] || idea.status}
           </Badge>
           <button
             onClick={(e) => onBookmark(e, idea.id)}

@@ -20,8 +20,14 @@ import { authenticateToken, isSuperAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// All super-admin routes require auth + super admin role
-router.use(authenticateToken, isSuperAdmin);
+// All super-admin routes require authentication
+router.use(authenticateToken);
+
+// Support submission is allowed for any authenticated user
+router.post('/support', submitSupportRequest);
+
+// All other super-admin routes require super admin role
+router.use(isSuperAdmin);
 
 router.get('/tenants', listTenants);
 router.get('/tenants/stats', getTenantStats);
@@ -35,7 +41,6 @@ router.delete('/tenants/:id', deleteTenant);
 router.post('/tenants/:id/admins', createTenantAdmin);
 router.patch('/tenants/:id/license', updateTenantMaxUsers);
 router.get('/support', listSupportRequests);
-router.post('/support', submitSupportRequest);
 
 // User management
 router.patch('/users/:userId/status', updateUserStatus);

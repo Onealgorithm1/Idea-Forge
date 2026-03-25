@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams, useParams, useNavigate } from "react-router-dom";
 import { Plus, GripVertical, ArrowBigUp, MessageSquare, ChevronUp, ChevronDown, Bookmark, ExternalLink, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ROUTES, getTenantPath } from "@/lib/constants";
+import { ROUTES, getTenantPath, PLATFORM_STATUS_LABELS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -130,7 +130,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
               <div className="p-1.5 bg-slate-200 rounded-lg">
                 <GripVertical className="h-4 w-4 text-slate-500" />
               </div>
-              <h3 className="font-bold text-sm tracking-tight text-slate-700">Idea Pool</h3>
+              <h3 className="font-bold text-sm tracking-tight text-slate-700">Ideation</h3>
             </div>
             <div className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{ideaPoolItems.length}</div>
           </div>
@@ -221,7 +221,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
               <div className="p-1.5 bg-primary/20 rounded-lg">
                 <ArrowBigUp className="h-4 w-4 text-primary fill-primary/20" />
               </div>
-              <h3 className="font-bold text-sm tracking-tight text-primary">Voting & Feedback</h3>
+              <h3 className="font-bold text-sm tracking-tight text-primary">In Development</h3>
             </div>
             <div className="bg-primary/20 text-primary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{votingItems.length}</div>
           </div>
@@ -314,7 +314,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
               <div className="p-1.5 bg-success/20 rounded-lg">
                 <Plus className="h-4 w-4 text-success" />
               </div>
-              <h3 className="font-bold text-sm tracking-tight text-success">In Development</h3>
+              <h3 className="font-bold text-sm tracking-tight text-success">In Production</h3>
             </div>
             <div className="bg-success/20 text-success px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{devItems.length}</div>
           </div>
@@ -336,7 +336,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                       <div className="min-w-0">
                         <p className="text-sm font-bold truncate group-hover:text-primary transition-colors">{item.title}</p>
                         <Badge variant="outline" className={`text-[9px] font-black uppercase tracking-tighter px-1.5 py-0 border-none ${statusColor[item.status]}`}>
-                          {item.status}
+                          {PLATFORM_STATUS_LABELS[item.status] || item.status}
                         </Badge>
                       </div>
                     </div>

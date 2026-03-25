@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
-import { ROUTES, getTenantPath } from "@/lib/constants";
+import { ROUTES, getTenantPath, PLATFORM_STATUS_LABELS } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -261,7 +261,7 @@ const IdeaDetail = () => {
               <div className="space-y-2 flex-1">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className={cn("bg-primary/5 text-primary border-primary/20", idea.status === 'Shipped' && "bg-green-100 text-green-700 border-green-200")}>
-                    {idea.status}
+                    {PLATFORM_STATUS_LABELS[idea.status] || idea.status}
                   </Badge>
                   <span className="text-xs text-muted-foreground">•</span>
                   <span className="text-xs text-muted-foreground">{idea.category}</span>
@@ -302,7 +302,7 @@ const IdeaDetail = () => {
                       >
                         {statusMutation.isPending && statusMutation.variables === s ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : s}
+                        ) : (PLATFORM_STATUS_LABELS[s] || s)}
                       </Button>
                     ))}
                   </div>

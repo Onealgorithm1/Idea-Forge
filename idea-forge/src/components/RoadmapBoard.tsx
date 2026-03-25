@@ -14,10 +14,10 @@ import { api } from "@/lib/api";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 const roadmapStages = [
-  { id: 'backlog', name: 'Backlog', icon: Clock, color: 'slate', statuses: ['Pending', 'Under Review'], defaultStatus: 'Pending' },
-  { id: 'progress', name: 'In Progress', icon: PlayCircle, color: 'primary', statuses: ['In Progress', 'In Development'], defaultStatus: 'In Progress' },
+  { id: 'backlog', name: 'Ideation', icon: Clock, color: 'slate', statuses: ['Pending', 'Under Review'], defaultStatus: 'Pending' },
+  { id: 'progress', name: 'In Development', icon: PlayCircle, color: 'primary', statuses: ['In Progress', 'In Development'], defaultStatus: 'In Progress' },
   { id: 'qa', name: 'QA & Testing', icon: FlaskConical, color: 'warning', statuses: ['QA'], defaultStatus: 'QA' },
-  { id: 'done', name: 'Completed', icon: CheckCircle2, color: 'success', statuses: ['Shipped'], defaultStatus: 'Shipped' },
+  { id: 'done', name: 'In Production', icon: CheckCircle2, color: 'success', statuses: ['Shipped'], defaultStatus: 'Shipped' },
 ];
 
 const stageColors: Record<string, string> = {
@@ -174,23 +174,25 @@ const RoadmapBoard = () => {
                                 {idea.title}
                               </h4>
                               
-                              <div className="flex items-center justify-between mt-1 pt-3 border-t border-slate-50">
-                                <div className="flex items-center gap-3">
-                                  <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
-                                     <MessageSquare className="h-3 w-3" />
-                                     {idea.comments_count || 0}
+                              {stage.id !== 'done' && (
+                                <div className="flex items-center justify-between mt-1 pt-3 border-t border-slate-50">
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+                                       <MessageSquare className="h-3 w-3" />
+                                       {idea.comments_count || 0}
+                                    </div>
+                                    <div className="h-1 w-1 rounded-full bg-slate-200" />
+                                    <span className="text-[10px] font-bold text-emerald-600">
+                                      {idea.votes_count || 0} Votes
+                                    </span>
                                   </div>
-                                  <div className="h-1 w-1 rounded-full bg-slate-200" />
-                                  <span className="text-[10px] font-bold text-emerald-600">
-                                    {idea.votes_count || 0} Votes
-                                  </span>
+                                  <Avatar className="h-6 w-6 border border-white shadow-sm ring-1 ring-slate-100">
+                                    <AvatarFallback className="text-[8px] font-black bg-slate-100 text-slate-500">
+                                      {getInitials(idea.author || 'U')}
+                                    </AvatarFallback>
+                                  </Avatar>
                                 </div>
-                                <Avatar className="h-6 w-6 border border-white shadow-sm ring-1 ring-slate-100">
-                                  <AvatarFallback className="text-[8px] font-black bg-slate-100 text-slate-500">
-                                    {getInitials(idea.author || 'U')}
-                                  </AvatarFallback>
-                                </Avatar>
-                              </div>
+                              )}
                             </div>
                           </div>
                         )}

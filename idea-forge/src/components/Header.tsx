@@ -12,6 +12,16 @@ import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useTenant } from "@/contexts/TenantContext";
+import { Menu, X, ShieldCheck, Activity, Users, Settings as SettingsIcon, Tag } from "lucide-react";
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle, 
+  SheetTrigger 
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { categories } from "./SidebarNav";
 
 const Header = () => {
   const { user, logout, token } = useAuth();
@@ -59,23 +69,160 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-header text-header-foreground border-b border-white/5 shadow-lg">
-      <div className="flex items-center justify-between px-6 h-16 max-w-[1600px] mx-auto w-full">
+      <div className="flex items-center justify-between px-4 md:px-6 h-16 max-w-[1600px] mx-auto w-full">
         
-        <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)} className="flex items-center gap-3.5 hover:opacity-90 transition-all group">
-          <div className="bg-primary/20 p-2.5 rounded-xl group-hover:bg-primary/30 transition-colors">
-            <Logo imageClassName="h-10 w-10" />
+        <div className="flex items-center gap-4">
+          {/* Mobile Menu Trigger */}
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <button className="p-2 rounded-xl hover:bg-white/10 transition-colors">
+                  <Menu className="h-6 w-6" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] bg-header border-white/10 p-0 text-white">
+                <SheetHeader className="p-6 border-b border-white/10 text-left">
+                  <SheetTitle className="text-white flex items-center gap-3">
+                    <Logo imageClassName="h-8 w-8" />
+                    <span>IdeaForge</span>
+                  </SheetTitle>
+                </SheetHeader>
+                <ScrollArea className="h-[calc(100vh-80px)] p-6">
+                  <div className="space-y-8">
+                    {/* Main Nav */}
+                    <div className="space-y-4">
+                      <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2">Navigation</p>
+                      <nav className="flex flex-col gap-2">
+                        {tabs.map((tab) => {
+                          const isActive = location.pathname === tab.path;
+                          return (
+                            <Link 
+                              key={tab.name} 
+                              to={tab.path} 
+                              className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all ${
+                                isActive ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/60 hover:bg-white/5 hover:text-white"
+                              }`}
+                            >
+                              {tab.name}
+                            </Link>
+                          );
+                        })}
+                      </nav>
+                    </div>
+
+                    {/* Categories section - only shown in mobile and if on Idea Board/Dashboard context */}
+                    {(location.pathname === getTenantPath(ROUTES.IDEA_BOARD, tenantSlug) || location.pathname === getTenantPath(ROUTES.ROOT, tenantSlug)) && (
+                      <div className="space-y-4">
+                        <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2 flex items-center gap-2">
+                          <Tag className="h-3 w-3" /> Categories
+                        </p>
+                        <div className="flex flex-wrap gap-2 px-1">
+                          {categories.map((cat) => {
+                            const searchParams = new URLSearchParams(location.search);
+                            const currentCat = searchParams.get("category") || "All";
+                            const isActive = currentCat === cat.label;
+                            
+                            const params = new URLSearchParams();
+                            if (cat.label !== "All") params.set("category", cat.label);
+                            const path = `${getTenantPath(ROUTES.ROOT, tenantSlug)}${params.toString() ? '?' + params.toString() : ''}`;
+
+                            return (
+                              <Link 
+                                key={cat.label} 
+                                to={path}
+                                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${
+                                  isActive ? "bg-white text-header border-white" : "bg-white/5 text-white/70 border-white/10 hover:border-white/20"
+                                }`}
+                              >
+                                {cat.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Admin section */}
+                    {user?.role === 'admin' && (
+                      <div className="space-y-4">
+                         <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2 flex items-center gap-2">
+                          <ShieldCheck className="h-3 w-3" /> Administration
+                        </p>
+                        <div className="space-y-2">
+                          <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
+                            Admin Dashboard
+                          </Link>
+                          <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
+                            Manage Users
+                          </Link>
+                          <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
+                            Organization Settings
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Help Section */}
+                    <div className="space-y-2">
+                      <SupportDialog>
+                        <button className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-bold bg-white/5 text-white/80 hover:bg-white/10 transition-all border border-white/5">
+                          <HelpCircle className="h-5 w-5 text-primary" />
+                          Help & Support
+                        </button>
+                      </SupportDialog>
+                    </div>
+
+                    {/* Account section */}
+                    <div className="space-y-4">
+                      <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2">Account</p>
+                      <div className="space-y-2">
+                        {user ? (
+                          <>
+                            <Link 
+                              to={getTenantPath(ROUTES.PROFILE, tenantSlug)}
+                              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all"
+                            >
+                              Profile Settings
+                            </Link>
+                            <button 
+                              onClick={logout}
+                              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-red-400 hover:bg-red-500/10 transition-all text-left"
+                            >
+                              Logout
+                            </button>
+                          </>
+                        ) : (
+                          <Link 
+                            to={getTenantPath(ROUTES.LOGIN, tenantSlug)}
+                            className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold bg-primary text-white text-center justify-center"
+                          >
+                            Login
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </ScrollArea>
+              </SheetContent>
+            </Sheet>
           </div>
-          <div className="flex flex-col -gap-1">
-            <span className="font-black text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
-              {tenant?.name || "IdeaForge"}
-            </span>
-            {tenant?.name && (
-              <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-primary/80 ml-0.5">
-                IdeaForge Platform
+
+          <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)} className="flex items-center gap-3 md:gap-3.5 hover:opacity-90 transition-all group">
+            <div className="bg-primary/20 p-2 md:p-2.5 rounded-xl group-hover:bg-primary/30 transition-colors">
+              <Logo imageClassName="h-7 w-7 md:h-10 md:w-10" />
+            </div>
+            <div className="flex flex-col -gap-1">
+              <span className="font-black text-lg md:text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70 truncate max-w-[120px] md:max-w-none">
+                {tenant?.name || "IdeaForge"}
               </span>
-            )}
-          </div>
-        </Link>
+              {tenant?.name && (
+                <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-[0.2em] text-primary/80 ml-0.5">
+                  IdeaForge
+                </span>
+              )}
+            </div>
+          </Link>
+        </div>
 
         <nav className="hidden md:flex items-center gap-8 h-full">
           {tabs.map((tab) => {

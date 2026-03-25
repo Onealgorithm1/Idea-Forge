@@ -24,3 +24,12 @@ export const getTenantPath = (path: string, slug?: string) => {
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
   return `/${slug}/${cleanPath}`;
 };
+
+export const PLATFORM_STATUS_LABELS: Record<string, string> = {
+  "Pending": "Ideation",
+  "Under Review": "Ideation",
+  "In Progress": "In Development",
+  "In Development": "In Development",
+  "QA": "QA & Testing",
+  "Shipped": "In Production",
+};

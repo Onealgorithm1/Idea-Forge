@@ -11,7 +11,7 @@ interface SidebarItem {
   label: string;
 }
 
-const categories: SidebarItem[] = [
+export const categories: SidebarItem[] = [
   { icon: LayoutGrid, label: "All" },
   { icon: Briefcase, label: "Sales / Opportunities" },
   { icon: Package, label: "Product Development" },
