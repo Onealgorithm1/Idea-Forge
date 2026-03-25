@@ -25,7 +25,7 @@ export const updateUserRole = async (req: Request, res: Response) => {
 
   try {
     const result = await query(
-      'UPDATE users SET role = $1 WHERE id = $2 AND tenant_id = $3 AND role != $4',
+      'UPDATE users SET role = $1 WHERE id = $2 AND tenant_id = $3 AND role != $4 RETURNING id',
       [role, id, (req as any).tenantId, 'super_admin']
     );
     if (result.rows.length === 0) {
