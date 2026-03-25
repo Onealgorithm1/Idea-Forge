@@ -18,6 +18,7 @@ import AdminSettings from "./pages/AdminSettings";
 import SuperAdminLogin from "./pages/SuperAdmin/Login";
 import SuperAdminDashboard from "./pages/SuperAdmin/Dashboard";
 import TenantDetail from "./pages/SuperAdmin/TenantDetail";
+import RegisterWorkspace from "./pages/RegisterWorkspace";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ROUTES } from "./lib/constants";
 import FloatingSubmitIdea from "./components/FloatingSubmitIdea";
@@ -30,6 +31,7 @@ const AppContent = () => (
     {/* Super Admin Portal — standalone */}
     <Route path="/super-admin" element={<SuperAdminLogin />} />
     <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+    <Route path="/register-workspace" element={<RegisterWorkspace />} />
     <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
     <Route path="/super-admin/tenants/:id" element={<TenantDetail />} />
 

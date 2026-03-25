@@ -249,7 +249,7 @@ export default function AuthPage() {
                 <p className="text-xs text-slate-500 font-medium">
                   {isLogin ? "New here?" : "Already member?"}{" "}
                   <Link 
-                    to={isLogin ? getTenantPath(ROUTES.LOGIN, tenantSlug) : getTenantPath(ROUTES.LOGIN, tenantSlug)} 
+                    to="/register-workspace" 
                     className="text-primary hover:text-white transition-colors font-bold ml-1"
                   >
                     {isLogin ? "Create Workspace Account" : "Sign In to Forge"}

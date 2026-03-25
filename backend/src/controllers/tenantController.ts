@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { query } from '../config/db.js';
+import { sendEmail } from '../config/mail.js';
 
 // =====================================================
 // Tenant Management (Super Admin only)
@@ -100,6 +102,11 @@ export const updateTenant = async (req: Request, res: Response) => {
   const { name, status, plan_type, settings_json } = req.body;
 
   try {
+    // Check old status
+    const oldResult = await query('SELECT status FROM tenants WHERE id = $1', [id]);
+    if (oldResult.rows.length === 0) return res.status(404).json({ message: 'Tenant not found' });
+    const oldStatus = oldResult.rows[0].status;
+
     const result = await query(
       `UPDATE tenants SET 
         name = COALESCE($1, name),
@@ -110,7 +117,13 @@ export const updateTenant = async (req: Request, res: Response) => {
        WHERE id = $5 RETURNING *`,
       [name, status, plan_type, settings_json, id]
     );
-    if (result.rows.length === 0) return res.status(404).json({ message: 'Tenant not found' });
+
+    // If tenant activated from pending, activate its users too
+    if (status === 'active' && oldStatus === 'pending') {
+      await query("UPDATE users SET status = 'active' WHERE tenant_id = $1 AND status = 'pending'", [id]);
+      await query("UPDATE tenant_users SET status = 'active' WHERE tenant_id = $1 AND status = 'pending'", [id]);
+    }
+
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Update tenant error:', error);
@@ -154,6 +167,88 @@ export const getTenantStats = async (_req: Request, res: Response) => {
     res.json({ ...tenantStats.rows[0], ...ideaStats.rows[0] });
   } catch (error) {
     console.error('Get tenant stats error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// =====================================================
+// Workspace Registration (Public)
+// =====================================================
+
+export const registerWorkspace = async (req: Request, res: Response) => {
+  const { orgName, orgSlug, adminName, adminEmail, adminPhone, adminPassword } = req.body;
+
+  if (!orgName || !orgSlug || !adminName || !adminEmail || !adminPhone || !adminPassword) {
+    return res.status(400).json({ message: 'All fields are required' });
+  }
+
+  const slug = orgSlug.toLowerCase().replace(/\s+/g, '-');
+
+  try {
+    // 1. Check if slug exists
+    const existing = await query('SELECT id FROM tenants WHERE slug = $1', [slug]);
+    if (existing.rows.length > 0) return res.status(409).json({ message: 'Organization URL already taken' });
+
+    // 2. Create Tenant (Pending)
+    const tenantResult = await query(
+      `INSERT INTO tenants (name, slug, status, plan_type) VALUES ($1, $2, 'pending', 'free') RETURNING *`,
+      [orgName, slug]
+    );
+    const tenantId = tenantResult.rows[0].id;
+
+    // 3. Create First Admin User (Pending)
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(adminPassword, salt);
+    const userResult = await query(
+      `INSERT INTO users (name, email, phone, password_hash, role, tenant_id, status)
+       VALUES ($1, $2, $3, $4, 'admin', $5, 'pending') RETURNING id, name, email`,
+      [adminName, adminEmail, adminPhone, hashedPassword, tenantId]
+    );
+
+    // 4. Add to tenant_users
+    await query(
+      'INSERT INTO tenant_users (tenant_id, user_id, status) VALUES ($1, $2, $3)',
+      [tenantId, userResult.rows[0].id, 'pending']
+    );
+
+    // 5. Initialize tenant resources (roles, spaces)
+    await query(
+      `INSERT INTO roles (tenant_id, name, description, is_system_role) VALUES 
+        ($1, 'admin', 'Full administrative access', TRUE),
+        ($1, 'member', 'Regular member access', TRUE)`,
+      [tenantId]
+    );
+    await query(
+      `INSERT INTO idea_spaces (tenant_id, name, key, description) VALUES ($1, 'General', 'general', 'Default idea space')`,
+      [tenantId]
+    );
+    await query(`INSERT INTO tenant_details (tenant_id) VALUES ($1)`, [tenantId]);
+
+    // 6. Notify Super Admin via Support Request logic
+    const superAdmins = await query('SELECT email FROM users WHERE is_super_admin = TRUE OR role = $1', ['superadmin']);
+    const adminEmails = superAdmins.rows.map(r => r.email).filter(Boolean);
+
+    // Create a support request record for tracking
+    await query(
+      'INSERT INTO support_requests (tenant_id, user_id, subject, message, status) VALUES ($1, $2, $3, $4, $5)',
+      [tenantId, userResult.rows[0].id, 'New Workspace Registration', `New organization registration request: ${orgName} (${slug}). Submitted by: ${adminName} (${adminEmail}, Phone: ${adminPhone})`, 'open']
+    );
+
+    // Send emails
+    if (adminEmails.length > 0) {
+      const subject = `[Action Required] New Workspace Registration: ${orgName}`;
+      const text = `A new organization registration request has been submitted.\n\nOrg Name: ${orgName}\nSlug: ${slug}\nAdmin: ${adminName} (${adminEmail})\nPhone: ${adminPhone}\n\nPlease log in to the Super Admin dashboard to review and approve this request.`;
+      
+      await sendEmail(adminEmails.join(','), subject, text);
+    }
+
+    res.status(201).json({ 
+      message: 'Registration submitted successfully. Please wait for Super Admin approval.',
+      tenant: { name: orgName, slug }
+    });
+
+  } catch (error) {
+    console.error('Register workspace error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

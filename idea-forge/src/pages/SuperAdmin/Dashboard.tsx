@@ -106,6 +106,7 @@ const SuperAdminDashboard = () => {
     active: "bg-success/10 text-success border-success/20",
     suspended: "bg-amber-500/10 text-amber-600 border-amber-500/20",
     deleted: "bg-destructive/10 text-destructive border-destructive/20",
+    pending: "bg-blue-500/10 text-blue-400 border-blue-500/20",
   };
 
   const planColor: Record<string, string> = {
@@ -275,13 +276,22 @@ const SuperAdminDashboard = () => {
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-white/5" />
-                            <DropdownMenuItem 
-                              onClick={() => toggleStatus.mutate({ id: tenant.id, status: tenant.status === 'active' ? 'suspended' : 'active' })}
-                              className={`hover:bg-white/10 cursor-pointer ${tenant.status === 'active' ? 'text-amber-400' : 'text-success'}`}
-                            >
-                              <Power className="mr-2 h-4 w-4" />
-                              {tenant.status === 'active' ? 'Suspend' : 'Activate'}
-                            </DropdownMenuItem>
+                            {tenant.status === 'pending' ? (
+                              <DropdownMenuItem 
+                                onClick={() => toggleStatus.mutate({ id: tenant.id, status: 'active' })}
+                                className="hover:bg-white/10 cursor-pointer text-success"
+                              >
+                                <ShieldCheck className="mr-2 h-4 w-4" /> Approve Tenant
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem 
+                                onClick={() => toggleStatus.mutate({ id: tenant.id, status: tenant.status === 'active' ? 'suspended' : 'active' })}
+                                className={`hover:bg-white/10 cursor-pointer ${tenant.status === 'active' ? 'text-amber-400' : 'text-success'}`}
+                              >
+                                <Power className="mr-2 h-4 w-4" />
+                                {tenant.status === 'active' ? 'Suspend' : 'Activate'}
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>

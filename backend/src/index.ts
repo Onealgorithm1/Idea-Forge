@@ -12,6 +12,7 @@ import superAdminRoutes from './routes/superAdminRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import organizationRoutes from './routes/organizationRoutes.js';
+import registerRoutes from './routes/registerRoutes.js';
 import { getTenantBySlug } from './controllers/tenantController.js';
 
 dotenv.config();
@@ -39,6 +40,7 @@ app.use('/api/super-admin', superAdminRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/org', organizationRoutes);
+app.use('/api/register', registerRoutes);
 
 import { query } from './config/db.js';
 

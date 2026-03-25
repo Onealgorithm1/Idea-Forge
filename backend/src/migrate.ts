@@ -59,7 +59,9 @@ async function migrate() {
     await runStatement(client, `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_super_admin BOOLEAN DEFAULT FALSE`, 'Column: users.is_super_admin');
     await runStatement(client, `ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`, 'Column: users.avatar_url');
     await runStatement(client, `ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT`, 'Column: users.bio');
+    await runStatement(client, `ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20)`, 'Column: users.phone');
     await runStatement(client, `UPDATE users SET tenant_id = '00000000-0000-0000-0000-000000000001' WHERE tenant_id IS NULL`, 'Migrate: users → default tenant');
+    await runStatement(client, `UPDATE users SET phone = 'N/A' WHERE phone IS NULL`, 'Migrate: users → set default phone');
 
     // === TENANT_USERS ===
     await runStatement(client, `
