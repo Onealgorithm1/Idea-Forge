@@ -21,6 +21,10 @@ import {
   Sparkles,
   ShieldCheck,
   Lightbulb,
+  Globe,
+  FileText,
+  Briefcase,
+  Save,
 } from "lucide-react";
 import Header from "@/components/Header";
 import SidebarNav from "@/components/SidebarNav";
@@ -28,6 +32,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -325,6 +331,58 @@ const Profile = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
+  const { data: orgData, isLoading: loadingOrg } = useQuery({
+    queryKey: ["org-details"],
+    queryFn: () => api.get("/org/details", token!),
+    enabled: !!token && user?.role === "admin",
+  });
+
+  const [orgForm, setOrgForm] = useState({
+    name: "",
+    slug: "",
+    website: "",
+    description: "",
+    industry: "",
+    logo_url: ""
+  });
+
+  useEffect(() => {
+    if (orgData) {
+      setOrgForm({
+        name: orgData.name || "",
+        slug: orgData.slug || "",
+        website: orgData.website || "",
+        description: orgData.description || "",
+        industry: orgData.industry || "",
+        logo_url: orgData.logo_url || ""
+      });
+    }
+  }, [orgData]);
+
+  const updateOrgMutation = useMutation({
+    mutationFn: (data: typeof orgForm) => api.patch("/org/details", data, token!),
+    onSuccess: (data: any, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["org-details"] });
+      toast.success("Organization details updated successfully");
+      
+      if (variables.slug && variables.slug !== orgData?.slug) {
+        toast.info("Organization URL changed. Redirecting...");
+        setTimeout(() => {
+          window.location.href = `/${variables.slug}/profile`;
+        }, 1500);
+      }
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to update details"),
+  });
+
+  const handleOrgSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (orgForm.slug && !/^[a-z0-9-]+$/.test(orgForm.slug)) {
+      return toast.error("Slug can only contain lowercase letters, numbers, and hyphens");
+    }
+    updateOrgMutation.mutate(orgForm);
+  };
+
   const { data: profile, isLoading: loadingProfile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: () => api.get("/users/me", token!),
@@ -394,7 +452,7 @@ const Profile = () => {
   );
 
   /* ─── Loading skeleton ─── */
-  if (loadingProfile || loadingIdeas) {
+  if (loadingProfile || loadingIdeas || loadingOrg) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Header />
@@ -583,6 +641,22 @@ const Profile = () => {
               </Card>
             </motion.div>
 
+            {/* ── Tabs ─────────────────────────────── */}
+            <Tabs defaultValue="my-account" className="space-y-6">
+              <div className="flex justify-center sm:justify-start">
+                <TabsList className="bg-white/50 backdrop-blur-md border border-slate-200 shadow-sm p-1 rounded-2xl h-auto">
+                  <TabsTrigger value="my-account" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary font-bold transition-all text-sm">
+                    My Account
+                  </TabsTrigger>
+                  {user?.role === "admin" && (
+                    <TabsTrigger value="organization" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary font-bold transition-all text-sm">
+                      Organization Settings
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+              </div>
+
+              <TabsContent value="my-account" className="focus:outline-none">
             {/* ── My Ideas section ─────────────────── */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -666,6 +740,138 @@ const Profile = () => {
                 </motion.div>
               )}
             </motion.div>
+              </TabsContent>
+
+              {user?.role === "admin" && (
+              <TabsContent value="organization" className="focus:outline-none">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.12 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-primary/10 shadow-sm">
+                      <Building2 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black tracking-tight text-slate-900">Organization Profile</h2>
+                      <p className="text-xs text-slate-500 font-medium">Manage how your organization looks to members</p>
+                    </div>
+                  </div>
+                  
+                  <form onSubmit={handleOrgSubmit} className="space-y-6">
+                     <Card className="border-0 shadow-[0_4px_40px_-8px_rgba(0,0,0,0.12)] rounded-3xl bg-white p-6 sm:p-8">
+                       <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-6">Basic Information</h3>
+                       <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <Label htmlFor="org-name" className="text-xs font-bold text-slate-500 uppercase">Name</Label>
+                            <div className="relative">
+                              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                              <Input 
+                                id="org-name" 
+                                value={orgForm.name} 
+                                onChange={e => setOrgForm({ ...orgForm, name: e.target.value })}
+                                className="pl-10 h-11 rounded-xl border-slate-200 focus:border-primary" 
+                                placeholder="Acme Corp"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="slug" className="text-xs font-bold text-slate-500 uppercase">URL Slug</Label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-mono">/</span>
+                              <Input 
+                                id="slug" 
+                                value={orgForm.slug} 
+                                onChange={e => setOrgForm({ ...orgForm, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                                className="pl-7 h-11 rounded-xl font-mono text-sm border-slate-200 focus:border-primary" 
+                                placeholder="acme-corp"
+                              />
+                            </div>
+                            <p className="text-[10px] text-amber-500 font-bold">Caution: Changing this URL will redirect all members.</p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="website" className="text-xs font-bold text-slate-500 uppercase">Website</Label>
+                            <div className="relative">
+                              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                              <Input 
+                                id="website" 
+                                value={orgForm.website} 
+                                onChange={e => setOrgForm({ ...orgForm, website: e.target.value })}
+                                className="pl-10 h-11 rounded-xl border-slate-200 focus:border-primary" 
+                                placeholder="https://acme.com"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="industry" className="text-xs font-bold text-slate-500 uppercase">Industry</Label>
+                            <div className="relative">
+                              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                              <Input 
+                                id="industry" 
+                                value={orgForm.industry} 
+                                onChange={e => setOrgForm({ ...orgForm, industry: e.target.value })}
+                                className="pl-10 h-11 rounded-xl border-slate-200 focus:border-primary" 
+                                placeholder="Technology, Healthcare..."
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="description" className="text-xs font-bold text-slate-500 uppercase">Description / Tagline</Label>
+                          <div className="relative">
+                            <FileText className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+                            <Textarea 
+                              id="description" 
+                              value={orgForm.description} 
+                              onChange={e => setOrgForm({ ...orgForm, description: e.target.value })}
+                              className="pl-10 min-h-[100px] resize-none rounded-xl border-slate-200 focus:border-primary" 
+                              placeholder="Tell your members what this space is about..."
+                            />
+                          </div>
+                        </div>
+                       </div>
+                     </Card>
+                     
+                     <Card className="border-0 shadow-[0_4px_40px_-8px_rgba(0,0,0,0.12)] rounded-3xl bg-white p-6 sm:p-8">
+                       <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-6">Branding</h3>
+                       <div className="space-y-4">
+                         <div className="space-y-2">
+                            <Label htmlFor="logo_url" className="text-xs font-bold text-slate-500 uppercase">Logo URL</Label>
+                            <Input 
+                              id="logo_url" 
+                              value={orgForm.logo_url} 
+                              onChange={e => setOrgForm({ ...orgForm, logo_url: e.target.value })}
+                              placeholder="https://example.com/logo.png"
+                              className="h-11 rounded-xl border-slate-200 focus:border-primary"
+                            />
+                            {orgForm.logo_url && (
+                              <div className="mt-4 p-6 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center bg-slate-50">
+                                <img src={orgForm.logo_url} alt="Logo Preview" className="h-16 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                              </div>
+                            )}
+                         </div>
+                       </div>
+                     </Card>
+
+                     <div className="flex justify-end pt-2">
+                       <Button 
+                         type="submit" 
+                         className="h-11 px-8 rounded-xl font-bold shadow-lg shadow-primary/20 gap-2 w-full sm:w-auto"
+                         disabled={updateOrgMutation.isPending}
+                       >
+                         {updateOrgMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                         Save Organization Changes
+                       </Button>
+                     </div>
+                  </form>
+                </motion.div>
+              </TabsContent>
+              )}
+            </Tabs>
           </div>
         </main>
       </div>

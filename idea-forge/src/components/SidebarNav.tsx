@@ -112,13 +112,6 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
                 active={pathname === getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default")}
               />
             </Link>
-            <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug || "default")} className="block w-full">
-              <SidebarButton
-                icon={Settings}
-                label="Organization"
-                active={pathname === getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug || "default")}
-              />
-            </Link>
           </div>
         </div>
       )}
