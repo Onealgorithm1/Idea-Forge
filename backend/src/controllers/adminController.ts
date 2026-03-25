@@ -1,6 +1,60 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { query } from '../config/db.js';
+import { sendEmail } from '../config/mail.js';
+
+export const createUser = async (req: Request, res: Response) => {
+  const tenantId = (req as any).tenantId;
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: 'All fields are required' });
+  }
+
+  try {
+    // 1. Check license limit
+    const tenant = await query('SELECT max_users FROM tenants WHERE id = $1', [tenantId]);
+    if (tenant.rows.length === 0) return res.status(404).json({ message: 'Organization not found' });
+    
+    const currentUsers = await query('SELECT COUNT(*) FROM users WHERE tenant_id = $1', [tenantId]);
+    const maxUsers = tenant.rows[0].max_users || 5;
+
+    if (parseInt(currentUsers.rows[0].count) >= maxUsers) {
+      return res.status(403).json({ message: `License limit reached (${maxUsers} users). Please contact support to upgrade.` });
+    }
+
+    // 2. Check if user already exists
+    const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) return res.status(409).json({ message: 'User with this email already exists' });
+
+    // 3. Create user
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = await query(
+      `INSERT INTO users (name, email, password_hash, role, tenant_id, status)
+       VALUES ($1, $2, $3, 'user', $4, 'active') RETURNING id, name, email, role, tenant_id`,
+      [name, email, hashedPassword, tenantId]
+    );
+
+    // 4. Send Email
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login`;
+    const orgName = (await query('SELECT name FROM tenants WHERE id = $1', [tenantId])).rows[0]?.name || 'your organization';
+    
+    const emailSubject = `Welcome to ${orgName} on IdeaForge`;
+    const emailText = `Hello ${name},\n\nYou have been added to ${orgName} on the IdeaForge platform.\n\nLogin URL: ${loginUrl}\nEmail: ${email}\nPassword: ${password}\n\nPlease change your password after logging in.`;
+    
+    await sendEmail(email, emailSubject, emailText);
+
+    res.status(201).json({
+      message: 'User created successfully and invitation sent',
+      user: newUser.rows[0]
+    });
+  } catch (error) {
+    console.error('Create user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
 export const getAllUsers = async (req: any, res: Response) => {
   try {

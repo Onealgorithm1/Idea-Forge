@@ -15,6 +15,7 @@ export const ROUTES = {
   PROFILE: "/profile",
   ADMIN_DASHBOARD: "/admin/dashboard",
   ADMIN_USERS: "/admin/users",
+  ADMIN_SETTINGS: "/admin/settings",
 } as const;
 
 export const getTenantPath = (path: string, slug?: string) => {

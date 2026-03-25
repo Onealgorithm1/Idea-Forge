@@ -50,7 +50,7 @@ export const isAdminOrReviewer = (req: AuthRequest, res: Response, next: NextFun
 };
 
 export const isSuperAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (req.user && req.user.isSuperAdmin === true) {
+  if (req.user && (req.user.isSuperAdmin === true || ['superadmin', 'supportadmin'].includes(req.user.role))) {
     next();
   } else {
     res.status(403).json({ message: 'Access denied: Super Admin role required' });

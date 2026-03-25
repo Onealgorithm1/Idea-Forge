@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { Zap } from "lucide-react";
+import { Zap, Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Card,
   CardContent,
@@ -27,6 +28,16 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
+  const [tenantInfo, setTenantInfo] = useState<any>(null);
+
+  useEffect(() => {
+    if (tenantSlug) {
+      fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5001/api"}/tenants/by-slug/${tenantSlug}`)
+        .then(res => res.json())
+        .then(data => setTenantInfo(data))
+        .catch(err => console.error("Failed to fetch tenant info:", err));
+    }
+  }, [tenantSlug]);
 
   const isLogin = location.pathname.endsWith("/login");
 
@@ -58,8 +69,6 @@ export default function AuthPage() {
         }
         navigate(getTenantPath(ROUTES.IDEA_BOARD, tenantSlug));
     } catch (error: any) {
-      // Error is handled in context/toast
-      // We can also set backend errors here if needed
       setErrors(prev => ({ ...prev, form: error.message || "Authentication failed" }));
     } finally {
       setIsLoading(false);
@@ -67,137 +76,190 @@ export default function AuthPage() {
   };
 
   return (
-    <div
-      className="flex min-h-screen items-center justify-center px-4 relative"
-    >
-      {/* Background Image with Overlay */}
-      <div
-        className="absolute inset-0 z-0 bg-cover bg-top bg-no-repeat"
-        style={{ backgroundImage: 'url("/Idea Sharing Hero Image.jpg")' }}
-      >
-        <div className="absolute inset-0 bg-background/20 backdrop-blur-[2px]"></div>
+    <div className="flex min-h-screen items-center justify-center px-4 relative overflow-hidden bg-slate-950">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 z-0">
+         <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 grayscale transition-opacity duration-1000"
+          style={{ backgroundImage: 'url("/Idea Sharing Hero Image.jpg")' }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/90 to-primary/20" />
+        
+        {/* Animated Orbs */}
+        <motion.div 
+          animate={{ 
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+            x: [0, 50, 0],
+            y: [0, -30, 0]
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px]" 
+        />
+        <motion.div 
+          animate={{ 
+            scale: [1, 1.3, 1],
+            opacity: [0.2, 0.4, 0.2],
+            x: [0, -40, 0],
+            y: [0, 60, 0]
+          }}
+          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/10 blur-[100px]" 
+        />
       </div>
 
-      <div className="w-full max-w-[400px] z-10">
-        <div className="flex justify-center mb-12">
-          <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)} className="flex items-center gap-1 text-5xl font-black tracking-tighter text-foreground drop-shadow-md">
-            <Logo imageClassName="h-32 w-32 transition-all duration-500 hover:scale-110" />
-            <span>IdeaForge</span>
-          </Link>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="w-full max-w-[440px] z-10"
+      >
+        <div className="flex flex-col items-center mb-10">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+          >
+            <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)} className="flex flex-col items-center gap-2 group">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-150 group-hover:bg-primary/40 transition-all duration-500" />
+                <Logo imageClassName="h-24 w-24 relative z-10 transition-transform duration-500 group-hover:scale-110" />
+              </div>
+              <h1 className="text-4xl font-black tracking-tighter text-white mt-4 drop-shadow-2xl">
+                Idea<span className="text-primary tracking-[-0.08em]">Forge</span>
+              </h1>
+            </Link>
+          </motion.div>
         </div>
 
-        <Card className="w-full bg-card/80 backdrop-blur-md border-primary/10 shadow-2xl mt-4">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">
-              {isLogin ? "Welcome back" : "Create an account"}
+        <Card className="w-full bg-white/5 backdrop-blur-2xl border-white/10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] rounded-[2.5rem] overflow-hidden">
+          <CardHeader className="space-y-2 pt-8">
+            <CardTitle className="text-3xl font-black text-center text-white tracking-tight">
+              {isLogin 
+                ? (tenantInfo ? `Welcome to ${tenantInfo.name}` : "Welcome back.") 
+                : "Join the Forge."}
             </CardTitle>
-            <CardDescription className="text-center">
+            <CardDescription className="text-center text-slate-400 font-medium">
               {isLogin
-                ? "Enter your email and password to log in"
-                : "Enter your details below to create your account"}
+                ? (tenantInfo?.description || "Sign in to share and collaborate on the next big thing.")
+                : "Create your workspace account to start building today."}
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              {!isLogin && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      type="text"
-                      placeholder="John"
-                      value={firstName}
-                      onChange={(e) => {
-                        setFirstName(e.target.value);
-                        if (errors.firstName) setErrors(prev => ({ ...prev, firstName: "" }));
-                      }}
-                      className={errors.firstName ? "border-red-500" : ""}
-                    />
-                    {errors.firstName && <p className="text-[10px] text-red-500 font-medium">{errors.firstName}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      type="text"
-                      placeholder="Doe"
-                      value={lastName}
-                      onChange={(e) => {
-                        setLastName(e.target.value);
-                        if (errors.lastName) setErrors(prev => ({ ...prev, lastName: "" }));
-                      }}
-                      className={errors.lastName ? "border-red-500" : ""}
-                    />
-                    {errors.lastName && <p className="text-[10px] text-red-500 font-medium">{errors.lastName}</p>}
-                  </div>
+            <CardContent className="space-y-5 px-8">
+              <AnimatePresence mode="wait">
+                {!isLogin && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="grid grid-cols-2 gap-4 overflow-hidden"
+                  >
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName" className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">First Name</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                        <Input
+                          id="firstName"
+                          placeholder="John"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className="pl-10 h-10 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600 focus:ring-primary/50"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName" className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        placeholder="Doe"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        className="h-10 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Email Address</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@organization.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10 h-10 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600 focus:ring-primary/50"
+                  />
                 </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (errors.email) setErrors(prev => ({ ...prev, email: "" }));
-                  }}
-                  className={errors.email ? "border-red-500" : ""}
-                />
-                {errors.email && <p className="text-[10px] text-red-500 font-medium">{errors.email}</p>}
               </div>
+
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between ml-1">
+                  <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-slate-500">Password</Label>
                   {isLogin && (
-                    <Link
-                      to="#"
-                      className="text-sm font-medium text-primary hover:underline"
-                    >
-                      Forgot password?
+                    <Link to="#" className="text-[10px] font-bold text-primary uppercase tracking-tighter hover:text-primary/80">
+                      Forgot?
                     </Link>
                   )}
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (errors.password) setErrors(prev => ({ ...prev, password: "" }));
-                  }}
-                  placeholder="••••••••"
-                  className={errors.password ? "border-red-500" : ""}
-                />
-                {errors.password && <p className="text-[10px] text-red-500 font-medium">{errors.password}</p>}
+                <div className="relative">
+                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="pl-10 h-10 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600"
+                  />
+                </div>
               </div>
+
+              {errors.form && (
+                <motion.p 
+                  initial={{ opacity: 0, x: -10 }} 
+                  animate={{ opacity: 1, x: 0 }} 
+                  className="text-xs text-red-400 font-medium text-center bg-red-400/10 py-2 rounded-lg border border-red-400/20"
+                >
+                  {errors.form}
+                </motion.p>
+              )}
             </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
+            <CardFooter className="flex flex-col space-y-6 pb-10 px-8">
+              <Button 
+                type="submit" 
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]" 
+                disabled={isLoading}
+              >
                 {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    {isLogin ? "Logging in..." : "Signing up..."}
-                  </div>
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  isLogin ? "Log in" : "Sign up"
+                  <span className="flex items-center gap-2">
+                    {isLogin ? "Sign In" : "Create Account"}
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
                 )}
               </Button>
-              <div className="text-center text-sm">
-                {isLogin ? "Don't have an account? " : "Already have an account? "}
-                <Link
-                  to={isLogin ? getTenantPath(ROUTES.SIGNUP, tenantSlug) : getTenantPath(ROUTES.LOGIN, tenantSlug)}
-                  className="font-medium text-primary hover:underline hover:text-primary/90"
-                >
-                  {isLogin ? "Sign up" : "Log in"}
-                </Link>
+              
+              <div className="text-center">
+                <p className="text-xs text-slate-500 font-medium">
+                  {isLogin ? "New here?" : "Already member?"}{" "}
+                  <Link 
+                    to={isLogin ? getTenantPath(ROUTES.LOGIN, tenantSlug) : getTenantPath(ROUTES.LOGIN, tenantSlug)} 
+                    className="text-primary hover:text-white transition-colors font-bold ml-1"
+                  >
+                    {isLogin ? "Create Workspace Account" : "Sign In to Forge"}
+                  </Link>
+                </p>
               </div>
             </CardFooter>
           </form>
         </Card>
-      </div>
+      </motion.div>
     </div>
   );
 }

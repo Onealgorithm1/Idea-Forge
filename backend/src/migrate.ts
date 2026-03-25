@@ -330,6 +330,28 @@ async function migrate() {
     await runStatement(client, `CREATE INDEX IF NOT EXISTS idx_ideas_tenant ON ideas(tenant_id)`, 'Index: ideas.tenant_id');
     await runStatement(client, `CREATE INDEX IF NOT EXISTS idx_users_tenant_id ON users(tenant_id)`, 'Index: users.tenant_id');
     await runStatement(client, `CREATE INDEX IF NOT EXISTS idx_audit_logs_tenant ON audit_logs(tenant_id, entity_type)`, 'Index: audit_logs');
+    
+    // === TENANT DETAILS ===
+    await runStatement(client, `
+      CREATE TABLE IF NOT EXISTS tenant_details (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tenant_id UUID NOT NULL REFERENCES tenants(id) UNIQUE,
+        website VARCHAR(255),
+        description TEXT,
+        industry VARCHAR(100),
+        logo_url TEXT,
+        banner_url TEXT,
+        theme_color VARCHAR(50),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `, 'Table: tenant_details');
+
+    // Initialize details for existing tenants
+    await runStatement(client, `
+      INSERT INTO tenant_details (tenant_id)
+      SELECT id FROM tenants
+      ON CONFLICT (tenant_id) DO NOTHING
+    `, 'Seed: initialize tenant_details');
 
     console.log('\n✅ Migration complete!\n');
   } finally {

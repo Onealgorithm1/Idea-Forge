@@ -1,4 +1,5 @@
-import { Bell, LogOut } from "lucide-react";
+import { Bell, LogOut, HelpCircle } from "lucide-react";
+import { SupportDialog } from "./SupportDialog";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,9 +11,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { useTenant } from "@/contexts/TenantContext";
 
 const Header = () => {
   const { user, logout, token } = useAuth();
+  const { tenant } = useTenant();
   const location = useLocation();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -62,9 +65,16 @@ const Header = () => {
           <div className="bg-primary/20 p-2.5 rounded-xl group-hover:bg-primary/30 transition-colors">
             <Logo imageClassName="h-10 w-10" />
           </div>
-          <span className="font-black text-3xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
-            IdeaForge
-          </span>
+          <div className="flex flex-col -gap-1">
+            <span className="font-black text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
+              {tenant?.name || "IdeaForge"}
+            </span>
+            {tenant?.name && (
+              <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-primary/80 ml-0.5">
+                IdeaForge Platform
+              </span>
+            )}
+          </div>
         </Link>
 
         <nav className="hidden md:flex items-center gap-8 h-full">
@@ -130,6 +140,12 @@ const Header = () => {
               </div>
             </PopoverContent>
           </Popover>
+
+          <SupportDialog>
+            <button className="p-1.5 rounded-full hover:bg-white/10 transition-colors" title="Contact Support">
+              <HelpCircle className="h-4 w-4" />
+            </button>
+          </SupportDialog>
 
           {user ? (
             <div className="flex items-center gap-2 ml-1 border-l border-white/10 pl-3">

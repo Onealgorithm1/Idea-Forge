@@ -4,6 +4,7 @@ import { ROUTES, getTenantPath } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { Button } from "@/components/ui/button";
+import { SupportDialog } from "./SupportDialog";
 
 interface SidebarItem {
   icon: LucideIcon;
@@ -111,6 +112,13 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
                 active={pathname === getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default")}
               />
             </Link>
+            <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug || "default")} className="block w-full">
+              <SidebarButton
+                icon={Settings}
+                label="Organization"
+                active={pathname === getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug || "default")}
+              />
+            </Link>
           </div>
         </div>
       )}
@@ -136,7 +144,9 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
         </div>
       </div>
 
-      <div className="pt-4 px-4 pb-2">
+      <div className="px-2 pb-2 space-y-1">
+        <SupportDialog />
+        
         <Button asChild className="w-full justify-start gap-3 shadow-premium hover:shadow-premium-hover transition-all duration-300 rounded-2xl h-12 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white font-semibold text-sm border border-white/20 group relative overflow-hidden">
           <Link to={getTenantPath(ROUTES.SUBMIT_IDEA, tenantSlug || "default")}>
             {/* Glossy overlay effect class */}

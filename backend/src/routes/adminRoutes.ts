@@ -1,6 +1,6 @@
 import express from 'express';
 import { authenticateToken, isAdmin, extractTenant } from '../middleware/auth.js';
-import { getAllUsers, updateUserRole, deleteUser, updateUserPassword, getStats, getRecentActivity, getAdminCategories, createCategory, deleteCategory, getIdeaSpaces, createIdeaSpace, deleteIdeaSpace } from '../controllers/adminController.js';
+import { getAllUsers, createUser, updateUserRole, deleteUser, updateUserPassword, getStats, getRecentActivity, getAdminCategories, createCategory, deleteCategory, getIdeaSpaces, createIdeaSpace, deleteIdeaSpace } from '../controllers/adminController.js';
 
 const router = express.Router();
 
@@ -10,6 +10,7 @@ router.use(extractTenant, authenticateToken, isAdmin);
 router.get('/stats', getStats);
 router.get('/recent-activity', getRecentActivity);
 router.get('/users', getAllUsers);
+router.post('/users', createUser);
 router.patch('/users/:id/role', updateUserRole);
 router.patch('/users/:id/password', updateUserPassword);
 router.delete('/users/:id', deleteUser);

@@ -44,7 +44,13 @@ export const getTenant = async (req: Request, res: Response) => {
 export const getTenantBySlug = async (req: Request, res: Response) => {
   const { slug } = req.params;
   try {
-    const result = await query('SELECT id, name, slug, status, settings_json FROM tenants WHERE slug = $1', [slug]);
+    const result = await query(`
+      SELECT t.id, t.name, t.slug, t.status, d.logo_url, d.theme_color, d.description
+      FROM tenants t
+      LEFT JOIN tenant_details d ON t.id = d.tenant_id
+      WHERE t.slug = $1
+    `, [slug]);
+    
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Tenant not found' });
     }

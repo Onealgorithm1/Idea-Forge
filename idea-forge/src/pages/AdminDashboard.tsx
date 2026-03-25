@@ -27,7 +27,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link, useParams } from "react-router-dom";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { formatDistanceToNow } from "date-fns";
@@ -114,7 +114,11 @@ const AdminDashboard = () => {
           <div className="max-w-6xl mx-auto space-y-10">
 
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 animate-fade-in-up">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col md:flex-row md:items-end justify-between gap-6"
+            >
               <div>
                 <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-none px-4 py-1 font-bold text-[10px] uppercase tracking-[0.2em]">
                   Admin Central
@@ -134,7 +138,7 @@ const AdminDashboard = () => {
                   </Link>
                 </Button>
               </div>
-            </div>
+            </motion.div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -167,84 +171,107 @@ const AdminDashboard = () => {
 
             {/* Management + Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-              <Card className="lg:col-span-2 p-8 border-none shadow-premium bg-white/80 backdrop-blur-md rounded-[2rem] space-y-8">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-100 rounded-xl"><ShieldCheck className="h-5 w-5 text-slate-600" /></div>
-                    <h2 className="text-xl font-black tracking-tight">Management Suite</h2>
-                  </div>
-                  <Button asChild variant="ghost" size="sm" className="font-bold text-primary group">
-                    <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)}>
-                      View All <ChevronRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)} className="group p-5 bg-slate-50/50 hover:bg-primary/5 border border-slate-100 hover:border-primary/20 rounded-[1.5rem] transition-all duration-300">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Users className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-slate-800">User Control</h3>
-                        <p className="text-xs text-slate-500">{statsLoading ? "Loading…" : `${stats?.total_users ?? 0} total · ${stats?.admin_count ?? 0} admins`}</p>
-                      </div>
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+                className="lg:col-span-2"
+              >
+                <Card className="h-full p-8 border-none shadow-premium bg-white/80 backdrop-blur-md rounded-[2rem] space-y-8">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-slate-100 rounded-xl"><ShieldCheck className="h-5 w-5 text-slate-600" /></div>
+                      <h2 className="text-xl font-black tracking-tight">Management Suite</h2>
                     </div>
-                  </Link>
-                  <div className="group p-5 bg-slate-50/50 hover:bg-info/5 border border-slate-100 hover:border-info/20 rounded-[1.5rem] transition-all duration-300">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <TrendingUp className="h-6 w-6 text-info" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-slate-800">Ideas Overview</h3>
-                        <p className="text-xs text-slate-500">{statsLoading ? "Loading…" : `${stats?.total_ideas ?? 0} total · ${stats?.new_ideas_30d ?? 0} new this month`}</p>
-                      </div>
-                    </div>
+                    <Button asChild variant="ghost" size="sm" className="font-bold text-primary group">
+                      <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)}>
+                        View All <ChevronRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                    </Button>
                   </div>
-                </div>
-              </Card>
-
-              {/* Recent Activity */}
-              <Card className="p-8 border-none shadow-premium bg-slate-900 text-white rounded-[2rem] space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/10 rounded-xl"><Clock className="h-5 w-5 text-white/70" /></div>
-                  <h2 className="text-xl font-bold tracking-tight">Recent Activity</h2>
-                </div>
-                <div className="space-y-5">
-                  {activityLoading ? (
-                    Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <div className="h-1.5 w-1.5 rounded-full bg-primary/40 shrink-0" />
-                        <Skeleton className="h-4 w-full rounded-md bg-white/10" />
-                      </div>
-                    ))
-                  ) : activity.length === 0 ? (
-                    <p className="text-white/30 text-sm">No activity yet.</p>
-                  ) : (
-                    activity.map((log: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between group cursor-default">
-                        <div className="flex items-center gap-3">
-                          <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                          <div>
-                            <p className="text-sm font-bold text-white/90 group-hover:text-primary transition-colors capitalize">
-                              {log.action} {log.entity_type}
-                            </p>
-                            <p className="text-[10px] text-white/40 font-medium uppercase tracking-wider">{log.actor}</p>
-                          </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)} className="group p-5 bg-slate-50/50 hover:bg-primary/5 border border-slate-100 hover:border-primary/20 rounded-[1.5rem] transition-all duration-300">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Users className="h-6 w-6 text-primary" />
                         </div>
-                        <span className="text-[10px] font-bold text-white/30 shrink-0 ml-2">
-                          {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                        </span>
+                        <div>
+                          <h3 className="font-bold text-slate-800">User Control</h3>
+                          <p className="text-xs text-slate-500">{statsLoading ? "Loading…" : `${stats?.total_users ?? 0} total · ${stats?.admin_count ?? 0} admins`}</p>
+                        </div>
                       </div>
-                    ))
-                  )}
-                </div>
-              </Card>
+                    </Link>
+                    <div className="group p-5 bg-slate-50/50 hover:bg-info/5 border border-slate-100 hover:border-info/20 rounded-[1.5rem] transition-all duration-300">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <TrendingUp className="h-6 w-6 text-info" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-slate-800">Ideas Overview</h3>
+                          <p className="text-xs text-slate-500">{statsLoading ? "Loading…" : `${stats?.total_ideas ?? 0} total · ${stats?.new_ideas_30d ?? 0} new this month`}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <Card className="h-full p-8 border-none shadow-premium bg-slate-900 text-white rounded-[2rem] space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/10 rounded-xl"><Clock className="h-5 w-5 text-white/70" /></div>
+                    <h2 className="text-xl font-bold tracking-tight">Recent Activity</h2>
+                  </div>
+                  <div className="space-y-5">
+                    {activityLoading ? (
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className="h-1.5 w-1.5 rounded-full bg-primary/40 shrink-0" />
+                          <Skeleton className="h-4 w-full rounded-md bg-white/10" />
+                        </div>
+                      ))
+                    ) : activity.length === 0 ? (
+                      <p className="text-white/30 text-sm">No activity yet.</p>
+                    ) : (
+                      activity.map((log: any, i: number) => (
+                        <motion.div 
+                          key={i} 
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.6 + i * 0.05 }}
+                          className="flex items-center justify-between group cursor-default"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                            <div>
+                              <p className="text-sm font-bold text-white/90 group-hover:text-primary transition-colors capitalize">
+                                {log.action} {log.entity_type}
+                              </p>
+                              <p className="text-[10px] text-white/40 font-medium uppercase tracking-wider">{log.actor}</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold text-white/30 shrink-0 ml-2">
+                            {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                          </span>
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
+                </Card>
+              </motion.div>
             </div>
 
             {/* Categories & Spaces Management */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-6"
+            >
               {/* Categories */}
               <Card className="p-6 border-none bg-white/80 shadow-premium rounded-[2rem] space-y-4">
                 <div className="flex items-center gap-3">
@@ -257,32 +284,42 @@ const AdminDashboard = () => {
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && newCategory.trim()) createCatMutation.mutate(newCategory.trim()); }}
+                    className="rounded-xl"
                   />
                   <Button
                     size="icon"
                     onClick={() => { if (newCategory.trim()) createCatMutation.mutate(newCategory.trim()); }}
                     disabled={createCatMutation.isPending}
+                    className="rounded-xl"
                   >
                     {createCatMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   </Button>
                 </div>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {catsLoading ? <Skeleton className="h-8 w-full rounded-lg" /> :
-                    categories.length === 0 ? <p className="text-sm text-muted-foreground italic">No categories yet.</p> :
-                      categories.map((cat: any) => (
-                        <div key={cat.id} className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-xl group">
-                          <span className="text-sm font-medium">{cat.name}</span>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700"
-                            onClick={() => deleteCatMutation.mutate(cat.id)}
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                  <AnimatePresence mode="popLayout">
+                    {catsLoading ? <Skeleton className="h-8 w-full rounded-lg" /> :
+                      categories.length === 0 ? <p className="text-sm text-muted-foreground italic">No categories yet.</p> :
+                        categories.map((cat: any) => (
+                          <motion.div 
+                            key={cat.id} 
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                            className="flex items-center justify-between px-3 py-2 bg-slate-50/50 rounded-xl group border border-transparent hover:border-amber-200 transition-all hover:bg-amber-50/30"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      ))
-                  }
+                            <span className="text-sm font-medium">{cat.name}</span>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                              onClick={() => deleteCatMutation.mutate(cat.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </motion.div>
+                        ))
+                    }
+                  </AnimatePresence>
                 </div>
               </Card>
 
@@ -298,38 +335,48 @@ const AdminDashboard = () => {
                     value={newSpace}
                     onChange={(e) => setNewSpace(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && newSpace.trim()) createSpaceMutation.mutate(newSpace.trim()); }}
+                    className="rounded-xl"
                   />
                   <Button
                     size="icon"
                     onClick={() => { if (newSpace.trim()) createSpaceMutation.mutate(newSpace.trim()); }}
                     disabled={createSpaceMutation.isPending}
+                    className="rounded-xl"
                   >
                     {createSpaceMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   </Button>
                 </div>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {spacesLoading ? <Skeleton className="h-8 w-full rounded-lg" /> :
-                    spaces.length === 0 ? <p className="text-sm text-muted-foreground italic">No idea spaces yet.</p> :
-                      spaces.map((sp: any) => (
-                        <div key={sp.id} className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-xl group">
-                          <div>
-                            <span className="text-sm font-medium">{sp.name}</span>
-                            {sp.key && <span className="ml-2 text-[10px] text-muted-foreground">/{sp.key}</span>}
-                          </div>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700"
-                            onClick={() => deleteSpaceMutation.mutate(sp.id)}
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                  <AnimatePresence mode="popLayout">
+                    {spacesLoading ? <Skeleton className="h-8 w-full rounded-lg" /> :
+                      spaces.length === 0 ? <p className="text-sm text-muted-foreground italic">No idea spaces yet.</p> :
+                        spaces.map((sp: any) => (
+                          <motion.div 
+                            key={sp.id} 
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                            className="flex items-center justify-between px-3 py-2 bg-slate-50/50 rounded-xl group border border-transparent hover:border-blue-200 transition-all hover:bg-blue-50/30"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      ))
-                  }
+                            <div>
+                              <span className="text-sm font-medium">{sp.name}</span>
+                              {sp.key && <span className="ml-2 text-[10px] text-muted-foreground font-mono">/{sp.key}</span>}
+                            </div>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                              onClick={() => deleteSpaceMutation.mutate(sp.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </motion.div>
+                        ))
+                    }
+                  </AnimatePresence>
                 </div>
               </Card>
-            </div>
+            </motion.div>
 
           </div>
         </main>

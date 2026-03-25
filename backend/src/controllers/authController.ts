@@ -111,7 +111,10 @@ export const register = async (req: Request, res: Response) => {
 export const superAdminLogin = async (req: Request, res: Response) => {
   const { email, password } = req.body;
   try {
-    const user = await query('SELECT * FROM users WHERE email = $1 AND is_super_admin = TRUE', [email]);
+    const user = await query(
+      'SELECT * FROM users WHERE email = $1 AND (is_super_admin = TRUE OR role IN ($2, $3))',
+      [email, 'superadmin', 'supportadmin']
+    );
     if (user.rows.length === 0) return res.status(403).json({ message: 'Unauthorized: not a super admin' });
 
     const isMatch = await bcrypt.compare(password, user.rows[0].password_hash);
@@ -124,7 +127,13 @@ export const superAdminLogin = async (req: Request, res: Response) => {
     );
 
     res.json({
-      user: { id: user.rows[0].id, name: user.rows[0].name, email: user.rows[0].email, isSuperAdmin: true },
+      user: { 
+        id: user.rows[0].id, 
+        name: user.rows[0].name, 
+        email: user.rows[0].email, 
+        role: user.rows[0].role,
+        isSuperAdmin: true 
+      },
       token,
     });
   } catch (error) {

@@ -14,8 +14,10 @@ import IdeaDetail from "./pages/IdeaDetail";
 import Profile from "./pages/Profile";
 import AdminUsers from "./pages/AdminUsers";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminSettings from "./pages/AdminSettings";
 import SuperAdminLogin from "./pages/SuperAdmin/Login";
 import SuperAdminDashboard from "./pages/SuperAdmin/Dashboard";
+import TenantDetail from "./pages/SuperAdmin/TenantDetail";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ROUTES } from "./lib/constants";
 import FloatingSubmitIdea from "./components/FloatingSubmitIdea";
@@ -29,12 +31,13 @@ const AppContent = () => (
     <Route path="/super-admin" element={<SuperAdminLogin />} />
     <Route path="/super-admin/login" element={<SuperAdminLogin />} />
     <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
+    <Route path="/super-admin/tenants/:id" element={<TenantDetail />} />
 
     {/* Root redirect: Send users to a default organization or landing page */}
     {/* For this MVP, we redirect to 'default' tenant */}
     <Route path="/" element={<Navigate to="/default" replace />} />
     <Route path="/login" element={<Navigate to="/default/login" replace />} />
-    <Route path="/signup" element={<Navigate to="/default/signup" replace />} />
+    {/* <Route path="/signup" element={<Navigate to="/default/signup" replace />} /> */}
     <Route path="/idea-board" element={<Navigate to="/default/idea-board" replace />} />
     <Route path="/roadmap" element={<Navigate to="/default/roadmap" replace />} />
     <Route path="/analytics" element={<Navigate to="/default/analytics" replace />} />
@@ -55,9 +58,10 @@ const AppContent = () => (
           <Route path="profile" element={<Profile />} />
           <Route path="admin/dashboard" element={<AdminDashboard />} />
           <Route path="admin/users" element={<AdminUsers />} />
+          <Route path="admin/settings" element={<AdminSettings />} />
         </Route>
         <Route path="login" element={<AuthPage />} />
-        <Route path="signup" element={<AuthPage />} />
+        {/* <Route path="signup" element={<AuthPage />} /> */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </TenantProvider>} />
