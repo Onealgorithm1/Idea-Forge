@@ -1,4 +1,4 @@
-import { Bell, LogOut, User, TrendingUp, Users, ShieldCheck, ChevronDown } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,14 +10,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const { user, logout, token } = useAuth();
@@ -140,88 +132,34 @@ const Header = () => {
           </Popover>
 
           {user ? (
-            <div className="flex items-center gap-3 ml-1 pr-1 border-l border-white/10 pl-3">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-white/10 transition-all group outline-none">
-                    <div className="relative">
-                      <Avatar className="h-8 w-8 border-2 border-white/10 group-hover:border-primary/50 transition-colors">
-                        <AvatarFallback className="bg-primary text-white text-[10px] font-bold">
-                          {user.name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success border-2 border-header rounded-full" />
-                    </div>
-                    <div className="hidden sm:flex flex-col items-start leading-none gap-1">
-                      <span className="text-sm font-bold tracking-tight">{user.name}</span>
-                      <span className="text-[10px] opacity-50 uppercase font-bold tracking-wider">{user.role}</span>
-                    </div>
-                    <ChevronDown className="h-3.5 w-3.5 opacity-40 group-hover:opacity-100 transition-opacity" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  className="w-64 p-2 border-white/10 bg-header shadow-2xl mt-2 text-white border animate-in fade-in zoom-in-95 duration-200" 
-                  align="center"
-                  sideOffset={8}
-                >
-                  <div className="px-3 py-2 mb-1.5 border-b border-white/5">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">Personal Account</p>
-                  </div>
-                  <div className="space-y-1">
-                    <DropdownMenuItem asChild className="outline-none">
-                      <Link to={getTenantPath(ROUTES.PROFILE, tenantSlug)} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-white/10 focus:bg-white/10 cursor-pointer transition-all group outline-none">
-                        <div className="p-1.5 rounded-md bg-white/5 group-hover:bg-primary/20 transition-colors">
-                          <User className="h-3.5 w-3.5 text-white/60 group-hover:text-primary transition-colors" />
-                        </div>
-                        <span className="text-white/90 group-hover:text-white group-focus:text-white font-semibold">My Ideas</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-white/10 focus:bg-white/10 cursor-pointer transition-all group outline-none text-white/90 hover:text-white focus:text-white">
-                      <div className="p-1.5 rounded-md bg-white/5 group-hover:bg-primary/20 transition-colors">
-                        <TrendingUp className="h-3.5 w-3.5 text-white/60 group-hover:text-primary transition-colors" />
-                      </div>
-                      <span className="font-semibold">Trending Ideas</span>
-                    </DropdownMenuItem>
-                  </div>
+            <div className="flex items-center gap-2 ml-1 border-l border-white/10 pl-3">
+              {/* Profile link — navigates directly to profile page */}
+              <Link
+                to={getTenantPath(ROUTES.PROFILE, tenantSlug)}
+                className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-white/10 transition-all group"
+              >
+                <div className="relative">
+                  <Avatar className="h-8 w-8 border-2 border-white/10 group-hover:border-primary/50 transition-colors">
+                    <AvatarFallback className="bg-primary text-white text-[10px] font-bold">
+                      {user.name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success border-2 border-header rounded-full" />
+                </div>
+                <div className="hidden sm:flex flex-col items-start leading-none gap-1">
+                  <span className="text-sm font-bold tracking-tight">{user.name}</span>
+                  <span className="text-[10px] opacity-50 uppercase font-bold tracking-wider">{user.role}</span>
+                </div>
+              </Link>
 
-                  {user.role === 'admin' && (
-                    <>
-                      <div className="px-3 py-2 mt-3 mb-1.5 border-b border-white/5">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">Administration</p>
-                      </div>
-                      <div className="space-y-1">
-                        <DropdownMenuItem asChild className="outline-none">
-                          <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug)} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-white/10 focus:bg-white/10 cursor-pointer transition-all group outline-none">
-                            <div className="p-1.5 rounded-md bg-white/5 group-hover:bg-primary/20 transition-colors">
-                              <ShieldCheck className="h-3.5 w-3.5 text-white/60 group-hover:text-primary transition-colors" />
-                            </div>
-                            <span className="text-white/90 group-hover:text-white group-focus:text-white font-semibold">Admin Dashboard</span>
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild className="outline-none">
-                          <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-white/10 focus:bg-white/10 cursor-pointer transition-all group outline-none">
-                            <div className="p-1.5 rounded-md bg-white/5 group-hover:bg-primary/20 transition-colors">
-                              <Users className="h-3.5 w-3.5 text-white/60 group-hover:text-primary transition-colors" />
-                            </div>
-                            <span className="text-white/90 group-hover:text-white group-focus:text-white font-semibold">Manage Users</span>
-                          </Link>
-                        </DropdownMenuItem>
-                      </div>
-                    </>
-                  )}
-
-                  <DropdownMenuSeparator className="bg-white/5 my-2" />
-                  <DropdownMenuItem 
-                    onClick={logout}
-                    className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg text-red-100 hover:bg-red-500/20 hover:text-red-400 focus:bg-red-500/20 focus:text-red-400 cursor-pointer transition-all group font-bold outline-none"
-                  >
-                    <div className="p-1.5 rounded-md bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
-                      <LogOut className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
-                    </div>
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Logout button */}
+              <button
+                onClick={logout}
+                title="Log out"
+                className="p-1.5 rounded-lg hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-all"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </div>
           ) : (
             <div className="flex items-center gap-2 ml-2">
