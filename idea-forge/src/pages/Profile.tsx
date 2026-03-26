@@ -39,7 +39,7 @@ import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { getTenantPath, ROUTES, PLATFORM_STATUS_LABELS } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
-import { getInitials } from "@/lib/utils";
+import { getInitials, cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTenant } from "@/contexts/TenantContext";
@@ -358,6 +358,10 @@ const Profile = () => {
       });
     }
   }, [orgData]);
+
+  const isNameLocked = !!orgData?.name;
+  const isSlugLocked = !!orgData?.slug;
+  const isLogoLocked = !!orgData?.logo_url;
 
   const updateOrgMutation = useMutation({
     mutationFn: (data: typeof orgForm) => api.patch("/org/details", data, token!),
@@ -773,10 +777,12 @@ const Profile = () => {
                                 id="org-name" 
                                 value={orgForm.name} 
                                 onChange={e => setOrgForm({ ...orgForm, name: e.target.value })}
-                                className="pl-10 h-11 rounded-xl border-slate-200 focus:border-primary" 
+                                className={cn("pl-10 h-11 rounded-xl border-slate-200 focus:border-primary", isNameLocked && "bg-slate-50 opacity-80 cursor-not-allowed")} 
                                 placeholder="Acme Corp"
+                                readOnly={isNameLocked}
                               />
                             </div>
+                            {isNameLocked && <p className="text-[10px] text-slate-400 font-medium">Locked: Organization name cannot be changed.</p>}
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="slug" className="text-xs font-bold text-slate-500 uppercase">URL Slug</Label>
@@ -786,11 +792,16 @@ const Profile = () => {
                                 id="slug" 
                                 value={orgForm.slug} 
                                 onChange={e => setOrgForm({ ...orgForm, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
-                                className="pl-7 h-11 rounded-xl font-mono text-sm border-slate-200 focus:border-primary" 
+                                className={cn("pl-7 h-11 rounded-xl font-mono text-sm border-slate-200 focus:border-primary", isSlugLocked && "bg-slate-50 opacity-80 cursor-not-allowed")} 
                                 placeholder="acme-corp"
+                                readOnly={isSlugLocked}
                               />
                             </div>
-                            <p className="text-[10px] text-amber-500 font-bold">Caution: Changing this URL will redirect all members.</p>
+                            {isSlugLocked ? (
+                              <p className="text-[10px] text-slate-400 font-medium">Locked: URL slug cannot be changed.</p>
+                            ) : (
+                              <p className="text-[10px] text-amber-500 font-bold">Caution: Changing this URL will redirect all members.</p>
+                            )}
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="website" className="text-xs font-bold text-slate-500 uppercase">Website</Label>
@@ -846,8 +857,10 @@ const Profile = () => {
                               value={orgForm.logo_url} 
                               onChange={e => setOrgForm({ ...orgForm, logo_url: e.target.value })}
                               placeholder="https://example.com/logo.png"
-                              className="h-11 rounded-xl border-slate-200 focus:border-primary"
+                              className={cn("h-11 rounded-xl border-slate-200 focus:border-primary", isLogoLocked && "bg-slate-50 opacity-80 cursor-not-allowed")}
+                              readOnly={isLogoLocked}
                             />
+                            {isLogoLocked && <p className="text-[10px] text-slate-400 font-medium">Locked: Logo URL cannot be changed.</p>}
                             {orgForm.logo_url && (
                               <div className="mt-4 p-6 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center bg-slate-50">
                                 <img src={orgForm.logo_url} alt="Logo Preview" className="h-16 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />

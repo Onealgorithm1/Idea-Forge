@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
 import { api } from "@/lib/api";
 import VotingSystem from "./VotingSystem";
+import ConfirmationModal from "./ConfirmationModal";
 
 const statusColor: Record<string, string> = {
   "Pending": "bg-muted text-muted-foreground",
@@ -30,6 +31,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
+  const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
 
   const { data: ideas = [], isLoading } = useQuery({
     queryKey: ["ideas"],
@@ -161,7 +163,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                       </button>
                       {(user?.role === 'admin' || user?.id === item.author_id) && (
                         <button 
-                          onClick={(e) => { e.stopPropagation(); if (window.confirm("Delete this idea?")) deleteMutation.mutate(item.id); }} 
+                          onClick={(e) => { e.stopPropagation(); setIdeaToDelete(item.id); }} 
                           className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-red-500 hover:scale-110 transition-all"
                           title="Delete Idea"
                         >
@@ -251,7 +253,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                       </button>
                       {(user?.role === 'admin' || user?.id === item.author_id) && (
                         <button 
-                          onClick={(e) => { e.stopPropagation(); if (window.confirm("Delete this idea?")) deleteMutation.mutate(item.id); }} 
+                          onClick={(e) => { e.stopPropagation(); setIdeaToDelete(item.id); }} 
                           className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-red-500 hover:scale-110 transition-all"
                           title="Delete Idea"
                         >
@@ -397,6 +399,21 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
           </div>
         </Card>
       </div>
+
+      <ConfirmationModal
+        isOpen={!!ideaToDelete}
+        onClose={() => setIdeaToDelete(null)}
+        onConfirm={() => {
+          if (ideaToDelete) {
+            deleteMutation.mutate(ideaToDelete);
+            setIdeaToDelete(null);
+          }
+        }}
+        title="Delete Idea?"
+        message="This action will permanently delete this idea and all associated data. This action cannot be undone."
+        confirmText="Delete Idea"
+        type="danger"
+      />
     </div>
   );
 };
