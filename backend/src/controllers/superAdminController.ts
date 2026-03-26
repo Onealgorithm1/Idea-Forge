@@ -65,7 +65,13 @@ export const createTenantAdmin = async (req: Request, res: Response) => {
       [name, email, hashedPassword, tenantId]
     );
 
-    // 4. Send Email
+    // 4. Send Response Immediately
+    res.status(201).json({
+      message: 'Tenant admin created successfully and email sent',
+      user: newUser.rows[0]
+    });
+
+    // 5. Send Email in Background
     const orgName = tenant.rows[0]?.name || 'your organization';
     const orgSlug = tenant.rows[0]?.slug || 'default';
     const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/${orgSlug}/login`;
@@ -73,15 +79,12 @@ export const createTenantAdmin = async (req: Request, res: Response) => {
     const emailSubject = `Welcome to IdeaForge - Admin Credentials for ${orgName}`;
     const emailText = `Hello ${name},\n\nYou have been added as an admin for ${orgName} on the IdeaForge platform.\n\nOrganization: ${orgName}\nLogin URL: ${loginUrl}\nEmail: ${email}\nPassword: ${password}\n\nPlease change your password after logging in.`;
     
-    // Send Email asynchronously (don't block the response)
-    sendEmail(email, emailSubject, emailText).catch(err => {
-      console.error('Background email sending error (createTenantAdmin):', err);
-    });
-
-    res.status(201).json({
-      message: 'Tenant admin created successfully and email sent',
-      user: newUser.rows[0]
-    });
+    try {
+      console.log(`[Background] Sending tenant admin email to ${email} for tenant ${orgSlug}...`);
+      await sendEmail(email, emailSubject, emailText);
+    } catch (err) {
+      console.error('[Background] Email sending failed in createTenantAdmin:', err);
+    }
   } catch (error) {
     console.error('Create tenant admin error:', error);
     res.status(500).json({ message: 'Server error' });
