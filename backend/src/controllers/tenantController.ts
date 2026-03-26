@@ -224,9 +224,8 @@ export const registerWorkspace = async (req: Request, res: Response) => {
     );
     await query(`INSERT INTO tenant_details (tenant_id) VALUES ($1)`, [tenantId]);
 
-    // 6. Notify Super Admin via Support Request logic
-    const superAdmins = await query('SELECT email FROM users WHERE is_super_admin = TRUE OR role = $1', ['superadmin']);
-    const adminEmails = superAdmins.rows.map(r => r.email).filter(Boolean);
+    // 6. Notify Platform Support
+    const supportEmail = process.env.SMTP_USER;
 
     // Create a support request record for tracking
     await query(
@@ -235,11 +234,11 @@ export const registerWorkspace = async (req: Request, res: Response) => {
     );
 
     // Send emails
-    if (adminEmails.length > 0) {
+    if (supportEmail) {
       const subject = `[Action Required] New Workspace Registration: ${orgName}`;
       const text = `A new organization registration request has been submitted.\n\nOrg Name: ${orgName}\nSlug: ${slug}\nAdmin: ${adminName} (${adminEmail})\nPhone: ${adminPhone}\n\nPlease log in to the Super Admin dashboard to review and approve this request.`;
       
-      await sendEmail(adminEmails.join(','), subject, text);
+      await sendEmail(supportEmail, subject, text);
     }
 
     res.status(201).json({ 

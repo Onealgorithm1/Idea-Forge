@@ -119,18 +119,17 @@ export const submitSupportRequest = async (req: Request, res: Response) => {
       [tenantId, user.id, subject, message]
     );
 
-    // 2. Notify Super Admin via Email
-    const superAdmins = await query('SELECT email FROM users WHERE is_super_admin = TRUE');
-    const adminEmails = superAdmins.rows.map(r => r.email).join(',');
+    // Notify Platform Support (Configured in .env)
+    const adminEmail = process.env.SMTP_USER;
 
-    if (adminEmails) {
+    if (adminEmail) {
       const tenantInfo = await query('SELECT name FROM tenants WHERE id = $1', [tenantId]);
       const tenantName = tenantInfo.rows[0]?.name || 'Unknown';
       
       const emailSubject = `[Support Request] ${subject} - ${tenantName}`;
       const emailText = `New support request from ${user.email} (${tenantName}):\n\nSubject: ${subject}\n\nMessage:\n${message}\n\nTenant ID: ${tenantId}`;
       
-      await sendEmail(adminEmails, emailSubject, emailText);
+      await sendEmail(adminEmail, emailSubject, emailText);
     }
 
     res.status(201).json({ message: 'Support request submitted successfully', ticketId: result.rows[0].id });
