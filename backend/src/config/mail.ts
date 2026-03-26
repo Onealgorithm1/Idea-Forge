@@ -4,10 +4,12 @@ dotenv.config();
 
 // Create a transporter using explicit Gmail SMTP settings
 // Using port 465 for SSL (often more reliable in modern cloud environments)
+// Forcing IPv4 to avoid ENETUNREACH errors sometimes seen with IPv6 in cloud environments
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
   secure: true, 
+  family: 4, // Force IPv4
   auth: {
     type: 'OAuth2',
     user: process.env.SMTP_USER,
