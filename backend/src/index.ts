@@ -54,6 +54,32 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// Diagnostic route
+app.get('/api/diag/email', async (req, res) => {
+  const envVars = {
+    FRONTEND_URL: process.env.FRONTEND_URL ? 'Set' : 'MISSING',
+    SMTP_USER: process.env.SMTP_USER ? 'Set' : 'MISSING',
+    OAUTH_CLIENT_ID: process.env.OAUTH_CLIENT_ID ? 'Set' : 'MISSING',
+    OAUTH_CLIENT_SECRET: process.env.OAUTH_CLIENT_SECRET ? 'Set' : 'MISSING',
+    OAUTH_REFRESH_TOKEN: process.env.OAUTH_REFRESH_TOKEN ? 'Set' : 'MISSING',
+  };
+
+  try {
+    const { sendEmail } = await import('./config/mail.js');
+    res.json({
+      status: 'ok',
+      environment: envVars,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'error', 
+      environment: envVars, 
+      message: error instanceof Error ? error.message : String(error) 
+    });
+  }
+});
+
 server.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT} (host 0.0.0.0)`);
 });
