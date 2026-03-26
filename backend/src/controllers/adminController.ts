@@ -38,13 +38,19 @@ export const createUser = async (req: Request, res: Response) => {
     );
 
     // 4. Send Email
-    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login`;
-    const orgName = (await query('SELECT name FROM tenants WHERE id = $1', [tenantId])).rows[0]?.name || 'your organization';
+    const tenantInfo = (await query('SELECT name, slug FROM tenants WHERE id = $1', [tenantId])).rows[0];
+    const orgName = tenantInfo?.name || 'your organization';
+    const orgSlug = tenantInfo?.slug || 'default';
+    
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/${orgSlug}/login`;
     
     const emailSubject = `Welcome to ${orgName} on IdeaForge`;
-    const emailText = `Hello ${name},\n\nYou have been added to ${orgName} on the IdeaForge platform.\n\nLogin URL: ${loginUrl}\nEmail: ${email}\nPassword: ${password}\n\nPlease change your password after logging in.`;
+    const emailText = `Hello ${name},\n\nYou have been added to ${orgName} on the IdeaForge platform.\n\nOrganization: ${orgName}\nLogin URL: ${loginUrl}\nEmail: ${email}\nPassword: ${password}\n\nPlease change your password after logging in.`;
     
-    await sendEmail(email, emailSubject, emailText);
+    // Send Email asynchronously (don't block the response)
+    sendEmail(email, emailSubject, emailText).catch(err => {
+      console.error('Background email sending error:', err);
+    });
 
     res.status(201).json({
       message: 'User created successfully and invitation sent',
@@ -94,21 +100,49 @@ export const updateUserRole = async (req: Request, res: Response) => {
 
 export const deleteUser = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const tenantId = (req as any).tenantId;
 
   try {
     // Check if user exists
-    const user = await query('SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND role != $3', [id, (req as any).tenantId, 'super_admin']);
+    const user = await query('SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND role != $3', [id, tenantId, 'super_admin']);
     if (user.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Prevent deleting your own account (optional but safer)
+    // Prevent deleting your own account
     if (id === (req as any).user.id) {
       return res.status(400).json({ message: 'Cannot delete your own account' });
     }
 
-    await query('DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND role != $3', [id, (req as any).tenantId, 'super_admin']);
-    res.json({ message: 'User deleted successfully' });
+    // ─── Manual Cleanup to satisfy Foreign Key Constraints ───────────
+    
+    // 1. Audit Logs: Set actor_user_id to NULL
+    await query('UPDATE audit_logs SET actor_user_id = NULL WHERE actor_user_id = $1', [id]);
+
+    // 2. Ideas: Set owner_id to NULL (author_id usually has ON DELETE SET NULL already)
+    await query('UPDATE ideas SET owner_id = NULL WHERE owner_id = $1', [id]);
+
+    // 3. Idea Attachments: Set uploaded_by to NULL
+    await query('UPDATE idea_attachments SET uploaded_by = NULL WHERE uploaded_by = $1', [id]);
+
+    // 4. Idea Scores: Delete (scored_by is part of a UNIQUE constraint)
+    await query('DELETE FROM idea_scores WHERE scored_by = $1', [id]);
+
+    // 5. Tenant Users & Roles: Clean up association
+    // First find the tenant_user relationship
+    const tuResult = await query('SELECT id FROM tenant_users WHERE user_id = $1 AND tenant_id = $2', [id, tenantId]);
+    if (tuResult.rows.length > 0) {
+      const tuId = tuResult.rows[0].id;
+      // Delete user roles for this tenant
+      await query('DELETE FROM user_roles WHERE tenant_user_id = $1', [tuId]);
+      // Delete tenant user association
+      await query('DELETE FROM tenant_users WHERE id = $1', [tuId]);
+    }
+
+    // ─── Finally delete the user ─────────────────────────────────────
+    await query('DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND role != $3', [id, tenantId, 'super_admin']);
+    
+    res.json({ message: 'User and associated data updated/deleted successfully' });
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ message: 'Server error' });

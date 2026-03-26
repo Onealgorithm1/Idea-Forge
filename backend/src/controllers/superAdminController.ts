@@ -41,7 +41,7 @@ export const createTenantAdmin = async (req: Request, res: Response) => {
 
   try {
     // 1. Check license limit
-    const tenant = await query('SELECT max_users FROM tenants WHERE id = $1', [tenantId]);
+    const tenant = await query('SELECT name, slug, max_users FROM tenants WHERE id = $1', [tenantId]);
     if (tenant.rows.length === 0) return res.status(404).json({ message: 'Tenant not found' });
     
     const currentUsers = await query('SELECT COUNT(*) FROM users WHERE tenant_id = $1', [tenantId]);
@@ -66,11 +66,17 @@ export const createTenantAdmin = async (req: Request, res: Response) => {
     );
 
     // 4. Send Email
-    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login`;
-    const emailSubject = 'Welcome to IdeaForge - Admin Credentials';
-    const emailText = `Hello ${name},\n\nYou have been added as an admin for your organization on IdeaForge.\n\nLogin URL: ${loginUrl}\nEmail: ${email}\nPassword: ${password}\n\nPlease change your password after logging in.`;
+    const orgName = tenant.rows[0]?.name || 'your organization';
+    const orgSlug = tenant.rows[0]?.slug || 'default';
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/${orgSlug}/login`;
     
-    await sendEmail(email, emailSubject, emailText);
+    const emailSubject = `Welcome to IdeaForge - Admin Credentials for ${orgName}`;
+    const emailText = `Hello ${name},\n\nYou have been added as an admin for ${orgName} on the IdeaForge platform.\n\nOrganization: ${orgName}\nLogin URL: ${loginUrl}\nEmail: ${email}\nPassword: ${password}\n\nPlease change your password after logging in.`;
+    
+    // Send Email asynchronously (don't block the response)
+    sendEmail(email, emailSubject, emailText).catch(err => {
+      console.error('Background email sending error (createTenantAdmin):', err);
+    });
 
     res.status(201).json({
       message: 'Tenant admin created successfully and email sent',
@@ -129,7 +135,10 @@ export const submitSupportRequest = async (req: Request, res: Response) => {
       const emailSubject = `[Support Request] ${subject} - ${tenantName}`;
       const emailText = `New support request from ${user.email} (${tenantName}):\n\nSubject: ${subject}\n\nMessage:\n${message}\n\nTenant ID: ${tenantId}`;
       
-      await sendEmail(adminEmail, emailSubject, emailText);
+      // Send Email asynchronously
+      sendEmail(adminEmail, emailSubject, emailText).catch(err => {
+        console.error('Background email sending error (submitSupportRequest):', err);
+      });
     }
 
     res.status(201).json({ message: 'Support request submitted successfully', ticketId: result.rows[0].id });

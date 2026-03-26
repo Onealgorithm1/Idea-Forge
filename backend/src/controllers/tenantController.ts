@@ -234,11 +234,14 @@ export const registerWorkspace = async (req: Request, res: Response) => {
     );
 
     // Send emails
+    // Send Email asynchronously
     if (supportEmail) {
       const subject = `[Action Required] New Workspace Registration: ${orgName}`;
       const text = `A new organization registration request has been submitted.\n\nOrg Name: ${orgName}\nSlug: ${slug}\nAdmin: ${adminName} (${adminEmail})\nPhone: ${adminPhone}\n\nPlease log in to the Super Admin dashboard to review and approve this request.`;
       
-      await sendEmail(supportEmail, subject, text);
+      sendEmail(supportEmail, subject, text).catch(err => {
+        console.error('Background email sending error (registerWorkspace):', err);
+      });
     }
 
     res.status(201).json({ 
