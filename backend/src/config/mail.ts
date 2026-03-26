@@ -19,6 +19,8 @@ const transporter = nodemailer.createTransport({
   },
 } as any);
 
+import https from 'https';
+
 // Verify connection configuration (only if not using Resend)
 if (!process.env.RESEND_API_KEY) {
   transporter.verify(function (error, success) {
@@ -35,33 +37,49 @@ export const sendEmail = async (to: string, subject: string, text: string, html?
 
   if (resendKey) {
     console.log(`[Email] Sending via Resend API to ${to}...`);
-    try {
-      const response = await fetch('https://api.resend.com/emails', {
+    return new Promise((resolve, reject) => {
+      const data = JSON.stringify({
+        from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+        to,
+        subject,
+        text,
+        html: html || text.replace(/\n/g, '<br>')
+      });
+
+      const options = {
+        hostname: 'api.resend.com',
+        path: '/emails',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${resendKey}`
-        },
-        body: JSON.stringify({
-          from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
-          to,
-          subject,
-          text,
-          html: html || text.replace(/\n/g, '<br>')
-        })
+          'Authorization': `Bearer ${resendKey}`,
+          'Content-Length': data.length
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        let responseBody = '';
+        res.on('data', (chunk) => responseBody += chunk);
+        res.on('end', () => {
+          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+            const parsed = JSON.parse(responseBody);
+            console.log(`[Email] Sent successfully via Resend. ID: ${parsed.id}`);
+            resolve({ success: true, messageId: parsed.id });
+          } else {
+            console.error('[Email] Resend API Error Response:', responseBody);
+            reject(new Error(`Resend API error: ${res.statusCode}`));
+          }
+        });
       });
 
-      const data: any = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Resend API error');
-      }
+      req.on('error', (e) => {
+        console.error('[Email] Resend HTTPS Request failed:', e.message);
+        reject(e);
+      });
 
-      console.log(`[Email] Sent successfully via Resend. ID: ${data.id}`);
-      return { success: true, messageId: data.id };
-    } catch (error: any) {
-      console.error('[Email] Resend API failed:', error.message);
-      throw error;
-    }
+      req.write(data);
+      req.end();
+    });
   }
 
   // Fallback to SMTP
