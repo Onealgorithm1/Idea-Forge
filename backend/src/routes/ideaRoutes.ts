@@ -1,5 +1,5 @@
 import express from 'express';
-import { getIdeas, createIdea, editIdea, getCategories, voteIdea, addComment, getComments, bookmarkIdea, getTags, getNotifications, markNotificationRead, getUserIdeas, updateIdeaStatus, deleteIdea } from '../controllers/ideaController.js';
+import { getIdeas, createIdea, editIdea, getCategories, voteIdea, addComment, getComments, bookmarkIdea, getTags, getNotifications, markNotificationRead, getUserIdeas, updateIdeaStatus, deleteIdea, getIdeaSpaces } from '../controllers/ideaController.js';
 import { authenticateToken, extractTenant, isAdminOrReviewer } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -11,6 +11,7 @@ router.get('/', getIdeas);
 router.post('/', authenticateToken, createIdea);
 router.patch('/:id', authenticateToken, editIdea);
 router.get('/categories', getCategories);
+router.get('/spaces', getIdeaSpaces);
 router.get('/tags', getTags);
 router.get('/notifications', authenticateToken, getNotifications);
 router.post('/notifications/:id/read', authenticateToken, markNotificationRead);

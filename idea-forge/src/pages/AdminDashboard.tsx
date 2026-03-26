@@ -26,6 +26,7 @@ import {
   FolderOpen,
   Plus,
   Trash2,
+  Building,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useParams } from "react-router-dom";
@@ -51,47 +52,6 @@ const AdminDashboard = () => {
     refetchInterval: 60_000,
   });
 
-  // Categories
-  const [newCategory, setNewCategory] = useState("");
-  const { data: categories = [], isLoading: catsLoading } = useQuery({
-    queryKey: ["admin-categories"],
-    queryFn: () => api.get("/admin/categories", token!),
-    enabled: !!token,
-  });
-  const createCatMutation = useMutation({
-    mutationFn: (name: string) => {
-      if (!name || name.trim().length < 2) throw new Error("Category name must be at least 2 characters");
-      return api.post("/admin/categories", { name }, token!);
-    },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-categories"] }); setNewCategory(""); toast.success("Category created"); },
-    onError: (e: any) => toast.error(e.message),
-  });
-  const deleteCatMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/admin/categories/${id}`, token!),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-categories"] }),
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  // Idea Spaces
-  const [newSpace, setNewSpace] = useState("");
-  const { data: spaces = [], isLoading: spacesLoading } = useQuery({
-    queryKey: ["admin-spaces"],
-    queryFn: () => api.get("/admin/spaces", token!),
-    enabled: !!token,
-  });
-  const createSpaceMutation = useMutation({
-    mutationFn: (name: string) => {
-      if (!name || name.trim().length < 2) throw new Error("Space name must be at least 2 characters");
-      return api.post("/admin/spaces", { name }, token!);
-    },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-spaces"] }); setNewSpace(""); toast.success("Space created"); },
-    onError: (e: any) => toast.error(e.message),
-  });
-  const deleteSpaceMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/admin/spaces/${id}`, token!),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-spaces"] }),
-    onError: (e: any) => toast.error(e.message),
-  });
 
   const adminStats = [
     { label: "Total Users", value: stats?.total_users ?? null, sub: `+${stats?.new_users_30d ?? 0} this month`, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
@@ -265,117 +225,42 @@ const AdminDashboard = () => {
               </motion.div>
             </div>
 
-            {/* Categories & Spaces Management */}
+            {/* Configuration Quick Links */}
             <motion.div 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
               className="grid grid-cols-1 md:grid-cols-2 gap-6"
             >
-              {/* Categories */}
-              <Card className="p-6 border-none bg-white/80 shadow-premium rounded-[2rem] space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-100 rounded-xl"><Tag className="h-5 w-5 text-amber-600" /></div>
-                  <h2 className="text-lg font-black">Categories</h2>
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="New category name…"
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && newCategory.trim()) createCatMutation.mutate(newCategory.trim()); }}
-                    className="rounded-xl"
-                  />
-                  <Button
-                    size="icon"
-                    onClick={() => { if (newCategory.trim()) createCatMutation.mutate(newCategory.trim()); }}
-                    disabled={createCatMutation.isPending}
-                    className="rounded-xl"
-                  >
-                    {createCatMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                  <AnimatePresence mode="popLayout">
-                    {catsLoading ? <Skeleton className="h-8 w-full rounded-lg" /> :
-                      categories.length === 0 ? <p className="text-sm text-muted-foreground italic">No categories yet.</p> :
-                        categories.map((cat: any) => (
-                          <motion.div 
-                            key={cat.id} 
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 10 }}
-                            className="flex items-center justify-between px-3 py-2 bg-slate-50/50 rounded-xl group border border-transparent hover:border-amber-200 transition-all hover:bg-amber-50/30"
-                          >
-                            <span className="text-sm font-medium">{cat.name}</span>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
-                              onClick={() => deleteCatMutation.mutate(cat.id)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </motion.div>
-                        ))
-                    }
-                  </AnimatePresence>
-                </div>
-              </Card>
-
-              {/* Idea Spaces */}
-              <Card className="p-6 border-none bg-white/80 shadow-premium rounded-[2rem] space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-xl"><FolderOpen className="h-5 w-5 text-blue-600" /></div>
-                  <h2 className="text-lg font-black">Idea Spaces</h2>
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="New space name…"
-                    value={newSpace}
-                    onChange={(e) => setNewSpace(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && newSpace.trim()) createSpaceMutation.mutate(newSpace.trim()); }}
-                    className="rounded-xl"
-                  />
-                  <Button
-                    size="icon"
-                    onClick={() => { if (newSpace.trim()) createSpaceMutation.mutate(newSpace.trim()); }}
-                    disabled={createSpaceMutation.isPending}
-                    className="rounded-xl"
-                  >
-                    {createSpaceMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                  <AnimatePresence mode="popLayout">
-                    {spacesLoading ? <Skeleton className="h-8 w-full rounded-lg" /> :
-                      spaces.length === 0 ? <p className="text-sm text-muted-foreground italic">No idea spaces yet.</p> :
-                        spaces.map((sp: any) => (
-                          <motion.div 
-                            key={sp.id} 
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 10 }}
-                            className="flex items-center justify-between px-3 py-2 bg-slate-50/50 rounded-xl group border border-transparent hover:border-blue-200 transition-all hover:bg-blue-50/30"
-                          >
-                            <div>
-                              <span className="text-sm font-medium">{sp.name}</span>
-                              {sp.key && <span className="ml-2 text-[10px] text-muted-foreground font-mono">/{sp.key}</span>}
-                            </div>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
-                              onClick={() => deleteSpaceMutation.mutate(sp.id)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </motion.div>
-                        ))
-                    }
-                  </AnimatePresence>
-                </div>
-              </Card>
+              <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug || "default")} className="group">
+                <Card className="p-8 border-none bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-premium rounded-[2rem] space-y-4 hover:scale-[1.02] transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/20 rounded-xl"><Building className="h-6 w-6 text-white" /></div>
+                    <h2 className="text-xl font-black italic">Organization Settings</h2>
+                  </div>
+                  <p className="text-white/70 text-sm leading-relaxed">
+                    Manage your idea spaces, categories, and general organization identity from the new central settings hub.
+                  </p>
+                  <div className="flex items-center gap-2 text-sm font-bold pt-2">
+                    Configure Now <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Card>
+              </Link>
+              
+              <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default")} className="group">
+                <Card className="p-8 border-none bg-white/80 backdrop-blur-md shadow-premium rounded-[2rem] space-y-4 hover:scale-[1.02] transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-xl"><Users className="h-6 w-6 text-primary" /></div>
+                    <h2 className="text-xl font-black">User Management</h2>
+                  </div>
+                  <p className="text-slate-500 text-sm leading-relaxed">
+                    Invite new members, manage roles, and monitor engagement across your innovation community.
+                  </p>
+                  <div className="flex items-center gap-2 text-sm font-bold text-primary pt-2">
+                    Manage Community <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Card>
+              </Link>
             </motion.div>
 
           </div>

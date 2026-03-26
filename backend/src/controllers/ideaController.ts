@@ -32,7 +32,7 @@ export const getIdeas = async (req: any, res: Response) => {
 
   try {
     const result = await query(`
-      SELECT i.*, u.name as author, c.name as category,
+      SELECT i.*, u.name as author, c.name as category, s.name as space_name,
              (SELECT json_agg(t.name) FROM tags t 
               JOIN idea_tags it ON t.id = it.tag_id 
               WHERE it.idea_id = i.id) as tags,
@@ -40,6 +40,7 @@ export const getIdeas = async (req: any, res: Response) => {
       FROM ideas i 
       LEFT JOIN users u ON i.author_id = u.id 
       LEFT JOIN categories c ON i.category_id = c.id
+      LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
       WHERE i.tenant_id = $1
       ORDER BY i.created_at DESC
     `, [tenantId, userId || '00000000-0000-0000-0000-000000000000']);
@@ -71,8 +72,8 @@ export const createIdea = async (req: any, res: Response) => {
 
     // Start a transaction block conceptually (though we use pool.query normally, we'll keep it simple but safe)
     const result = await query(
-      'INSERT INTO ideas (title, description, author_id, category_id, tenant_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [title, description, author_id, category_id, tenant_id]
+      'INSERT INTO ideas (title, description, author_id, category_id, tenant_id, idea_space_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [title, description, author_id, category_id, tenant_id, req.body.idea_space_id || null]
     );
     const idea = result.rows[0];
 
@@ -138,8 +139,8 @@ export const editIdea = async (req: any, res: Response) => {
     if (idea.author_id !== user_id && !isAdmin) return res.status(403).json({ message: 'Not authorized to edit this idea' });
 
     const updated = await query(
-      'UPDATE ideas SET title = $1, description = $2, category_id = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 AND tenant_id = $5 RETURNING *',
-      [title ?? idea.title, description ?? idea.description, category_id ?? idea.category_id, id, tenant_id]
+      'UPDATE ideas SET title = $1, description = $2, category_id = $3, idea_space_id = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5 AND tenant_id = $6 RETURNING *',
+      [title ?? idea.title, description ?? idea.description, category_id ?? idea.category_id, req.body.idea_space_id ?? idea.idea_space_id, id, tenant_id]
     );
 
     // Update tags: clear and re-add
@@ -173,6 +174,17 @@ export const getCategories = async (req: any, res: Response) => {
     res.json(result.rows);
   } catch (error) {
     console.error('Get categories error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getIdeaSpaces = async (req: any, res: Response) => {
+  const tenantId = req.tenantId;
+  try {
+    const result = await query('SELECT * FROM idea_spaces WHERE tenant_id = $1 ORDER BY name', [tenantId]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get idea spaces error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -343,7 +355,7 @@ export const getUserIdeas = async (req: any, res: Response) => {
   const tenant_id = req.tenantId;
   try {
     const result = await query(`
-      SELECT i.*, u.name as author, c.name as category,
+      SELECT i.*, u.name as author, c.name as category, s.name as space_name,
       (SELECT json_agg(t.name) FROM tags t 
        JOIN idea_tags it ON t.id = it.tag_id 
        WHERE it.idea_id = i.id) as tags,
@@ -351,6 +363,7 @@ export const getUserIdeas = async (req: any, res: Response) => {
       FROM ideas i
       JOIN users u ON i.author_id = u.id
       LEFT JOIN categories c ON i.category_id = c.id
+      LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
       WHERE i.author_id = $1 AND i.tenant_id = $2
       ORDER BY i.created_at DESC
     `, [user_id, tenant_id]);

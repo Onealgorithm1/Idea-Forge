@@ -126,9 +126,11 @@ const SIMILAR_IDEAS = getSimilarIdeas(5);
 const SubmitIdeaForm = () => {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<string>("");
+  const [ideaSpace, setIdeaSpace] = useState<string>("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
   const [categories, setCategories] = useState<any[]>([]);
+  const [ideaSpaces, setIdeaSpaces] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const { token } = useAuth();
@@ -163,7 +165,19 @@ const SubmitIdeaForm = () => {
         console.error("Failed to fetch categories:", error);
       }
     };
+
+    const fetchIdeaSpaces = async () => {
+      try {
+        const data = await api.get("/ideas/spaces");
+        setIdeaSpaces(data);
+        if (data.length > 0) setIdeaSpace(data[0].id);
+      } catch (error) {
+        console.error("Failed to fetch idea spaces:", error);
+      }
+    };
+
     fetchCategories();
+    fetchIdeaSpaces();
   }, []);
 
   const validate = () => {
@@ -172,6 +186,7 @@ const SubmitIdeaForm = () => {
     else if (title.trim().length < 5) newErrors.title = "Title must be at least 5 characters";
     
     if (!category) newErrors.category = "Please select a category";
+    if (!ideaSpace) newErrors.ideaSpace = "Please select an idea space";
     
     if (!description.trim()) newErrors.description = "Description is required";
     else if (description.trim().length < 20) newErrors.description = "Description must be at least 20 characters";
@@ -190,6 +205,7 @@ const SubmitIdeaForm = () => {
         title,
         description,
         category_id: category,
+        idea_space_id: ideaSpace,
         tags: tags.split(',').map(t => t.trim()).filter(t => t !== "")
       }, token || undefined);
       
@@ -280,6 +296,30 @@ const SubmitIdeaForm = () => {
                 </SelectContent>
               </Select>
               {errors.category && <p className="text-xs text-red-500 font-medium">{errors.category}</p>}
+            </div>
+
+            {/* Idea Space */}
+            <div className="space-y-1.5">
+              <Label className="text-gray-500 font-normal">
+                <span className="text-orange-400 mr-1">*</span>Idea Space
+              </Label>
+              <Select 
+                value={ideaSpace} 
+                onValueChange={(val) => {
+                  setIdeaSpace(val);
+                  if (errors.ideaSpace) setErrors(prev => ({ ...prev, ideaSpace: "" }));
+                }}
+              >
+                <SelectTrigger className={`w-full h-11 focus:ring-1 ${errors.ideaSpace ? 'border-red-500 focus:ring-red-400' : 'focus:ring-blue-400'}`}>
+                  <SelectValue placeholder="Select idea space" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ideaSpaces.map((sp) => (
+                    <SelectItem key={sp.id} value={sp.id}>{sp.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.ideaSpace && <p className="text-xs text-red-500 font-medium">{errors.ideaSpace}</p>}
             </div>
 
             {/* Description */}

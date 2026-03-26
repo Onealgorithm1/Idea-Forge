@@ -14,6 +14,7 @@ import IdeaDetail from "./pages/IdeaDetail";
 import Profile from "./pages/Profile";
 import AdminUsers from "./pages/AdminUsers";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminSettings from "./pages/AdminSettings";
 import SuperAdminLogin from "./pages/SuperAdmin/Login";
 import SuperAdminDashboard from "./pages/SuperAdmin/Dashboard";
 import TenantDetail from "./pages/SuperAdmin/TenantDetail";
@@ -59,6 +60,7 @@ const AppContent = () => (
           <Route path="profile" element={<Profile />} />
           <Route path="admin/dashboard" element={<AdminDashboard />} />
           <Route path="admin/users" element={<AdminUsers />} />
+          <Route path="admin/settings" element={<AdminSettings />} />
         </Route>
         <Route path="login" element={<AuthPage />} />
         {/* <Route path="signup" element={<AuthPage />} /> */}

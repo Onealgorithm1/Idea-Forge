@@ -53,14 +53,7 @@ export default function FloatingSubmitIdea() {
                  </div>
                  <h2 className="text-xl font-bold tracking-tight">Share Your Innovation</h2>
                </div>
-               <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => setIsOpen(false)}
-                className="rounded-full hover:bg-white/10"
-               >
-                 <X className="h-5 w-5" />
-               </Button>
+
             </div>
             <div className="bg-white rounded-2xl p-2">
               <SubmitIdeaForm />

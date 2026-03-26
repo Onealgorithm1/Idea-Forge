@@ -1,4 +1,4 @@
-import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, ShieldCheck, Activity, type LucideIcon } from "lucide-react";
+import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, ShieldCheck, Activity, Building, type LucideIcon } from "lucide-react";
 import { Link, useNavigate, useLocation, useSearchParams, useParams } from "react-router-dom";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
@@ -110,6 +110,13 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
                 icon={Users}
                 label="Manage Users"
                 active={pathname === getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default")}
+              />
+            </Link>
+            <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug || "default")} className="block w-full">
+              <SidebarButton
+                icon={Building}
+                label="Organization Settings"
+                active={pathname === getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug || "default")}
               />
             </Link>
           </div>

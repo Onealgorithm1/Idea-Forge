@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, MessageSquare, Bookmark, Calendar, Target, User, Loader2, Pencil, Star, X, Check, Trash2 } from "lucide-react";
+import { ChevronLeft, MessageSquare, Bookmark, Calendar, Target, User, Loader2, Pencil, Star, X, Check, Trash2, Layers } from "lucide-react";
 import Header from "@/components/Header";
 import SidebarNav from "@/components/SidebarNav";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,13 @@ import { cn } from "@/lib/utils";
 import VotingSystem from "@/components/VotingSystem";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const STATUSES = ['Pending', 'Under Review', 'In Progress', 'In Development', 'Shipped'];
 
@@ -129,7 +136,13 @@ const IdeaDetail = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editIdeaSpace, setEditIdeaSpace] = useState("");
   const [newComment, setNewComment] = useState("");
+
+  const { data: ideaSpaces = [] } = useQuery({
+    queryKey: ["idea-spaces"],
+    queryFn: () => api.get("/ideas/spaces"),
+  });
 
   const commentMutation = useMutation({
     mutationFn: (content: string) => {
@@ -198,6 +211,7 @@ const IdeaDetail = () => {
   const startEdit = () => {
     setEditTitle(idea?.title || "");
     setEditDescription(idea?.description || "");
+    setEditIdeaSpace(idea?.idea_space_id || "");
     setIsEditing(true);
   };
 
@@ -210,7 +224,7 @@ const IdeaDetail = () => {
     if (!editDescription.trim() || editDescription.trim().length < 20) {
       return toast.error("Description must be at least 20 characters long");
     }
-    editMutation.mutate({ title: editTitle, description: editDescription });
+    editMutation.mutate({ title: editTitle, description: editDescription, idea_space_id: editIdeaSpace });
   };
 
   const isLoading = !idea && !allIdeas.length;
@@ -265,6 +279,15 @@ const IdeaDetail = () => {
                   </Badge>
                   <span className="text-xs text-muted-foreground">•</span>
                   <span className="text-xs text-muted-foreground">{idea.category}</span>
+                  {idea.space_name && (
+                    <>
+                      <span className="text-xs text-muted-foreground">•</span>
+                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 text-[10px] h-5">
+                        <Layers className="h-3 w-3 mr-1" />
+                        {idea.space_name}
+                      </Badge>
+                    </>
+                  )}
                   <span className="text-xs text-muted-foreground">•</span>
                   <span className="text-xs text-muted-foreground flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
@@ -273,7 +296,22 @@ const IdeaDetail = () => {
                 </div>
 
                 {isEditing ? (
-                  <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="text-2xl font-bold h-12 text-2xl" />
+                  <div className="space-y-3">
+                    <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="text-2xl font-bold h-12" />
+                    <div className="flex items-center gap-2">
+                       <span className="text-xs font-semibold text-muted-foreground uppercase">Space:</span>
+                       <Select value={editIdeaSpace} onValueChange={setEditIdeaSpace}>
+                        <SelectTrigger className="w-[200px] h-9 text-sm">
+                          <SelectValue placeholder="Select space" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ideaSpaces.map((s: any) => (
+                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 ) : (
                   <h1 className="text-3xl font-bold tracking-tight">{idea.title}</h1>
                 )}
