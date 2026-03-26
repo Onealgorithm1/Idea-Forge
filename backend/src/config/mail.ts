@@ -7,7 +7,7 @@ dotenv.config();
 // Forcing IPv4 to avoid ENETUNREACH errors sometimes seen with IPv6 in cloud environments
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
+  port: 443,
   secure: true, 
   family: 4, 
   auth: {
