@@ -2,9 +2,12 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// Create a transporter using Gmail OAuth2
+// Create a transporter using explicit Gmail SMTP settings
+// Using port 465 for SSL (often more reliable in modern cloud environments)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, 
   auth: {
     type: 'OAuth2',
     user: process.env.SMTP_USER,
@@ -32,14 +35,14 @@ export const sendEmail = async (to: string, subject: string, text: string, html?
       text,
       html,
     });
-    console.log('Message sent successfully! Message ID: %s', info.messageId);
-    return true;
+    return { success: true, messageId: (info as any).messageId };
   } catch (error: any) {
     console.error('Email send failed:', {
       message: error.message,
       code: error.code,
-      command: error.command
+      command: error.command,
+      response: error.response
     });
-    return false;
+    throw error;
   }
 };
