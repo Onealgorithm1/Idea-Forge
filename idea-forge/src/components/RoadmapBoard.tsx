@@ -104,8 +104,8 @@ const RoadmapBoard = () => {
             const Icon = stage.icon;
 
             return (
-              <Card key={stage.id} className={`p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]}`}>
-                <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
+              <Card key={stage.id} className={`flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]}`}>
+                <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-black/5">
                   <div className="flex items-center gap-2.5">
                     <div className={`p-1.5 rounded-lg bg-${stage.color === 'slate' ? 'slate-200' : stage.color + '/20'}`}>
                       <Icon className={`h-4 w-4 text-${stage.color === 'slate' ? 'slate-500' : stage.color}`} />
@@ -122,7 +122,7 @@ const RoadmapBoard = () => {
                     <div 
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className={`p-3 space-y-3 min-h-[500px] transition-colors duration-200 ${snapshot.isDraggingOver ? 'bg-black/5' : ''}`}
+                      className={`flex-1 overflow-y-auto no-scrollbar p-3 space-y-3 min-h-0 transition-colors duration-200 ${snapshot.isDraggingOver ? 'bg-black/5' : ''}`}
                     >
                       {stageIdeas.map((idea, index) => (
                         <Draggable key={idea.id} draggableId={String(idea.id)} index={index}>

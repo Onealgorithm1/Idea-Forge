@@ -126,8 +126,8 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Idea Pool */}
-        <Card className="p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-slate-50/80 to-slate-200/50 backdrop-blur-sm border-t-4 border-slate-400/30">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-slate-100/80 to-slate-50/50">
+        <Card className="flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-slate-50/80 to-slate-200/50 backdrop-blur-sm border-t-4 border-slate-400/30">
+          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-slate-100/80 to-slate-50/50">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-slate-200 rounded-lg">
                 <GripVertical className="h-4 w-4 text-slate-500" />
@@ -136,7 +136,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
             </div>
             <div className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{ideaPoolItems.length}</div>
           </div>
-          <div className="p-3 space-y-3">
+          <div className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar">
             {ideaPoolItems.map((item, idx) => (
               <motion.div
                 layout
@@ -217,8 +217,8 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
         </Card>
 
         {/* Voting & Feedback */}
-        <Card className="p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-primary/10 bg-primary/10">
+        <Card className="flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30">
+          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-primary/10 bg-primary/10">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-primary/20 rounded-lg">
                 <ArrowBigUp className="h-4 w-4 text-primary fill-primary/20" />
@@ -227,7 +227,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
             </div>
             <div className="bg-primary/20 text-primary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{votingItems.length}</div>
           </div>
-          <div className="p-3 space-y-3">
+          <div className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar">
             {votingItems.map((item, idx) => (
               <motion.div
                 layout
@@ -310,8 +310,8 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
         </Card>
 
         {/* In Development */}
-        <Card className="p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-success/10 bg-success/10">
+        <Card className="flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30">
+          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-success/10 bg-success/10">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-success/20 rounded-lg">
                 <Plus className="h-4 w-4 text-success" />
@@ -320,7 +320,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
             </div>
             <div className="bg-success/20 text-success px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{devItems.length}</div>
           </div>
-          <div className="p-3 space-y-3">
+          <div className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar">
             {devItems.map((item, idx) => (
               <motion.div
                 layout

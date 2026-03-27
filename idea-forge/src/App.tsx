@@ -37,7 +37,7 @@ const AppContent = () => (
 
     {/* Root redirect: Send users to a default organization or landing page */}
     {/* For this MVP, we redirect to 'default' tenant */}
-    <Route path="/" element={<Navigate to="/default" replace />} />
+    <Route path="/" element={<Navigate to="/default/idea-board" replace />} />
     <Route path="/login" element={<Navigate to="/default/login" replace />} />
     {/* <Route path="/signup" element={<Navigate to="/default/signup" replace />} /> */}
     <Route path="/idea-board" element={<Navigate to="/default/idea-board" replace />} />
@@ -51,7 +51,7 @@ const AppContent = () => (
     <Route path="/:tenantSlug/*" element={<TenantProvider>
       <Routes>
         <Route element={<ProtectedRoute />}>
-          <Route index element={<Index />} />
+          <Route index element={<Navigate to="idea-board" replace />} />
           <Route path="idea-board" element={<Index />} />
           <Route path="roadmap" element={<Index />} />
           <Route path="analytics" element={<Index />} />

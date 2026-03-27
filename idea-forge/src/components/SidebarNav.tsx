@@ -4,7 +4,6 @@ import { ROUTES, getTenantPath } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { Button } from "@/components/ui/button";
-import { SupportDialog } from "./SupportDialog";
 
 interface SidebarItem {
   icon: LucideIcon;
@@ -87,7 +86,7 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
   };
 
   return (
-    <aside className="w-[260px] shrink-0 border-r border-slate-200/60 hidden md:flex flex-col pt-6 pb-4 gap-2 bg-white/40 backdrop-blur-xl shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20">
+    <aside className="sticky top-0 h-screen w-[260px] shrink-0 border-r border-slate-200/60 hidden md:flex flex-col pt-6 pb-4 gap-2 bg-white/40 backdrop-blur-xl shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20">
 
       {user?.role === 'admin' && (
         <div className="mb-4 space-y-1">
@@ -142,21 +141,6 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
             />
           ))}
         </div>
-      </div>
-
-      <div className="px-2 pb-2 space-y-1">
-        <SupportDialog />
-        
-        <Button asChild className="w-full justify-start gap-3 shadow-premium hover:shadow-premium-hover transition-all duration-300 rounded-2xl h-12 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white font-semibold text-sm border border-white/20 group relative overflow-hidden">
-          <Link to={getTenantPath(ROUTES.SUBMIT_IDEA, tenantSlug || "default")}>
-            {/* Glossy overlay effect class */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="flex bg-white/20 items-center justify-center rounded-xl w-7 h-7 shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-300">
-              <Plus className="h-4 w-4" strokeWidth={2.5} />
-            </div>
-            <span>New Idea</span>
-          </Link>
-        </Button>
       </div>
 
     </aside>

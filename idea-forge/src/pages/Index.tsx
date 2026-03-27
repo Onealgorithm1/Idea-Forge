@@ -60,7 +60,7 @@ const Index = () => {
           />
         )}
 
-        <main className={`flex-1 overflow-y-auto px-6 py-8 md:px-10 ${pathname === tenantRoot ? 'max-w-[1600px] mx-auto w-full' : ''}`}>
+        <main className={`flex-1 overflow-y-auto no-scrollbar px-6 py-8 md:px-10 ${pathname === tenantRoot ? 'max-w-[1600px] mx-auto w-full' : ''}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={`${pathname}-${selectedCategory}`}
