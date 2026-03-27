@@ -68,7 +68,7 @@ const AdminDashboard = () => {
       </div>
 
       <Header />
-      <div className="flex flex-1 overflow-hidden relative z-10 w-full max-w-[1600px] mx-auto">
+      <div className="flex flex-1 relative z-10 w-full max-w-[1600px] mx-auto">
         <SidebarNav />
         <main className="flex-1 overflow-y-auto p-6 md:p-10">
           <div className="max-w-6xl mx-auto space-y-10">

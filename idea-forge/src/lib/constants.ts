@@ -5,6 +5,7 @@ export const ROUTES = {
   
   // Tenant-scoped routes (relative)
   ROOT: "/",
+  DASHBOARD: "/dashboard",
   IDEA_BOARD: "/idea-board",
   ROADMAP: "/roadmap",
   ANALYTICS: "/analytics",

@@ -22,7 +22,7 @@ const NotFound = () => {
           </p>
         </div>
         <Button asChild className="px-8 py-6 text-lg font-bold rounded-2xl shadow-premium">
-          <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)}>
+          <Link to={getTenantPath(ROUTES.DASHBOARD, tenantSlug)}>
             Back to Dashboard
           </Link>
         </Button>

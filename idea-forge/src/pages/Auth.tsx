@@ -120,7 +120,7 @@ export default function AuthPage() {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
           >
-            <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)} className="flex flex-col items-center gap-2 group">
+            <Link to={getTenantPath(ROUTES.DASHBOARD, tenantSlug)} className="flex flex-col items-center gap-2 group">
               <div className="relative">
                 <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-150 group-hover:bg-primary/40 transition-all duration-500" />
                 <Logo imageClassName="h-24 w-24 relative z-10 transition-transform duration-500 group-hover:scale-110" />

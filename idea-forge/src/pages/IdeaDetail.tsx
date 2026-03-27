@@ -247,7 +247,7 @@ const IdeaDetail = () => {
         <div className="flex flex-1 items-center justify-center flex-col gap-4">
           <h2 className="text-2xl font-bold">Idea not found</h2>
           <Button asChild variant="outline">
-            <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)}>Back to Dashboard</Link>
+            <Link to={getTenantPath(ROUTES.DASHBOARD, tenantSlug)}>Back to Dashboard</Link>
           </Button>
         </div>
       </div>
@@ -257,7 +257,7 @@ const IdeaDetail = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1">
         <SidebarNav />
         <main className="flex-1 overflow-y-auto p-6 bg-muted/30">
           <motion.div

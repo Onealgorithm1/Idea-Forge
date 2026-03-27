@@ -5,6 +5,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "start": "npm start --prefix backend",
     "dev:backend": "npm run dev --prefix backend",
     "dev:frontend": "npm run dev --prefix idea-forge",
@@ -13,5 +14,8 @@
   "workspaces": [
     "backend",
     "idea-forge"
-  ]
+  ],
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
 }

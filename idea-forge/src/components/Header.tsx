@@ -1,5 +1,4 @@
-import { Bell, LogOut, HelpCircle } from "lucide-react";
-import { SupportDialog } from "./SupportDialog";
+import { Bell, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,7 +30,7 @@ const Header = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
 
   const tabs = [
-    { name: "Dashboard", path: getTenantPath(ROUTES.ROOT, tenantSlug) },
+    { name: "Dashboard", path: getTenantPath(ROUTES.DASHBOARD, tenantSlug) },
     { name: "Idea Board", path: getTenantPath(ROUTES.IDEA_BOARD, tenantSlug) },
     { name: "Roadmap", path: getTenantPath(ROUTES.ROADMAP, tenantSlug) },
     { name: "Analytics", path: getTenantPath(ROUTES.ANALYTICS, tenantSlug) },
@@ -111,7 +110,7 @@ const Header = () => {
                     </div>
 
                     {/* Categories section - only shown in mobile and if on Idea Board/Dashboard context */}
-                    {(location.pathname === getTenantPath(ROUTES.IDEA_BOARD, tenantSlug) || location.pathname === getTenantPath(ROUTES.ROOT, tenantSlug)) && (
+                    {(location.pathname === getTenantPath(ROUTES.IDEA_BOARD, tenantSlug) || location.pathname === getTenantPath(ROUTES.DASHBOARD, tenantSlug)) && (
                       <div className="space-y-4">
                         <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2 flex items-center gap-2">
                           <Tag className="h-3 w-3" /> Categories
@@ -124,7 +123,7 @@ const Header = () => {
                             
                             const params = new URLSearchParams();
                             if (cat.label !== "All") params.set("category", cat.label);
-                            const path = `${getTenantPath(ROUTES.ROOT, tenantSlug)}${params.toString() ? '?' + params.toString() : ''}`;
+                            const path = `${getTenantPath(ROUTES.DASHBOARD, tenantSlug)}${params.toString() ? '?' + params.toString() : ''}`;
 
                             return (
                               <Link 
@@ -162,16 +161,6 @@ const Header = () => {
                       </div>
                     )}
 
-                    {/* Help Section */}
-                    <div className="space-y-2">
-                      <SupportDialog>
-                        <button className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-bold bg-white/5 text-white/80 hover:bg-white/10 transition-all border border-white/5">
-                          <HelpCircle className="h-5 w-5 text-primary" />
-                          Help & Support
-                        </button>
-                      </SupportDialog>
-                    </div>
-
                     {/* Account section */}
                     <div className="space-y-4">
                       <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2">Account</p>
@@ -207,7 +196,7 @@ const Header = () => {
             </Sheet>
           </div>
 
-          <Link to={getTenantPath(ROUTES.ROOT, tenantSlug)} className="flex items-center gap-3 md:gap-3.5 hover:opacity-90 transition-all group">
+          <Link to={getTenantPath(ROUTES.DASHBOARD, tenantSlug)} className="flex items-center gap-3 md:gap-3.5 hover:opacity-90 transition-all group">
             <div className="bg-primary/20 p-2 md:p-2.5 rounded-xl group-hover:bg-primary/30 transition-colors">
               <Logo imageClassName="h-7 w-7 md:h-10 md:w-10" />
             </div>
@@ -287,12 +276,6 @@ const Header = () => {
               </div>
             </PopoverContent>
           </Popover>
-
-          <SupportDialog>
-            <button className="p-1.5 rounded-full hover:bg-white/10 transition-colors" title="Contact Support">
-              <HelpCircle className="h-4 w-4" />
-            </button>
-          </SupportDialog>
 
           {user ? (
             <div className="flex items-center gap-2 ml-1 border-l border-white/10 pl-3">

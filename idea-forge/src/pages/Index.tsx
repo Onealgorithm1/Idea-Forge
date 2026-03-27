@@ -22,7 +22,7 @@ const Index = () => {
   const selectedCategory = searchParams.get("category") || "All";
 
   // Pre-calculate tenant paths for comparison
-  const tenantRoot = getTenantPath(ROUTES.ROOT, tenantSlug);
+  const tenantDashboard = getTenantPath(ROUTES.DASHBOARD, tenantSlug);
   const tenantIdeaBoard = getTenantPath(ROUTES.IDEA_BOARD, tenantSlug);
   const tenantRoadmap = getTenantPath(ROUTES.ROADMAP, tenantSlug);
   const tenantAnalytics = getTenantPath(ROUTES.ANALYTICS, tenantSlug);
@@ -52,15 +52,15 @@ const Index = () => {
 
       <Header />
 
-      <div className="flex flex-1 overflow-hidden relative z-10 w-full max-w-[1600px] mx-auto">
-        {pathname !== tenantRoot && (
+      <div className="flex flex-1 relative z-10 w-full max-w-[1600px] mx-auto">
+        {pathname !== tenantDashboard && (
           <SidebarNav
             selectedCategory={selectedCategory}
             onCategorySelect={setSelectedCategory}
           />
         )}
 
-        <main className={`flex-1 overflow-y-auto px-6 py-8 md:px-10 ${pathname === tenantRoot ? 'max-w-[1600px] mx-auto w-full' : ''}`}>
+        <main className={`flex-1 overflow-y-auto px-6 py-8 md:px-10 ${pathname === tenantDashboard ? 'max-w-[1600px] mx-auto w-full' : ''}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={`${pathname}-${selectedCategory}`}
@@ -70,7 +70,7 @@ const Index = () => {
               transition={{ duration: 0.4, ease: "easeOut" }}
               className="space-y-10"
             >
-              {pathname === tenantRoot && (
+              {pathname === tenantDashboard && (
                 <div className="space-y-12">
                   {selectedCategory === "All" && (
                     <section className="animate-fade-in-up">
