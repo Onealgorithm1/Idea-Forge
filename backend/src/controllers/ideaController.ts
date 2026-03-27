@@ -138,6 +138,20 @@ export const editIdea = async (req: any, res: Response) => {
     const isAdmin = req.user.role === 'admin';
     if (idea.author_id !== user_id && !isAdmin) return res.status(403).json({ message: 'Not authorized to edit this idea' });
 
+    // --- LOCKING LOGIC ---
+    // 1. Lock if status is 'In Development'
+    if (idea.status === 'In Development') {
+      return res.status(403).json({ message: 'Ideas in Development stage cannot be edited.' });
+    }
+
+    // 2. Lock if older than 24 hours
+    const oneDay = 24 * 60 * 60 * 1000;
+    const isOlderThan24h = (Date.now() - new Date(idea.created_at).getTime()) > oneDay;
+    if (isOlderThan24h && !isAdmin) {
+      return res.status(403).json({ message: 'Ideas cannot be edited after 24 hours of creation.' });
+    }
+    // ---------------------
+
     const updated = await query(
       'UPDATE ideas SET title = $1, description = $2, category_id = $3, idea_space_id = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5 AND tenant_id = $6 RETURNING *',
       [title ?? idea.title, description ?? idea.description, category_id ?? idea.category_id, req.body.idea_space_id ?? idea.idea_space_id, id, tenant_id]
@@ -292,6 +306,63 @@ export const getComments = async (req: any, res: Response) => {
     res.json(result.rows);
   } catch (error) {
     console.error('Get comments error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const editComment = async (req: any, res: Response) => {
+  const { commentId } = req.params;
+  const { content } = req.body;
+  const user_id = req.user.id;
+  const is_admin = req.user.role === 'admin';
+
+  if (!content || content.trim().length < 2) {
+    return res.status(400).json({ message: 'Comment must be at least 2 characters long' });
+  }
+
+  try {
+    const existing = await query('SELECT * FROM comments WHERE id = $1 AND tenant_id = $2', [commentId, req.tenantId]);
+    if (existing.rows.length === 0) return res.status(404).json({ message: 'Comment not found' });
+
+    if (existing.rows[0].user_id !== user_id && !is_admin) {
+      return res.status(403).json({ message: 'Not authorized to edit this comment' });
+    }
+
+    const result = await query(
+      'UPDATE comments SET content = $1, is_edited = TRUE WHERE id = $2 RETURNING *',
+      [content, commentId]
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Edit comment error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const deleteComment = async (req: any, res: Response) => {
+  const { commentId } = req.params;
+  const user_id = req.user.id;
+  const is_admin = req.user.role === 'admin';
+
+  try {
+    const existing = await query('SELECT * FROM comments WHERE id = $1 AND tenant_id = $2', [commentId, req.tenantId]);
+    if (existing.rows.length === 0) return res.status(404).json({ message: 'Comment not found' });
+
+    if (existing.rows[0].user_id !== user_id && !is_admin) {
+      return res.status(403).json({ message: 'Not authorized to delete this comment' });
+    }
+
+    const ideaId = existing.rows[0].idea_id;
+
+    await query('DELETE FROM comments WHERE id = $1', [commentId]);
+
+    // Update comments_count
+    await query('UPDATE ideas SET comments_count = GREATEST(0, comments_count - 1) WHERE id = $1', [ideaId]);
+
+    res.json({ message: 'Comment deleted successfully' });
+  } catch (error) {
+    console.error('Delete comment error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import ConfirmationModal from "./ConfirmationModal";
 
 const roadmapStages = [
   { id: 'backlog', name: 'Ideation', icon: Clock, color: 'slate', statuses: ['Pending', 'Under Review'], defaultStatus: 'Pending' },
@@ -32,6 +33,7 @@ const RoadmapBoard = () => {
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
+  const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
 
   const { data: ideas = [], isLoading } = useQuery({
     queryKey: ["ideas"],
@@ -94,126 +96,143 @@ const RoadmapBoard = () => {
   }
 
   return (
-    <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {roadmapStages.map((stage) => {
-          const stageIdeas = ideas.filter(i => stage.statuses.includes(i.status));
-          const Icon = stage.icon;
+    <>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {roadmapStages.map((stage) => {
+            const stageIdeas = ideas.filter(i => stage.statuses.includes(i.status));
+            const Icon = stage.icon;
 
-          return (
-            <Card key={stage.id} className={`p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]}`}>
-              <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
-                <div className="flex items-center gap-2.5">
-                  <div className={`p-1.5 rounded-lg bg-${stage.color === 'slate' ? 'slate-200' : stage.color + '/20'}`}>
-                    <Icon className={`h-4 w-4 text-${stage.color === 'slate' ? 'slate-500' : stage.color}`} />
+            return (
+              <Card key={stage.id} className={`flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]}`}>
+                <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-black/5">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`p-1.5 rounded-lg bg-${stage.color === 'slate' ? 'slate-200' : stage.color + '/20'}`}>
+                      <Icon className={`h-4 w-4 text-${stage.color === 'slate' ? 'slate-500' : stage.color}`} />
+                    </div>
+                    <h3 className="font-bold text-sm tracking-tight text-slate-800">{stage.name}</h3>
                   </div>
-                  <h3 className="font-bold text-sm tracking-tight text-slate-800">{stage.name}</h3>
+                  <Badge variant="secondary" className="bg-white/50 text-slate-500 border-none font-bold text-[10px]">
+                    {stageIdeas.length}
+                  </Badge>
                 </div>
-                <Badge variant="secondary" className="bg-white/50 text-slate-500 border-none font-bold text-[10px]">
-                  {stageIdeas.length}
-                </Badge>
-              </div>
-              
-              <Droppable droppableId={stage.id}>
-                {(provided, snapshot) => (
-                  <div 
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    className={`p-3 space-y-3 min-h-[500px] transition-colors duration-200 ${snapshot.isDraggingOver ? 'bg-black/5' : ''}`}
-                  >
-                    {stageIdeas.map((idea, index) => (
-                      <Draggable key={idea.id} draggableId={String(idea.id)} index={index}>
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className={`group bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm hover:shadow-md transition-all cursor-pointer relative ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-primary/20 scale-[1.02] z-50' : ''}`}
-                            onClick={() => navigate(getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', idea.id), tenantSlug))}
-                          >
-                            <div className="flex flex-col gap-3">
-                              <div className="flex justify-between items-start">
-                                <Badge variant="outline" className="text-[9px] uppercase tracking-widest font-bold bg-slate-50 text-slate-400 border-none px-1.5 py-0">
-                                  {idea.category}
-                                </Badge>
-                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  {(user?.role === 'admin' || user?.id === idea.author_id) && (
-                                    <button 
-                                      onClick={(e) => { 
-                                        e.stopPropagation(); 
-                                        if (window.confirm("Delete this idea?")) deleteMutation.mutate(idea.id);
-                                      }}
-                                      className="p-1 hover:bg-red-50 rounded-md text-slate-400 hover:text-red-500"
-                                      title="Delete"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                  )}
-                                  {user?.role === 'admin' && (
-                                    <>
+                
+                <Droppable droppableId={stage.id}>
+                  {(provided, snapshot) => (
+                    <div 
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className={`flex-1 overflow-y-auto no-scrollbar p-3 space-y-3 min-h-0 transition-colors duration-200 ${snapshot.isDraggingOver ? 'bg-black/5' : ''}`}
+                    >
+                      {stageIdeas.map((idea, index) => (
+                        <Draggable key={idea.id} draggableId={String(idea.id)} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={`group bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm hover:shadow-md transition-all cursor-pointer relative ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-primary/20 scale-[1.02] z-50' : ''}`}
+                              onClick={() => navigate(getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', idea.id), tenantSlug))}
+                            >
+                              <div className="flex flex-col gap-3">
+                                <div className="flex justify-between items-start">
+                                  <Badge variant="outline" className="text-[9px] uppercase tracking-widest font-bold bg-slate-50 text-slate-400 border-none px-1.5 py-0">
+                                    {idea.category}
+                                  </Badge>
+                                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {(user?.role === 'admin' || user?.id === idea.author_id) && (
                                       <button 
-                                        onClick={(e) => { e.stopPropagation(); handleStatusUpdate(idea.id, getPrevStatus(idea.status)); }}
-                                        className="p-1 hover:bg-slate-100 rounded-md text-slate-400"
-                                        title="Previous Stage"
+                                        onClick={(e) => { 
+                                          e.stopPropagation(); 
+                                          setIdeaToDelete(idea.id);
+                                        }}
+                                        className="p-1 hover:bg-red-50 rounded-md text-slate-400 hover:text-red-500"
+                                        title="Delete"
                                       >
-                                        <ChevronLeft className="h-3.5 w-3.5" />
+                                        <Trash2 className="h-3.5 w-3.5" />
                                       </button>
-                                      <button 
-                                        onClick={(e) => { e.stopPropagation(); handleStatusUpdate(idea.id, getNextStatus(idea.status)); }}
-                                        className="p-1 hover:bg-slate-100 rounded-md text-slate-400"
-                                        title="Next Stage"
-                                      >
-                                        <ChevronRight className="h-3.5 w-3.5" />
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <h4 className="font-bold text-sm text-slate-800 line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-                                {idea.title}
-                              </h4>
-                              
-                              {stage.id !== 'done' && (
-                                <div className="flex items-center justify-between mt-1 pt-3 border-t border-slate-50">
-                                  <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
-                                       <MessageSquare className="h-3 w-3" />
-                                       {idea.comments_count || 0}
-                                    </div>
-                                    <div className="h-1 w-1 rounded-full bg-slate-200" />
-                                    <span className="text-[10px] font-bold text-emerald-600">
-                                      {idea.votes_count || 0} Votes
-                                    </span>
+                                    )}
+                                    {user?.role === 'admin' && (
+                                      <>
+                                        <button 
+                                          onClick={(e) => { e.stopPropagation(); handleStatusUpdate(idea.id, getPrevStatus(idea.status)); }}
+                                          className="p-1 hover:bg-slate-100 rounded-md text-slate-400"
+                                          title="Previous Stage"
+                                        >
+                                          <ChevronLeft className="h-3.5 w-3.5" />
+                                        </button>
+                                        <button 
+                                          onClick={(e) => { e.stopPropagation(); handleStatusUpdate(idea.id, getNextStatus(idea.status)); }}
+                                          className="p-1 hover:bg-slate-100 rounded-md text-slate-400"
+                                          title="Next Stage"
+                                        >
+                                          <ChevronRight className="h-3.5 w-3.5" />
+                                        </button>
+                                      </>
+                                    )}
                                   </div>
-                                  <Avatar className="h-6 w-6 border border-white shadow-sm ring-1 ring-slate-100">
-                                    <AvatarFallback className="text-[8px] font-black bg-slate-100 text-slate-500">
-                                      {getInitials(idea.author || 'U')}
-                                    </AvatarFallback>
-                                  </Avatar>
                                 </div>
-                              )}
+                                
+                                <h4 className="font-bold text-sm text-slate-800 line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                                  {idea.title}
+                                </h4>
+                                
+                                {stage.id !== 'done' && (
+                                  <div className="flex items-center justify-between mt-1 pt-3 border-t border-slate-50">
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+                                        <MessageSquare className="h-3 w-3" />
+                                        {idea.comments_count || 0}
+                                      </div>
+                                      <div className="h-1 w-1 rounded-full bg-slate-200" />
+                                      <span className="text-[10px] font-bold text-emerald-600">
+                                        {idea.votes_count || 0} Votes
+                                      </span>
+                                    </div>
+                                    <Avatar className="h-6 w-6 border border-white shadow-sm ring-1 ring-slate-100">
+                                      <AvatarFallback className="text-[8px] font-black bg-slate-100 text-slate-500">
+                                        {getInitials(idea.author || 'U')}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+
+                {stageIdeas.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-10 opacity-30 grayscale italic text-[10px] text-slate-400 pointer-events-none">
+                    <GripVertical className="h-5 w-5 mb-2" />
+                    No items in this stage
                   </div>
                 )}
-              </Droppable>
+              </Card>
+            );
+          })}
+        </div>
+      </DragDropContext>
 
-              {stageIdeas.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-10 opacity-30 grayscale italic text-[10px] text-slate-400 pointer-events-none">
-                   <GripVertical className="h-5 w-5 mb-2" />
-                   No items in this stage
-                </div>
-              )}
-            </Card>
-          );
-        })}
-      </div>
-    </DragDropContext>
+      <ConfirmationModal
+        isOpen={!!ideaToDelete}
+        onClose={() => setIdeaToDelete(null)}
+        onConfirm={() => {
+          if (ideaToDelete) {
+            deleteMutation.mutate(ideaToDelete);
+            setIdeaToDelete(null);
+          }
+        }}
+        title="Delete Idea?"
+        message="This action will permanently delete this idea and all associated data. This action cannot be undone."
+        confirmText="Delete Idea"
+        type="danger"
+      />
+    </>
   );
 };
 

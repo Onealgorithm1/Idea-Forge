@@ -12,10 +12,13 @@ export const createUser = async (req: Request, res: Response) => {
   }
 
   try {
-    // 1. Check license limit
-    const tenant = await query('SELECT max_users FROM tenants WHERE id = $1', [tenantId]);
+    // 1. Check license limit and organization details
+    const tenant = await query('SELECT name, slug, max_users FROM tenants WHERE id = $1', [tenantId]);
     if (tenant.rows.length === 0) return res.status(404).json({ message: 'Organization not found' });
     
+    const orgName = tenant.rows[0].name || 'your organization';
+    const orgSlug = tenant.rows[0].slug || 'default';
+
     const currentUsers = await query('SELECT COUNT(*) FROM users WHERE tenant_id = $1', [tenantId]);
     const maxUsers = tenant.rows[0].max_users || 5;
 
@@ -37,25 +40,23 @@ export const createUser = async (req: Request, res: Response) => {
       [name, email, hashedPassword, tenantId]
     );
 
-    // 4. Send Email
-    const tenantInfo = (await query('SELECT name, slug FROM tenants WHERE id = $1', [tenantId])).rows[0];
-    const orgName = tenantInfo?.name || 'your organization';
-    const orgSlug = tenantInfo?.slug || 'default';
-    
-    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/${orgSlug}/login`;
-    
-    const emailSubject = `Welcome to ${orgName} on IdeaForge`;
-    const emailText = `Hello ${name},\n\nYou have been added to ${orgName} on the IdeaForge platform.\n\nOrganization: ${orgName}\nLogin URL: ${loginUrl}\nEmail: ${email}\nPassword: ${password}\n\nPlease change your password after logging in.`;
-    
-    // Send Email asynchronously (don't block the response)
-    sendEmail(email, emailSubject, emailText).catch(err => {
-      console.error('Background email sending error:', err);
-    });
-
+    // 4. Send Response Immediately
     res.status(201).json({
       message: 'User created successfully and invitation sent',
       user: newUser.rows[0]
     });
+
+    // 5. Send Email in Background
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/${orgSlug}/login`;
+    const emailSubject = `Welcome to ${orgName} on IdeaForge`;
+    const emailText = `Hello ${name},\n\nYou have been added to ${orgName} on the IdeaForge platform.\n\nOrganization: ${orgName}\nLogin URL: ${loginUrl}\nEmail: ${email}\nPassword: ${password}\n\nPlease change your password after logging in.`;
+    
+    try {
+      console.log(`[Background] Sending welcome email to ${email} for tenant ${orgSlug}...`);
+      await sendEmail(email, emailSubject, emailText);
+    } catch (err) {
+      console.error('[Background] Email sending failed in createUser:', err);
+    }
   } catch (error) {
     console.error('Create user error:', error);
     res.status(500).json({ message: 'Server error' });

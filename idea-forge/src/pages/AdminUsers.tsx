@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { Trash2, Shield, User, Loader2, Key, Lock, UserPlus, Plus, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import ConfirmationModal from "@/components/ConfirmationModal";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,7 @@ const AdminUsers = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [newPassword, setNewPassword] = useState("");
   const [createForm, setCreateForm] = useState({ name: "", email: "", password: "" });
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -108,8 +110,13 @@ const AdminUsers = () => {
   };
 
   const handleDeleteUser = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
-      deleteUserMutation.mutate(id);
+    setUserToDelete(id);
+  };
+
+  const confirmDeleteUser = () => {
+    if (userToDelete) {
+      deleteUserMutation.mutate(userToDelete);
+      setUserToDelete(null);
     }
   };
 
@@ -375,6 +382,16 @@ const AdminUsers = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <ConfirmationModal
+        isOpen={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
+        onConfirm={confirmDeleteUser}
+        title="Delete User?"
+        message="This action will permanently delete this user and all associated data. This action cannot be undone."
+        confirmText="Delete User"
+        type="danger"
+      />
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Plus, X, Lightbulb } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +18,12 @@ export default function FloatingSubmitIdea() {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
 
-  if (!user) return null;
+  const location = useLocation();
+
+  const hiddenPaths = ["/submit-idea", "/admin", "/profile", "/login", "/super-admin", "/register-workspace"];
+  const isHidden = hiddenPaths.some(path => location.pathname.includes(path));
+
+  if (!user || isHidden) return null;
 
   return (
     <div className="fixed bottom-8 right-8 z-50">

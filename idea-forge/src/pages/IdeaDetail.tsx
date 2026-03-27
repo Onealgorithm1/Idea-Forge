@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import VotingSystem from "@/components/VotingSystem";
+import ConfirmationModal from "@/components/ConfirmationModal";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -138,6 +139,12 @@ const IdeaDetail = () => {
   const [editDescription, setEditDescription] = useState("");
   const [editIdeaSpace, setEditIdeaSpace] = useState("");
   const [newComment, setNewComment] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentContent, setEditingCommentContent] = useState("");
+  
+  // Custom Confirmation States
+  const [isDeleteIdeaModalOpen, setIsDeleteIdeaModalOpen] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
   const { data: ideaSpaces = [] } = useQuery({
     queryKey: ["idea-spaces"],
@@ -157,6 +164,28 @@ const IdeaDetail = () => {
       toast.success("Comment added");
     },
     onError: (error: any) => toast.error(error.message || "Failed to add comment"),
+  });
+
+  const editCommentMutation = useMutation({
+    mutationFn: ({ commentId, content }: { commentId: string, content: string }) =>
+      api.patch(`/ideas/comments/${commentId}`, { content }, token!),
+    onSuccess: () => {
+      setEditingCommentId(null);
+      queryClient.invalidateQueries({ queryKey: ["comments", id] });
+      toast.success("Comment updated");
+    },
+    onError: (error: any) => toast.error(error.message || "Failed to update comment"),
+  });
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: (commentId: string) =>
+      api.delete(`/ideas/comments/${commentId}`, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", id] });
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      toast.success("Comment deleted");
+    },
+    onError: (error: any) => toast.error(error.message || "Failed to delete comment"),
   });
 
   const editMutation = useMutation({
@@ -205,8 +234,21 @@ const IdeaDetail = () => {
   });
 
   const isAuthor = idea?.author_id === user?.id;
-  const canEdit = isAuthor || user?.role === 'admin';
+  const isAdmin = user?.role === 'admin';
+  const canEdit = isAuthor || isAdmin;
   const canChangeStatus = ['admin', 'reviewer'].includes(user?.role ?? '');
+
+  // Edit Locks
+  const isInDevelopment = idea?.status === 'In Development';
+  const oneDay = 24 * 60 * 60 * 1000;
+  const isOlderThan24h = idea ? (Date.now() - new Date(idea.created_at).getTime()) > oneDay : false;
+  const isEditLocked = isInDevelopment || (isOlderThan24h && !isAdmin);
+
+  const getLockReason = () => {
+    if (isInDevelopment) return "Ideas in Development stage cannot be edited";
+    if (isOlderThan24h && !isAdmin) return "Ideas cannot be edited after 24 hours of creation";
+    return "";
+  };
 
   const startEdit = () => {
     setEditTitle(idea?.title || "");
@@ -363,7 +405,18 @@ const IdeaDetail = () => {
                 </Button>
 
                 {canEdit && !isEditing && (
-                  <Button variant="outline" size="sm" className="gap-2" onClick={startEdit}>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className={cn("gap-2", isEditLocked && "opacity-50 cursor-not-allowed")} 
+                    onClick={() => {
+                      if (isEditLocked) {
+                        toast.error(getLockReason());
+                        return;
+                      }
+                      startEdit();
+                    }}
+                  >
                     <Pencil className="h-4 w-4" />
                     Edit
                   </Button>
@@ -375,11 +428,7 @@ const IdeaDetail = () => {
                     size="sm" 
                     className="gap-2 text-destructive hover:text-white hover:bg-destructive transition-all" 
                     disabled={deleteMutation.isPending}
-                    onClick={() => {
-                      if (window.confirm("Are you sure you want to delete this idea? This action cannot be undone.")) {
-                        deleteMutation.mutate();
-                      }
-                    }}
+                    onClick={() => setIsDeleteIdeaModalOpen(true)}
                   >
                     {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                     Delete
@@ -461,15 +510,69 @@ const IdeaDetail = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     key={c.id}
-                    className="bg-background border rounded-lg p-4 shadow-sm"
+                    className="bg-background border rounded-lg p-4 shadow-sm group"
                   >
                     <div className="flex justify-between items-center mb-2">
-                      <span className="font-semibold text-sm">{c.author}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(c.created_at), "MMM d, yyyy HH:mm")}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm">{c.author}</span>
+                        {c.is_edited && <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded italic">Edited</span>}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-muted-foreground">
+                          {format(new Date(c.created_at), "MMM d, HH:mm")}
+                        </span>
+                        
+                        {(c.user_id === user?.id || isAdmin) && (
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => {
+                                setEditingCommentId(c.id);
+                                setEditingCommentContent(c.content);
+                              }}
+                              className="p-1 hover:text-primary transition-colors"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                            <button 
+                              onClick={() => setCommentToDelete(c.id)}
+                              className="p-1 hover:text-red-500 transition-colors"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-sm leading-relaxed">{c.content}</p>
+
+                    {editingCommentId === c.id ? (
+                      <div className="space-y-2 mt-2">
+                        <Textarea 
+                          value={editingCommentContent}
+                          onChange={(e) => setEditingCommentContent(e.target.value)}
+                          className="min-h-[80px] text-sm"
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 text-xs" 
+                            onClick={() => setEditingCommentId(null)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            className="h-8 text-xs" 
+                            onClick={() => editCommentMutation.mutate({ commentId: c.id, content: editingCommentContent })}
+                            disabled={editCommentMutation.isPending}
+                          >
+                            {editCommentMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Update"}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm leading-relaxed">{c.content}</p>
+                    )}
                   </motion.div>
                 ))}
                 {comments.length === 0 && (
@@ -482,6 +585,26 @@ const IdeaDetail = () => {
           </motion.div>
         </main>
       </div>
+
+      <ConfirmationModal 
+        isOpen={isDeleteIdeaModalOpen}
+        onClose={() => setIsDeleteIdeaModalOpen(false)}
+        onConfirm={() => deleteMutation.mutate()}
+        title="Delete Idea?"
+        message="This action will permanently delete this idea and all associated data. This cannot be undone."
+        confirmText="Delete Idea"
+        type="danger"
+      />
+
+      <ConfirmationModal 
+        isOpen={!!commentToDelete}
+        onClose={() => setCommentToDelete(null)}
+        onConfirm={() => commentToDelete && deleteCommentMutation.mutate(commentToDelete)}
+        title="Delete Comment?"
+        message="Are you sure you want to delete this comment?"
+        confirmText="Delete"
+        type="danger"
+      />
     </div>
   );
 };

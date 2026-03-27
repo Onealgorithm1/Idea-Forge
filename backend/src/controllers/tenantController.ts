@@ -233,21 +233,24 @@ export const registerWorkspace = async (req: Request, res: Response) => {
       [tenantId, userResult.rows[0].id, 'New Workspace Registration', `New organization registration request: ${orgName} (${slug}). Submitted by: ${adminName} (${adminEmail}, Phone: ${adminPhone})`, 'open']
     );
 
-    // Send emails
-    // Send Email asynchronously
-    if (supportEmail) {
-      const subject = `[Action Required] New Workspace Registration: ${orgName}`;
-      const text = `A new organization registration request has been submitted.\n\nOrg Name: ${orgName}\nSlug: ${slug}\nAdmin: ${adminName} (${adminEmail})\nPhone: ${adminPhone}\n\nPlease log in to the Super Admin dashboard to review and approve this request.`;
-      
-      sendEmail(supportEmail, subject, text).catch(err => {
-        console.error('Background email sending error (registerWorkspace):', err);
-      });
-    }
-
+    // 6. Send Response Immediately
     res.status(201).json({ 
       message: 'Registration submitted successfully. Please wait for Super Admin approval.',
       tenant: { name: orgName, slug }
     });
+
+    // 7. Send Email in Background
+    if (supportEmail) {
+      const subject = `[Action Required] New Workspace Registration: ${orgName}`;
+      const text = `A new organization registration request has been submitted.\n\nOrg Name: ${orgName}\nSlug: ${slug}\nAdmin: ${adminName} (${adminEmail})\nPhone: ${adminPhone}\n\nPlease log in to the Super Admin dashboard to review and approve this request.`;
+      
+      try {
+        console.log(`[Background] Sending workspace registration notification to ${supportEmail}...`);
+        await sendEmail(supportEmail, subject, text);
+      } catch (err) {
+        console.error('[Background] Email sending failed in registerWorkspace:', err);
+      }
+    }
 
   } catch (error) {
     console.error('Register workspace error:', error);
