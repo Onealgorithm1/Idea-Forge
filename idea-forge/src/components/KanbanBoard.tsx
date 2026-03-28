@@ -343,7 +343,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                       </div>
                     </div>
                     <div className="flex flex-col gap-1.5 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-                      {useAuth().user?.role === 'admin' && (
+                      {user?.role === 'admin' && (
                         <>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleStatusChange(item.id, item.status === 'Shipped' ? 'In Development' : 'In Progress'); }}

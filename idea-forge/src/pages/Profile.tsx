@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   ChevronLeft,
   MessageSquare,
@@ -323,6 +323,7 @@ const Profile = () => {
   const { user, token } = useAuth();
   const { tenant } = useTenant();
   const tenantSlug = tenant?.slug || "default";
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
@@ -454,6 +455,10 @@ const Profile = () => {
     idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     idea.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const activeTab =
+    user?.role === "admin" && searchParams.get("tab") === "organization"
+      ? "organization"
+      : "my-account";
 
   /* ─── Loading skeleton ─── */
   if (loadingProfile || loadingIdeas || loadingOrg) {
@@ -646,7 +651,15 @@ const Profile = () => {
             </motion.div>
 
             {/* ── Tabs ─────────────────────────────── */}
-            <Tabs defaultValue="my-account" className="space-y-6">
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) => {
+                const nextParams = new URLSearchParams(searchParams);
+                nextParams.set("tab", value === "organization" ? "organization" : "my-account");
+                setSearchParams(nextParams);
+              }}
+              className="space-y-6"
+            >
               <div className="flex justify-center sm:justify-start">
                 <TabsList className="bg-white/50 backdrop-blur-md border border-slate-200 shadow-sm p-1 rounded-2xl h-auto">
                   <TabsTrigger value="my-account" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary font-bold transition-all text-sm">

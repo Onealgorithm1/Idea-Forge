@@ -1,4 +1,4 @@
-import { Search, Zap, LogOut } from "lucide-react";
+import { Search, Zap, Plus, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -7,11 +7,12 @@ import { Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 
 interface NavbarProps {
+  onNewIdea: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
 }
 
-const Navbar = ({ searchQuery, onSearchChange }: NavbarProps) => {
+const Navbar = ({ onNewIdea, searchQuery, onSearchChange }: NavbarProps) => {
   const { user, logout } = useAuth();
 
   return (
@@ -33,6 +34,11 @@ const Navbar = ({ searchQuery, onSearchChange }: NavbarProps) => {
         </div>
 
         <div className="ml-auto flex items-center gap-3">
+          <Button size="sm" onClick={onNewIdea} className="gap-1.5">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">New Idea</span>
+          </Button>
+
           {user ? (
             <div className="flex items-center gap-2">
               <span className="text-sm hidden sm:block font-medium">{user.name}</span>

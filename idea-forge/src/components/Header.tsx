@@ -1,4 +1,17 @@
-import { Bell, LogOut } from "lucide-react";
+import {
+  Activity,
+  Bell,
+  ChevronDown,
+  HelpCircle,
+  Layers,
+  LogOut,
+  Menu,
+  Settings,
+  ShieldCheck,
+  Tag,
+  UserCircle2,
+  Users,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,16 +24,24 @@ import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useTenant } from "@/contexts/TenantContext";
-import { Menu, X, ShieldCheck, Activity, Users, Settings as SettingsIcon, Tag } from "lucide-react";
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle, 
-  SheetTrigger 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { categories } from "./SidebarNav";
+import { SupportDialog } from "./SupportDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const { user, logout, token } = useAuth();
@@ -49,7 +70,6 @@ const Header = () => {
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      // Poll for notifications every 30 seconds
       const interval = setInterval(fetchNotifications, 30000);
       return () => clearInterval(interval);
     }
@@ -64,14 +84,12 @@ const Header = () => {
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
     <header className="sticky top-0 z-50 w-full bg-header text-header-foreground border-b border-white/5 shadow-lg">
       <div className="flex items-center justify-between px-4 md:px-6 h-16 max-w-[1600px] mx-auto w-full">
-        
         <div className="flex items-center gap-4">
-          {/* Mobile Menu Trigger */}
           <div className="md:hidden">
             <Sheet>
               <SheetTrigger asChild>
@@ -88,16 +106,15 @@ const Header = () => {
                 </SheetHeader>
                 <ScrollArea className="h-[calc(100vh-80px)] p-6">
                   <div className="space-y-8">
-                    {/* Main Nav */}
                     <div className="space-y-4">
                       <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2">Navigation</p>
                       <nav className="flex flex-col gap-2">
                         {tabs.map((tab) => {
                           const isActive = location.pathname === tab.path;
                           return (
-                            <Link 
-                              key={tab.name} 
-                              to={tab.path} 
+                            <Link
+                              key={tab.name}
+                              to={tab.path}
                               className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all ${
                                 isActive ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/60 hover:bg-white/5 hover:text-white"
                               }`}
@@ -109,8 +126,8 @@ const Header = () => {
                       </nav>
                     </div>
 
-                    {/* Categories section - only shown in mobile and if on Idea Board/Dashboard context */}
-                    {(location.pathname === getTenantPath(ROUTES.IDEA_BOARD, tenantSlug) || location.pathname === getTenantPath(ROUTES.DASHBOARD, tenantSlug)) && (
+                    {(location.pathname === getTenantPath(ROUTES.IDEA_BOARD, tenantSlug) ||
+                      location.pathname === getTenantPath(ROUTES.DASHBOARD, tenantSlug)) && (
                       <div className="space-y-4">
                         <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2 flex items-center gap-2">
                           <Tag className="h-3 w-3" /> Categories
@@ -120,14 +137,13 @@ const Header = () => {
                             const searchParams = new URLSearchParams(location.search);
                             const currentCat = searchParams.get("category") || "All";
                             const isActive = currentCat === cat.label;
-                            
                             const params = new URLSearchParams();
                             if (cat.label !== "All") params.set("category", cat.label);
-                            const path = `${getTenantPath(ROUTES.DASHBOARD, tenantSlug)}${params.toString() ? '?' + params.toString() : ''}`;
+                            const path = `${getTenantPath(ROUTES.DASHBOARD, tenantSlug)}${params.toString() ? "?" + params.toString() : ""}`;
 
                             return (
-                              <Link 
-                                key={cat.label} 
+                              <Link
+                                key={cat.label}
                                 to={path}
                                 className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${
                                   isActive ? "bg-white text-header border-white" : "bg-white/5 text-white/70 border-white/10 hover:border-white/20"
@@ -141,10 +157,9 @@ const Header = () => {
                       </div>
                     )}
 
-                    {/* Admin section */}
-                    {user?.role === 'admin' && (
+                    {user?.role === "admin" && (
                       <div className="space-y-4">
-                         <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2 flex items-center gap-2">
+                        <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2 flex items-center gap-2">
                           <ShieldCheck className="h-3 w-3" /> Administration
                         </p>
                         <div className="space-y-2">
@@ -161,19 +176,27 @@ const Header = () => {
                       </div>
                     )}
 
-                    {/* Account section */}
+                    <div className="space-y-2">
+                      <SupportDialog>
+                        <button className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-bold bg-white/5 text-white/80 hover:bg-white/10 transition-all border border-white/5">
+                          <HelpCircle className="h-5 w-5 text-primary" />
+                          Help & Support
+                        </button>
+                      </SupportDialog>
+                    </div>
+
                     <div className="space-y-4">
                       <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2">Account</p>
                       <div className="space-y-2">
                         {user ? (
                           <>
-                            <Link 
+                            <Link
                               to={getTenantPath(ROUTES.PROFILE, tenantSlug)}
                               className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all"
                             >
                               Profile Settings
                             </Link>
-                            <button 
+                            <button
                               onClick={logout}
                               className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-red-400 hover:bg-red-500/10 transition-all text-left"
                             >
@@ -181,7 +204,7 @@ const Header = () => {
                             </button>
                           </>
                         ) : (
-                          <Link 
+                          <Link
                             to={getTenantPath(ROUTES.LOGIN, tenantSlug)}
                             className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold bg-primary text-white text-center justify-center"
                           >
@@ -217,16 +240,16 @@ const Header = () => {
           {tabs.map((tab) => {
             const isActive = location.pathname === tab.path;
             return (
-              <Link 
-                key={tab.name} 
-                to={tab.path} 
+              <Link
+                key={tab.name}
+                to={tab.path}
                 className={`text-sm font-bold transition-all relative h-full flex items-center group ${
                   isActive ? "text-white" : "text-white/50 hover:text-white/90"
                 }`}
               >
                 {tab.name}
                 {isActive && (
-                  <motion.div 
+                  <motion.div
                     layoutId="nav-underline"
                     className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
@@ -257,55 +280,107 @@ const Header = () => {
               <div className="max-h-80 overflow-y-auto">
                 {notifications.length > 0 ? (
                   notifications.map((n) => (
-                    <div 
-                      key={n.id} 
+                    <div
+                      key={n.id}
                       onClick={() => markAsRead(n.id)}
-                      className={`px-4 py-3 border-b border-white/5 last:border-0 hover:bg-white/5 cursor-pointer transition-colors ${!n.is_read ? 'bg-primary/5' : ''}`}
+                      className={`px-4 py-3 border-b border-white/5 last:border-0 hover:bg-white/5 cursor-pointer transition-colors ${!n.is_read ? "bg-primary/5" : ""}`}
                     >
                       <p className="text-sm leading-tight mb-1 font-medium">{n.message}</p>
-                      <span className="text-[10px] opacity-50">
-                        {new Date(n.created_at).toLocaleString()}
-                      </span>
+                      <span className="text-[10px] opacity-50">{new Date(n.created_at).toLocaleString()}</span>
                     </div>
                   ))
                 ) : (
-                  <div className="p-6 text-center text-sm opacity-40 italic">
-                    No notifications yet.
-                  </div>
+                  <div className="p-6 text-center text-sm opacity-40 italic">No notifications yet.</div>
                 )}
               </div>
             </PopoverContent>
           </Popover>
 
+          <SupportDialog>
+            <button className="p-1.5 rounded-full hover:bg-white/10 transition-colors" title="Contact Support">
+              <HelpCircle className="h-4 w-4" />
+            </button>
+          </SupportDialog>
+
           {user ? (
             <div className="flex items-center gap-2 ml-1 border-l border-white/10 pl-3">
-              {/* Profile link — navigates directly to profile page */}
-              <Link
-                to={getTenantPath(ROUTES.PROFILE, tenantSlug)}
-                className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-white/10 transition-all group"
-              >
-                <div className="relative">
-                  <Avatar className="h-8 w-8 border-2 border-white/10 group-hover:border-primary/50 transition-colors">
-                    <AvatarFallback className="bg-primary text-white text-[10px] font-bold">
-                      {user.name.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success border-2 border-header rounded-full" />
-                </div>
-                <div className="hidden sm:flex flex-col items-start leading-none gap-1">
-                  <span className="text-sm font-bold tracking-tight">{user.name}</span>
-                  <span className="text-[10px] opacity-50 uppercase font-bold tracking-wider">{user.role}</span>
-                </div>
-              </Link>
-
-              {/* Logout button */}
-              <button
-                onClick={logout}
-                title="Log out"
-                className="p-1.5 rounded-lg hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-all"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-white/10 transition-all group">
+                    <div className="relative">
+                      <Avatar className="h-8 w-8 border-2 border-white/10 group-hover:border-primary/50 transition-colors">
+                        <AvatarFallback className="bg-primary text-white text-[10px] font-bold">
+                          {user.name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success border-2 border-header rounded-full" />
+                    </div>
+                    <div className="hidden sm:flex flex-col items-start leading-none gap-1">
+                      <span className="text-sm font-bold tracking-tight">{user.name}</span>
+                      <span className="text-[10px] opacity-50 uppercase font-bold tracking-wider">{user.role}</span>
+                    </div>
+                    <ChevronDown className="hidden sm:block h-4 w-4 text-white/40 group-hover:text-white/70 transition-colors" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-64 border border-sky-300/30 bg-gradient-to-b from-sky-700 via-sky-800 to-blue-950 text-white backdrop-blur-xl shadow-[0_20px_60px_-20px_rgba(14,165,233,0.7)]"
+                >
+                  {user.role === "admin" ? (
+                    <>
+                      <DropdownMenuItem asChild className="cursor-pointer rounded-lg hover:!bg-white/15 focus:!bg-white/15 focus:!text-white">
+                        <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug)}>
+                          <Activity className="mr-2 h-4 w-4" />
+                          Admin Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild className="cursor-pointer rounded-lg hover:!bg-white/15 focus:!bg-white/15 focus:!text-white">
+                        <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)}>
+                          <Users className="mr-2 h-4 w-4" />
+                          Manage Users
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild className="cursor-pointer rounded-lg hover:!bg-white/15 focus:!bg-white/15 focus:!text-white">
+                        <Link to={`${getTenantPath(ROUTES.PROFILE, tenantSlug)}?tab=my-account`}>
+                          <UserCircle2 className="mr-2 h-4 w-4" />
+                          User Settings
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-white/15" />
+                      <DropdownMenuLabel className="px-2 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-sky-100/85">
+                        Organization Settings
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem asChild className="cursor-pointer rounded-lg hover:!bg-white/15 focus:!bg-white/15 focus:!text-white">
+                        <Link to={`${getTenantPath(ROUTES.PROFILE, tenantSlug)}?tab=organization`}>
+                          <Settings className="mr-2 h-4 w-4" />
+                          Organization Profile
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild className="cursor-pointer rounded-lg hover:!bg-white/15 focus:!bg-white/15 focus:!text-white">
+                        <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug)}>
+                          <Layers className="mr-2 h-4 w-4" />
+                          Organization Idea Spaces
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <DropdownMenuItem asChild className="cursor-pointer rounded-lg hover:!bg-white/15 focus:!bg-white/15 focus:!text-white">
+                      <Link to={`${getTenantPath(ROUTES.PROFILE, tenantSlug)}?tab=my-account`}>
+                        <UserCircle2 className="mr-2 h-4 w-4" />
+                        User Settings
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator className="bg-white/15" />
+                  <DropdownMenuItem
+                    onClick={logout}
+                    className="cursor-pointer rounded-lg text-red-200 hover:!bg-red-500/20 hover:!text-white focus:!bg-red-500/20 focus:!text-white"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ) : (
             <div className="flex items-center gap-2 ml-2">

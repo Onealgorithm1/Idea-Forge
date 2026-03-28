@@ -1,7 +1,9 @@
-import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, ShieldCheck, Activity, Building, type LucideIcon } from "lucide-react";
+import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, ShieldCheck, Activity, Building, type LucideIcon } from "lucide-react";
 import { Link, useNavigate, useLocation, useSearchParams, useParams } from "react-router-dom";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenant } from "@/contexts/TenantContext";
+import { Button } from "@/components/ui/button";
 
 interface SidebarItem {
   icon: LucideIcon;
@@ -84,65 +86,64 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
   };
 
   return (
-    <>
-      <div className="hidden md:block w-[260px] shrink-0" aria-hidden="true" />
-      <aside className="hidden md:flex fixed top-16 left-[max(0px,calc((100vw-1600px)/2))] z-30 w-[260px] h-[calc(100vh-4rem)] flex-col gap-2 border-r border-slate-200/60 bg-white/40 pt-6 pb-4 backdrop-blur-xl shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] overflow-hidden">
-        {user?.role === 'admin' && (
-          <div className="mb-4 space-y-1">
-            <div className="px-5 mb-3">
-              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-                <ShieldCheck className="h-3 w-3" />
-                Administration
-              </div>
-            </div>
-            <div className="space-y-0.5 px-2">
-              <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug || "default")} className="block w-full">
-                <SidebarButton
-                  icon={Activity}
-                  label="Admin Dashboard"
-                  active={pathname === getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug || "default")}
-                />
-              </Link>
-              <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default")} className="block w-full">
-                <SidebarButton
-                  icon={Users}
-                  label="Manage Users"
-                  active={pathname === getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default")}
-                />
-              </Link>
-              <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug || "default")} className="block w-full">
-                <SidebarButton
-                  icon={Building}
-                  label="Organization Settings"
-                  active={pathname === getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug || "default")}
-                />
-              </Link>
-            </div>
-          </div>
-        )}
+    <aside className="sticky top-0 h-screen w-[260px] shrink-0 border-r border-slate-200/60 hidden md:flex flex-col pt-6 pb-4 gap-2 bg-white/40 backdrop-blur-xl shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20">
 
-        <div className="flex-1 flex flex-col min-h-0 space-y-2 mt-2 overflow-hidden">
-          <div className="px-5 mb-2">
+      {user?.role === 'admin' && (
+        <div className="mb-4 space-y-1">
+          <div className="px-5 mb-3">
             <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-              <Tag className="h-3 w-3" />
-              Categories
+              <ShieldCheck className="h-3 w-3" />
+              Administration
             </div>
           </div>
-
-          <div className="flex-1 space-y-0.5 overflow-y-auto custom-scrollbar pb-4 px-2">
-            {categories.map((cat) => (
+          <div className="space-y-0.5 px-2">
+            <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug || "default")} className="block w-full">
               <SidebarButton
-                key={cat.label}
-                icon={cat.icon}
-                label={cat.label}
-                active={selectedCategory === cat.label || (cat.label === "All" && !selectedCategory && pathname !== getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug || "default") && pathname !== getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default"))}
-                onClick={() => handleCategoryClick(cat.label)}
+                icon={Activity}
+                label="Admin Dashboard"
+                active={pathname === getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug || "default")}
               />
-            ))}
+            </Link>
+            <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default")} className="block w-full">
+              <SidebarButton
+                icon={Users}
+                label="Manage Users"
+                active={pathname === getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default")}
+              />
+            </Link>
+            <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug || "default")} className="block w-full">
+              <SidebarButton
+                icon={Building}
+                label="Organization Settings"
+                active={pathname === getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug || "default")}
+              />
+            </Link>
           </div>
         </div>
-      </aside>
-    </>
+      )}
+
+      <div className="flex-1 flex flex-col min-h-0 space-y-2 mt-2 overflow-hidden">
+        <div className="px-5 mb-2">
+          <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+            <Tag className="h-3 w-3" />
+            Categories
+          </div>
+        </div>
+
+        <div className="flex-1 space-y-0.5 overflow-y-auto custom-scrollbar pb-4 px-2">
+          {categories.map((cat) => (
+            <SidebarButton
+              key={cat.label}
+              icon={cat.icon}
+              label={cat.label}
+              active={selectedCategory === cat.label || (cat.label === "All" && !selectedCategory && pathname !== getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug || "default") && pathname !== getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default"))}
+              onClick={() => handleCategoryClick(cat.label)}
+            />
+          ))}
+        </div>
+      </div>
+
+    </aside>
   );
 };
 

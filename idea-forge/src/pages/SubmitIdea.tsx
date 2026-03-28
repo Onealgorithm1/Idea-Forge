@@ -6,7 +6,7 @@ const SubmitIdea = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         <SidebarNav />
         <main
           className="flex-1 overflow-y-auto p-6"
