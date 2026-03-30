@@ -30,7 +30,7 @@ export default function FloatingSubmitIdea() {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
           <motion.button
-            className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl hover:bg-primary/90 focus:outline-none"
+            className="group relative flex h-14 items-center justify-center gap-2 rounded-full bg-primary px-6 text-primary-foreground shadow-2xl hover:bg-primary/90 focus:outline-none"
             animate={{
               y: [0, -10, 0],
             }}
@@ -39,14 +39,15 @@ export default function FloatingSubmitIdea() {
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             <Plus className="h-6 w-6 transition-transform group-hover:rotate-90" />
+            <span className="font-bold text-sm tracking-wide">Submit Idea</span>
             
-            {/* Tooltip-like label */}
+            {/* Tooltip-like label (optional, can keep or remove since text is now inside) */}
             <span className="absolute right-full mr-4 whitespace-nowrap rounded-lg bg-header px-3 py-1.5 text-xs font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 shadow-xl border border-white/10">
-              Submit New Idea
+              Post Your Innovation
             </span>
           </motion.button>
         </DialogTrigger>

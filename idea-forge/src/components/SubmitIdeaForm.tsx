@@ -226,7 +226,7 @@ const SubmitIdeaForm = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-6 w-full max-w-6xl mx-auto">
+    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto">
       {/* Form card */}
       <div className="flex-1 bg-white/95 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200 p-8">
         <div className="max-w-2xl mx-auto w-full">
@@ -240,6 +240,7 @@ const SubmitIdeaForm = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col space-y-6">
+            {/* ... form fields ... */}
             {/* Title */}
             <div className="space-y-1.5">
               <Label htmlFor="title" className="text-gray-500 font-normal">
@@ -374,7 +375,7 @@ const SubmitIdeaForm = () => {
         </div>
       </div>
 
-      <SimilarIdeasPanel ideas={mappedRecentIdeas} tenantSlug={tenantSlug} />
+      {/* <SimilarIdeasPanel ideas={mappedRecentIdeas} tenantSlug={tenantSlug} /> */}
     </div>
   );
 };
