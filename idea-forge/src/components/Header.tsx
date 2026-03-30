@@ -324,60 +324,89 @@ const Header = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-64 border border-sky-300/30 bg-gradient-to-b from-sky-700 via-sky-800 to-blue-950 text-white backdrop-blur-xl shadow-[0_20px_60px_-20px_rgba(14,165,233,0.7)]"
+                  className="w-72 rounded-2xl border border-white/10 bg-header/95 p-1.5 text-white backdrop-blur-2xl shadow-[0_24px_60px_-24px_rgba(15,23,42,0.7)]"
                 >
                   {user.role === "admin" ? (
                     <>
-                      <DropdownMenuItem asChild className="cursor-pointer rounded-lg hover:!bg-white/15 focus:!bg-white/15 focus:!text-white">
+                      <DropdownMenuLabel className="px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/45">
+                        Admin Controls
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/8 hover:!text-white focus:!bg-white/8 focus:!text-white">
                         <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug)}>
-                          <Activity className="mr-2 h-4 w-4" />
-                          Admin Dashboard
+                          <Activity className="mr-3 h-4 w-4 text-primary" />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold leading-tight">Admin Dashboard</span>
+                            <span className="text-[10px] leading-tight text-white/45">Review platform activity and approvals</span>
+                          </div>
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="cursor-pointer rounded-lg hover:!bg-white/15 focus:!bg-white/15 focus:!text-white">
+                      <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/8 hover:!text-white focus:!bg-white/8 focus:!text-white">
                         <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)}>
-                          <Users className="mr-2 h-4 w-4" />
-                          Manage Users
+                          <Users className="mr-3 h-4 w-4 text-primary" />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold leading-tight">Manage Users</span>
+                            <span className="text-[10px] leading-tight text-white/45">Handle roles, access, and member activity</span>
+                          </div>
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="cursor-pointer rounded-lg hover:!bg-white/15 focus:!bg-white/15 focus:!text-white">
+                      <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/8 hover:!text-white focus:!bg-white/8 focus:!text-white">
                         <Link to={`${getTenantPath(ROUTES.PROFILE, tenantSlug)}?tab=my-account`}>
-                          <UserCircle2 className="mr-2 h-4 w-4" />
-                          User Settings
+                          <UserCircle2 className="mr-3 h-4 w-4 text-primary" />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold leading-tight">User Settings</span>
+                            <span className="text-[10px] leading-tight text-white/45">Update your account and preferences</span>
+                          </div>
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-white/15" />
-                      <DropdownMenuLabel className="px-2 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-sky-100/85">
+                      <DropdownMenuSeparator className="my-1.5 bg-white/10" />
+                      <DropdownMenuLabel className="px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/45">
                         Organization Settings
                       </DropdownMenuLabel>
-                      <DropdownMenuItem asChild className="cursor-pointer rounded-lg hover:!bg-white/15 focus:!bg-white/15 focus:!text-white">
+                      <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/8 hover:!text-white focus:!bg-white/8 focus:!text-white">
                         <Link to={`${getTenantPath(ROUTES.PROFILE, tenantSlug)}?tab=organization`}>
-                          <Settings className="mr-2 h-4 w-4" />
-                          Organization Profile
+                          <Settings className="mr-3 h-4 w-4 text-info" />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold leading-tight">Organization Profile</span>
+                            <span className="text-[10px] leading-tight text-white/45">Edit brand, details, and workspace identity</span>
+                          </div>
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="cursor-pointer rounded-lg hover:!bg-white/15 focus:!bg-white/15 focus:!text-white">
+                      <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/8 hover:!text-white focus:!bg-white/8 focus:!text-white">
                         <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug)}>
-                          <Layers className="mr-2 h-4 w-4" />
-                          Organization Idea Spaces
+                          <Layers className="mr-3 h-4 w-4 text-info" />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold leading-tight">Organization Idea Spaces</span>
+                            <span className="text-[10px] leading-tight text-white/45">Manage spaces, structure, and admin options</span>
+                          </div>
                         </Link>
                       </DropdownMenuItem>
                     </>
                   ) : (
-                    <DropdownMenuItem asChild className="cursor-pointer rounded-lg hover:!bg-white/15 focus:!bg-white/15 focus:!text-white">
-                      <Link to={`${getTenantPath(ROUTES.PROFILE, tenantSlug)}?tab=my-account`}>
-                        <UserCircle2 className="mr-2 h-4 w-4" />
-                        User Settings
-                      </Link>
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuLabel className="px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/45">
+                        Account
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/8 hover:!text-white focus:!bg-white/8 focus:!text-white">
+                        <Link to={`${getTenantPath(ROUTES.PROFILE, tenantSlug)}?tab=my-account`}>
+                          <UserCircle2 className="mr-3 h-4 w-4 text-primary" />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold leading-tight">User Settings</span>
+                            <span className="text-[10px] leading-tight text-white/45">Update your account and preferences</span>
+                          </div>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
                   )}
-                  <DropdownMenuSeparator className="bg-white/15" />
+                  <DropdownMenuSeparator className="my-1.5 bg-white/10" />
                   <DropdownMenuItem
                     onClick={logout}
-                    className="cursor-pointer rounded-lg text-red-200 hover:!bg-red-500/20 hover:!text-white focus:!bg-red-500/20 focus:!text-white"
+                    className="cursor-pointer rounded-xl px-3 py-2.5 text-red-200 transition-all hover:!bg-red-500/15 hover:!text-white focus:!bg-red-500/15 focus:!text-white"
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
+                    <LogOut className="mr-3 h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold leading-tight">Logout</span>
+                      <span className="text-[10px] leading-tight text-red-200/70">Sign out of this workspace</span>
+                    </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
