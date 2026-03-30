@@ -26,9 +26,9 @@ export const createUser = async (req: Request, res: Response) => {
       return res.status(403).json({ message: `License limit reached (${maxUsers} users). Please contact support to upgrade.` });
     }
 
-    // 2. Check if user already exists
-    const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
-    if (existing.rows.length > 0) return res.status(409).json({ message: 'User with this email already exists' });
+    // 2. Check if user already exists in this tenant
+    const existing = await query('SELECT id FROM users WHERE email = $1 AND tenant_id = $2', [email, tenantId]);
+    if (existing.rows.length > 0) return res.status(409).json({ message: 'User with this email already exists in this organization' });
 
     // 3. Create user
     const salt = await bcrypt.genSalt(10);

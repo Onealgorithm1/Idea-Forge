@@ -140,7 +140,7 @@ const TenantDetail = () => {
           </div>
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" size="sm" className="text-white/40 hover:text-white hover:bg-white/5 font-bold">
-              <a href={`/${tenant.slug}`} target="_blank" rel="noopener noreferrer">
+              <a href={`/${tenant.slug.replace(/^\//, '')}`} target="_blank" rel="noopener noreferrer">
                 <Globe className="mr-2 h-4 w-4" /> View Platform
               </a>
             </Button>

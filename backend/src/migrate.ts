@@ -63,6 +63,9 @@ async function migrate() {
     await runStatement(client, `UPDATE users SET tenant_id = '00000000-0000-0000-0000-000000000001' WHERE tenant_id IS NULL`, 'Migrate: users → default tenant');
     await runStatement(client, `UPDATE users SET phone = 'N/A' WHERE phone IS NULL`, 'Migrate: users → set default phone');
 
+    await runStatement(client, `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key`, 'Drop: users_email_key');
+    await runStatement(client, `ALTER TABLE users ADD CONSTRAINT users_email_tenant_id_key UNIQUE (email, tenant_id)`, 'Add: unique email per tenant');
+
     // === TENANT_USERS ===
     await runStatement(client, `
       CREATE TABLE IF NOT EXISTS tenant_users (

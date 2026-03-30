@@ -23,7 +23,8 @@ export const getTenantPath = (path: string, slug?: string) => {
   if (!slug) return path;
   // Ensure path starts with / but strip it for concatenation
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-  return `/${slug}/${cleanPath}`;
+  const cleanSlug = slug.startsWith('/') ? slug.substring(1) : slug;
+  return `/${cleanSlug}/${cleanPath}`;
 };
 
 export const PLATFORM_STATUS_LABELS: Record<string, string> = {

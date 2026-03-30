@@ -31,6 +31,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const fetchTenant = async () => {
       // Skip tenant fetching for super-admin routes
       if (location.pathname.startsWith('/super-admin')) {
+        document.title = 'Super Admin | IdeaForge';
         setIsLoading(false);
         return;
       }
@@ -56,6 +57,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         console.log(`[TenantContext] Tenant data received:`, data);
         setTenant(data);
         setError(null);
+        document.title = `${data.name} | IdeaForge`;
         
         // Store in localStorage for api.ts to pick up
         localStorage.setItem('tenantId', data.id);

@@ -4,12 +4,13 @@
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     avatar_url TEXT,
     bio TEXT,
     role VARCHAR(50) DEFAULT 'user',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    -- Note: UNIQUE(email, tenant_id) constraint is added later in migrations
 );
 
 -- Categories table

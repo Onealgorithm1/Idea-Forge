@@ -364,7 +364,7 @@ const SuperAdminDashboard = () => {
             </div>
             <div className="space-y-1.5">
               <Label className="text-white/50 text-xs uppercase font-bold tracking-wider">URL Slug</Label>
-              <Input value={form.slug} onChange={(e) => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }))}
+              <Input value={form.slug} onChange={(e) => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, '-') }))}
                 placeholder="acme-corp" className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-primary/50 rounded-xl" />
               <p className="text-[11px] text-white/30">Used for login: ideaforge.io/{form.slug || "..."}</p>
             </div>

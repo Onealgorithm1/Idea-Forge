@@ -51,11 +51,13 @@ const Header = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
 
   const tabs = [
-    { name: "Dashboard", path: getTenantPath(ROUTES.DASHBOARD, tenantSlug) },
     { name: "Idea Board", path: getTenantPath(ROUTES.IDEA_BOARD, tenantSlug) },
     { name: "Roadmap", path: getTenantPath(ROUTES.ROADMAP, tenantSlug) },
-    { name: "Analytics", path: getTenantPath(ROUTES.ANALYTICS, tenantSlug) },
   ];
+  
+  if (user?.role === "admin" || user?.role === "reviewer" || user?.role === "super_admin") {
+    tabs.push({ name: "Analytics", path: getTenantPath(ROUTES.ANALYTICS, tenantSlug) });
+  }
 
   const fetchNotifications = async () => {
     if (!token) return;
@@ -126,8 +128,7 @@ const Header = () => {
                       </nav>
                     </div>
 
-                    {(location.pathname === getTenantPath(ROUTES.IDEA_BOARD, tenantSlug) ||
-                      location.pathname === getTenantPath(ROUTES.DASHBOARD, tenantSlug)) && (
+                    {(location.pathname === getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)) && (
                       <div className="space-y-4">
                         <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2 flex items-center gap-2">
                           <Tag className="h-3 w-3" /> Categories
@@ -139,7 +140,7 @@ const Header = () => {
                             const isActive = currentCat === cat.label;
                             const params = new URLSearchParams();
                             if (cat.label !== "All") params.set("category", cat.label);
-                            const path = `${getTenantPath(ROUTES.DASHBOARD, tenantSlug)}${params.toString() ? "?" + params.toString() : ""}`;
+                            const path = `${getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)}${params.toString() ? "?" + params.toString() : ""}`;
 
                             return (
                               <Link
@@ -219,7 +220,7 @@ const Header = () => {
             </Sheet>
           </div>
 
-          <Link to={getTenantPath(ROUTES.DASHBOARD, tenantSlug)} className="flex items-center gap-3 md:gap-3.5 hover:opacity-90 transition-all group">
+          <Link to={getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)} className="flex items-center gap-3 md:gap-3.5 hover:opacity-90 transition-all group">
             <div className="bg-primary/20 p-2 md:p-2.5 rounded-xl group-hover:bg-primary/30 transition-colors">
               <Logo imageClassName="h-7 w-7 md:h-10 md:w-10" />
             </div>

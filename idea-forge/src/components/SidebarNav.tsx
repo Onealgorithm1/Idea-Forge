@@ -81,7 +81,7 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
     } else {
       const params = new URLSearchParams();
       if (label !== "All") params.set("category", label);
-      navigate(`${getTenantPath(ROUTES.DASHBOARD, tenantSlug)}${params.toString() ? '?' + params.toString() : ''}`);
+      navigate(`${getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)}${params.toString() ? '?' + params.toString() : ''}`);
     }
   };
 
