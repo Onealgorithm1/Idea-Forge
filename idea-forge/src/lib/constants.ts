@@ -12,6 +12,7 @@ export const ROUTES = {
   SUBMIT_IDEA: "/submit-idea",
   LOGIN: "/login",
   SIGNUP: "/signup",
+  FORGOT_PASSWORD: "/forgot-password",
   IDEA_DETAIL: "/ideas/:id",
   PROFILE: "/profile",
   ADMIN_DASHBOARD: "/admin/dashboard",

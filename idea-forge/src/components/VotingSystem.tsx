@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowBigUp, ArrowBigDown } from 'lucide-react';
+import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -45,7 +45,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
           whileHover={{ scale: 1.15 }}
           whileTap={{ scale: 0.9 }}
         >
-          <ArrowBigUp className="h-4 w-4 fill-current opacity-70 group-hover:opacity-100" />
+          <ThumbsUp className="h-4 w-4 opacity-70 group-hover:opacity-100" />
         </motion.div>
       </Button>
 
@@ -82,7 +82,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
           whileHover={{ scale: 1.15 }}
           whileTap={{ scale: 0.9 }}
         >
-          <ArrowBigDown className="h-4 w-4 fill-current opacity-70 group-hover:opacity-100" />
+          <ThumbsDown className="h-4 w-4 opacity-70 group-hover:opacity-100" />
         </motion.div>
       </Button>
     </div>

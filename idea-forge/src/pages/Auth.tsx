@@ -201,7 +201,10 @@ export default function AuthPage() {
                 <div className="flex items-center justify-between ml-1">
                   <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-slate-500">Password</Label>
                   {isLogin && (
-                    <Link to="#" className="text-[10px] font-bold text-primary uppercase tracking-tighter hover:text-primary/80">
+                    <Link 
+                      to={getTenantPath(ROUTES.FORGOT_PASSWORD, tenantSlug)} 
+                      className="text-[10px] font-bold text-primary uppercase tracking-tighter hover:text-primary/80 transition-colors"
+                    >
                       Forgot?
                     </Link>
                   )}

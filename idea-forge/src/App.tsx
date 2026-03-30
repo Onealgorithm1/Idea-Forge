@@ -19,6 +19,7 @@ import SuperAdminLogin from "./pages/SuperAdmin/Login";
 import SuperAdminDashboard from "./pages/SuperAdmin/Dashboard";
 import TenantDetail from "./pages/SuperAdmin/TenantDetail";
 import RegisterWorkspace from "./pages/RegisterWorkspace";
+import ForgotPassword from "./pages/ForgotPassword";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ROUTES } from "./lib/constants";
 import FloatingSubmitIdea from "./components/FloatingSubmitIdea";
@@ -63,6 +64,7 @@ const AppContent = () => (
           <Route path="admin/settings" element={<AdminSettings />} />
         </Route>
         <Route path="login" element={<AuthPage />} />
+        <Route path="forgot-password" element={<ForgotPassword />} />
         {/* <Route path="signup" element={<AuthPage />} /> */}
         <Route path="*" element={<NotFound />} />
       </Routes>
