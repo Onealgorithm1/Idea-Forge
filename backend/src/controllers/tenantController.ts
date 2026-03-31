@@ -85,10 +85,30 @@ export const createTenant = async (req: Request, res: Response) => {
     );
 
     // Create default idea space
-    await query(
-      `INSERT INTO idea_spaces (tenant_id, name, key, description) VALUES ($1, 'General', 'general', 'Default idea space')`,
+    const spaceResult = await query(
+      `INSERT INTO idea_spaces (tenant_id, name, key, description) VALUES ($1, 'General', 'general', 'Default idea space') RETURNING id`,
       [result.rows[0].id]
     );
+    const defaultSpaceId = spaceResult.rows[0].id;
+
+    // Create default categories for the new tenant
+    const defaultCategories = [
+      { name: 'Sales / Opportunities', description: 'Ideas related to sales processes and opportunity tracking' },
+      { name: 'Product Development', description: 'Product features and improvements' },
+      { name: 'UI/UX Design', description: 'User interface and experience enhancements' },
+      { name: 'Marketing & Content', description: 'Strategies for branding and content' },
+      { name: 'Engineering & Tech', description: 'Technical infrastructure and dev tools' },
+      { name: 'Operations', description: 'Business operations and internal processes' },
+      { name: 'General', description: 'General ideas and suggestions' }
+    ];
+
+    for (const cat of defaultCategories) {
+      const slug = cat.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      await query(
+        `INSERT INTO categories (name, description, slug, tenant_id, is_default) VALUES ($1, $2, $3, $4, TRUE)`,
+        [cat.name, cat.description, slug, result.rows[0].id]
+      );
+    }
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -218,10 +238,31 @@ export const registerWorkspace = async (req: Request, res: Response) => {
         ($1, 'member', 'Regular member access', TRUE)`,
       [tenantId]
     );
-    await query(
-      `INSERT INTO idea_spaces (tenant_id, name, key, description) VALUES ($1, 'General', 'general', 'Default idea space')`,
+    const spaceResult = await query(
+      `INSERT INTO idea_spaces (tenant_id, name, key, description) VALUES ($1, 'General', 'general', 'Default idea space') RETURNING id`,
       [tenantId]
     );
+    const defaultSpaceId = spaceResult.rows[0].id;
+
+    // Create default categories for the new tenant
+    const defaultCategories = [
+      { name: 'Sales / Opportunities', description: 'Ideas related to sales processes and opportunity tracking' },
+      { name: 'Product Development', description: 'Product features and improvements' },
+      { name: 'UI/UX Design', description: 'User interface and experience enhancements' },
+      { name: 'Marketing & Content', description: 'Strategies for branding and content' },
+      { name: 'Engineering & Tech', description: 'Technical infrastructure and dev tools' },
+      { name: 'Operations', description: 'Business operations and internal processes' },
+      { name: 'General', description: 'General ideas and suggestions' }
+    ];
+
+    for (const cat of defaultCategories) {
+      const slug = cat.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      await query(
+        `INSERT INTO categories (name, description, slug, tenant_id, is_default) VALUES ($1, $2, $3, $4, TRUE)`,
+        [cat.name, cat.description, slug, tenantId]
+      );
+    }
+
     await query(`INSERT INTO tenant_details (tenant_id) VALUES ($1)`, [tenantId]);
 
     // 6. Notify Platform Support

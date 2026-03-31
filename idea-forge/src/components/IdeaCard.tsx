@@ -22,23 +22,25 @@ const IdeaCard = ({ idea, onVote }: IdeaCardProps) => {
         {/* Vote column */}
         <div className="flex flex-col items-center gap-0.5 px-3 py-4 bg-secondary/50 min-w-[56px]">
           <button
-            onClick={() => onVote(idea.id, "up")}
-            className={`p-1 rounded hover:bg-primary/10 transition-colors ${
-              idea.userVote === "up" ? "text-primary" : "text-muted-foreground"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onVote(idea.id, "up"); }}
+            className={`p-1 rounded hover:bg-emerald-500/10 transition-colors ${
+              idea.userVote === "up" ? "text-emerald-600" : "text-muted-foreground"
             }`}
           >
-            <ChevronUp className="h-5 w-5" />
+            <ChevronUp className={`h-5 w-5 ${idea.userVote === 'up' ? 'fill-current' : ''}`} />
           </button>
-          <span className={`text-sm font-semibold tabular-nums ${idea.userVote === "up" ? "text-primary" : "text-foreground"}`}>
+          <span className={`text-sm font-bold tabular-nums ${
+            idea.votes > 0 ? "text-emerald-600" : idea.votes < 0 ? "text-rose-600" : "text-slate-700"
+          }`}>
             {idea.votes}
           </span>
           <button
-            onClick={() => onVote(idea.id, "down")}
-            className={`p-1 rounded hover:bg-destructive/10 transition-colors ${
-              idea.userVote === "down" ? "text-destructive" : "text-muted-foreground"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onVote(idea.id, "down"); }}
+            className={`p-1 rounded hover:bg-rose-500/10 transition-colors ${
+              idea.userVote === "down" ? "text-rose-600" : "text-muted-foreground"
             }`}
           >
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className={`h-4 w-4 ${idea.userVote === 'down' ? 'fill-current' : ''}`} />
           </button>
         </div>
 

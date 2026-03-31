@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { format } from "date-fns";
-import { Trash2, Shield, User, Loader2, Key, Lock, UserPlus, Plus, Mail } from "lucide-react";
+import { Trash2, Shield, User, Loader2, Key, Lock, UserPlus, Plus, Mail, Layers } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import ConfirmationModal from "@/components/ConfirmationModal";
@@ -30,15 +31,23 @@ const AdminUsers = () => {
   const queryClient = useQueryClient();
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isSpaceDialogOpen, setIsSpaceDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [newPassword, setNewPassword] = useState("");
   const [createForm, setCreateForm] = useState({ name: "", email: "", password: "" });
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [selectedSpaces, setSelectedSpaces] = useState<string[]>([]);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users"],
     queryFn: () => api.get("/admin/users", token!),
     enabled: !!token,
+  });
+
+  const { data: availableSpaces = [] } = useQuery({
+    queryKey: ["admin-spaces"],
+    queryFn: () => api.get("/admin/spaces", token!),
+    enabled: !!token && isSpaceDialogOpen,
   });
 
   const createUserMutation = useMutation({
@@ -91,10 +100,29 @@ const AdminUsers = () => {
     }
   });
 
+  const assignSpacesMutation = useMutation({
+    mutationFn: ({ userId, spaceIds }: { userId: string; spaceIds: string[] }) => 
+      api.post(`/admin/users/${userId}/spaces`, { spaceIds }, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("User spaces updated");
+      setIsSpaceDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to assign spaces");
+    }
+  });
+
   const handleOpenPasswordDialog = (user: any) => {
     setSelectedUser(user);
     setNewPassword("");
     setIsPasswordDialogOpen(true);
+  };
+
+  const handleOpenSpaceDialog = (user: any) => {
+    setSelectedUser(user);
+    setSelectedSpaces(user.assigned_spaces?.map((s: any) => s.id) || []);
+    setIsSpaceDialogOpen(true);
   };
 
   const handleUpdatePassword = () => {
@@ -163,7 +191,7 @@ const AdminUsers = () => {
                     <tr>
                       <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">User</th>
                       <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Role</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Joined</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Spaces</th>
                       <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
                     </tr>
                   </thead>
@@ -182,35 +210,55 @@ const AdminUsers = () => {
                         </td>
                       </tr>
                     ) : (
-                      users.map((u: any) => (
-                        <tr key={u.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-10 w-10">
-                                <AvatarImage src={u.avatar_url} />
-                                <AvatarFallback className="bg-primary/5 text-primary">
-                                  {getInitials(u.name)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-semibold text-sm">{u.name}</p>
-                                <p className="text-xs text-muted-foreground">{u.email}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <Badge 
-                              variant={u.role === 'admin' ? 'default' : 'secondary'}
-                              className="text-[10px] font-bold uppercase tracking-wider"
-                            >
-                              {u.role}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">
-                            {format(new Date(u.created_at), "MMM d, yyyy")}
-                          </td>
-                          <td className="px-6 py-4 text-right">
+                    users.map((u: any) => (
+                         <tr key={u.id} className="hover:bg-muted/30 transition-colors">
+                           <td className="px-6 py-4">
+                             <div className="flex items-center gap-3">
+                               <Avatar className="h-10 w-10">
+                                 <AvatarImage src={u.avatar_url} />
+                                 <AvatarFallback className="bg-primary/5 text-primary">
+                                   {getInitials(u.name)}
+                                 </AvatarFallback>
+                               </Avatar>
+                               <div>
+                                 <p className="font-semibold text-sm">{u.name}</p>
+                                 <p className="text-xs text-muted-foreground">{u.email}</p>
+                               </div>
+                             </div>
+                           </td>
+                           <td className="px-6 py-4">
+                             <Badge 
+                               variant={u.role === 'admin' ? 'default' : 'secondary'}
+                               className="text-[10px] font-bold uppercase tracking-wider"
+                             >
+                               {u.role}
+                             </Badge>
+                           </td>
+                           <td className="px-6 py-4">
+                             <div className="flex flex-wrap gap-1">
+                               {u.assigned_spaces && u.assigned_spaces.length > 0 ? (
+                                 (u.assigned_spaces as any[]).slice(0, 2).map((s: any) => (
+                                   <Badge key={s.id} variant="outline" className="text-[9px] h-4 px-1 bg-blue-50 text-blue-600 border-blue-100">{s.name}</Badge>
+                                 ))
+                               ) : (
+                                 <span className="text-xs text-muted-foreground italic">None</span>
+                               )}
+                               {u.assigned_spaces && u.assigned_spaces.length > 2 && (
+                                 <Badge variant="outline" className="text-[9px] h-4 px-1">+{u.assigned_spaces.length - 2}</Badge>
+                               )}
+                             </div>
+                           </td>
+                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
+                               <Button 
+                                 variant="ghost" 
+                                 size="icon" 
+                                 className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                 onClick={() => handleOpenSpaceDialog(u)}
+                                 title="Manage Spaces"
+                               >
+                                 <Layers className="h-4 w-4" />
+                               </Button>
                                <Button 
                                  variant="ghost" 
                                  size="icon" 
@@ -237,7 +285,7 @@ const AdminUsers = () => {
                                  onClick={() => handleDeleteUser(u.id)}
                                  disabled={u.id === currentUser?.id}
                                  title="Delete User"
-                               >
+                                >
                                  <Trash2 className="h-4 w-4" />
                                </Button>
                              </div>
@@ -378,6 +426,65 @@ const AdminUsers = () => {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
               Create & Invite
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isSpaceDialogOpen} onOpenChange={setIsSpaceDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl bg-white/95 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl font-black">
+              <Layers className="h-6 w-6 text-primary" />
+              Manage Spaces
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 font-medium">
+              Assign idea spaces to <strong>{selectedUser?.name}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4 max-h-[40vh] overflow-y-auto pr-2">
+            {availableSpaces.map((space: any) => (
+              <div key={space.id} className="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+                <Checkbox 
+                  id={`space-${space.id}`} 
+                  checked={selectedSpaces.includes(space.id)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedSpaces([...selectedSpaces, space.id]);
+                    } else {
+                      setSelectedSpaces(selectedSpaces.filter(id => id !== space.id));
+                    }
+                  }}
+                  className="rounded-md border-slate-300 data-[state=checked]:bg-primary"
+                />
+                <Label 
+                  htmlFor={`space-${space.id}`}
+                  className="flex-1 font-bold text-slate-700 cursor-pointer"
+                >
+                  {space.name}
+                  {space.description && (
+                    <p className="text-[10px] font-medium text-slate-400 mt-0.5">{space.description}</p>
+                  )}
+                </Label>
+              </div>
+            ))}
+            {availableSpaces.length === 0 && (
+              <p className="text-center py-6 text-slate-400 italic font-medium">No idea spaces available. Create them in settings.</p>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setIsSpaceDialogOpen(false)} className="rounded-xl font-bold text-slate-500">
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => assignSpacesMutation.mutate({ userId: selectedUser.id, spaceIds: selectedSpaces })} 
+              disabled={assignSpacesMutation.isPending}
+              className="bg-primary hover:bg-primary/90 font-bold rounded-xl shadow-lg shadow-primary/20 px-6"
+            >
+              {assignSpacesMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Update Allocation
             </Button>
           </DialogFooter>
         </DialogContent>

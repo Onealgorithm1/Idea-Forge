@@ -66,7 +66,14 @@ export const createUser = async (req: Request, res: Response) => {
 export const getAllUsers = async (req: any, res: Response) => {
   try {
     const result = await query(
-      'SELECT id, name, email, avatar_url, role, created_at FROM users WHERE tenant_id = $1 AND role != $2 ORDER BY created_at DESC',
+      `SELECT u.id, u.name, u.email, u.avatar_url, u.role, u.created_at,
+              COALESCE(JSON_AGG(JSON_BUILD_OBJECT('id', s.id, 'name', s.name)) FILTER (WHERE s.id IS NOT NULL), '[]') as assigned_spaces
+       FROM users u
+       LEFT JOIN user_idea_spaces uis ON u.id = uis.user_id
+       LEFT JOIN idea_spaces s ON uis.idea_space_id = s.id
+       WHERE u.tenant_id = $1 AND u.role != $2
+       GROUP BY u.id
+       ORDER BY u.created_at DESC`,
       [req.tenantId, 'super_admin']
     );
     res.json(result.rows);
@@ -273,7 +280,14 @@ export const createCategory = async (req: any, res: Response) => {
 export const deleteCategory = async (req: any, res: Response) => {
   const { id } = req.params;
   try {
-    await query('DELETE FROM categories WHERE id = $1 AND tenant_id = $1', [id, req.tenantId]);
+    // Check if it's a default category
+    const check = await query('SELECT is_default FROM categories WHERE id = $1 AND tenant_id = $2', [id, req.tenantId]);
+    if (check.rows.length === 0) return res.status(404).json({ message: 'Category not found' });
+    if (check.rows[0].is_default) {
+      return res.status(403).json({ message: 'Cannot delete default categories' });
+    }
+
+    await query('DELETE FROM categories WHERE id = $1 AND tenant_id = $2', [id, req.tenantId]);
     res.json({ message: 'Category deleted' });
   } catch (error) {
     console.error('Delete category error:', error);
@@ -322,6 +336,56 @@ export const deleteIdeaSpace = async (req: any, res: Response) => {
     res.json({ message: 'Idea space deleted' });
   } catch (error) {
     console.error('Delete idea space error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ─── User Idea Space Allocation ──────────────────────────────────────────────
+
+export const getUserSpaces = async (req: any, res: Response) => {
+  const { userId } = req.params;
+  try {
+    const result = await query(
+      `SELECT s.id, s.name FROM idea_spaces s
+       JOIN user_idea_spaces uis ON s.id = uis.idea_space_id
+       WHERE uis.user_id = $1 AND uis.tenant_id = $2`,
+      [userId, req.tenantId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get user spaces error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const assignUserSpaces = async (req: any, res: Response) => {
+  const { userId } = req.params;
+  const { spaceIds } = req.body; // Array of space IDs
+
+  if (!Array.isArray(spaceIds)) {
+    return res.status(400).json({ message: 'spaceIds must be an array' });
+  }
+
+  try {
+    // Start transaction
+    await query('BEGIN');
+
+    // 1. Clear existing assignments
+    await query('DELETE FROM user_idea_spaces WHERE user_id = $1 AND tenant_id = $2', [userId, req.tenantId]);
+
+    // 2. Add new assignments
+    for (const spaceId of spaceIds) {
+      await query(
+        'INSERT INTO user_idea_spaces (user_id, idea_space_id, tenant_id) VALUES ($1, $2, $3)',
+        [userId, spaceId, req.tenantId]
+      );
+    }
+
+    await query('COMMIT');
+    res.json({ message: 'Idea spaces assigned successfully' });
+  } catch (error) {
+    await query('ROLLBACK');
+    console.error('Assign user spaces error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

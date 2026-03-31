@@ -25,6 +25,7 @@ import {
   FileText,
   Briefcase,
   Save,
+  ThumbsUp,
 } from "lucide-react";
 import Header from "@/components/Header";
 import SidebarNav from "@/components/SidebarNav";
@@ -290,8 +291,14 @@ const IdeaCard = ({ idea, tenantSlug, onBookmark }: { idea: any; tenantSlug: str
 
       <div className="flex items-center gap-3 mt-5 pt-4 border-t border-slate-50">
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 text-[10px] font-black text-slate-400 group-hover:text-emerald-600 transition-colors">
-            <Heart className="h-3.5 w-3.5 fill-rose-50 text-rose-400" />
+          <span className={cn(
+            "flex items-center gap-1 text-[10px] font-black transition-colors",
+            idea.votes_count > 0 ? "text-emerald-600" : idea.votes_count < 0 ? "text-rose-600" : "text-slate-400"
+          )}>
+            <ThumbsUp className={cn(
+              "h-3.5 w-3.5",
+              idea.vote_type === 'up' ? "fill-emerald-200 text-emerald-600" : (idea.vote_type === 'down' ? "text-rose-600 rotate-180" : "text-slate-400")
+            )} />
             {idea.votes_count || 0}
           </span>
           <span className="flex items-center gap-1 text-[10px] font-black text-slate-400 group-hover:text-primary transition-colors">

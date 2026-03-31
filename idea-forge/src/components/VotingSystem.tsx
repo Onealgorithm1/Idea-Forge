@@ -8,7 +8,7 @@ interface VotingSystemProps {
   ideaId: string;
   initialVotes: number;
   onVote: (type: 'up' | 'down') => void;
-  hasVoted?: boolean;
+  userVote?: 'up' | 'down' | null;
   orientation?: 'vertical' | 'horizontal';
   className?: string;
 }
@@ -17,7 +17,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
   ideaId,
   initialVotes,
   onVote,
-  hasVoted = false,
+  userVote = null,
   orientation = 'horizontal',
   className
 }) => {
@@ -33,7 +33,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
         size="icon"
         className={cn(
           "h-7 w-7 rounded-lg hover:bg-emerald-500/20 hover:text-emerald-600 transition-all group",
-          hasVoted ? "bg-emerald-500/20 text-emerald-600" : "text-slate-500"
+          userVote === 'up' ? "bg-emerald-500/20 text-emerald-600" : "text-slate-500"
         )}
         onClick={(e) => {
           e.preventDefault();
@@ -45,7 +45,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
           whileHover={{ scale: 1.15 }}
           whileTap={{ scale: 0.9 }}
         >
-          <ThumbsUp className="h-4 w-4 opacity-70 group-hover:opacity-100" />
+          <ThumbsUp className={cn("h-4 w-4 opacity-70 group-hover:opacity-100", userVote === 'up' && "opacity-100 fill-current")} />
         </motion.div>
       </Button>
 
@@ -71,7 +71,10 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
         type="button"
         variant="ghost"
         size="icon"
-        className="h-7 w-7 rounded-lg hover:bg-rose-500/20 hover:text-rose-600 text-slate-500 transition-all group"
+        className={cn(
+          "h-7 w-7 rounded-lg hover:bg-rose-500/20 hover:text-rose-600 transition-all group",
+          userVote === 'down' ? "bg-rose-500/20 text-rose-600" : "text-slate-500"
+        )}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -82,7 +85,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
           whileHover={{ scale: 1.15 }}
           whileTap={{ scale: 0.9 }}
         >
-          <ThumbsDown className="h-4 w-4 opacity-70 group-hover:opacity-100" />
+          <ThumbsDown className={cn("h-4 w-4 opacity-70 group-hover:opacity-100", userVote === 'down' && "opacity-100 fill-current")} />
         </motion.div>
       </Button>
     </div>

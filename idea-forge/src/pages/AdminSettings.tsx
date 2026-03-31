@@ -231,15 +231,20 @@ const AdminSettings = () => {
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.8 }}
-                            className="bg-slate-100 hover:bg-amber-50 border border-slate-200 hover:border-amber-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 flex items-center gap-2 group transition-all"
+                            className={`hover:bg-amber-50 border px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 group transition-all ${cat.is_default ? 'bg-amber-50/50 border-amber-200 text-amber-700' : 'bg-slate-100 border-slate-200 text-slate-600 hover:border-amber-200'}`}
                           >
                             {cat.name}
-                            <button 
-                              onClick={() => { if (confirm("Delete this category?")) deleteCatMutation.mutate(cat.id); }}
-                              className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                            >
-                              <Plus className="h-3 w-3 rotate-45" />
-                            </button>
+                            {cat.is_default && (
+                              <Badge variant="outline" className="h-4 px-1 text-[8px] bg-amber-100 text-amber-700 border-amber-200 uppercase">Default</Badge>
+                            )}
+                            {!cat.is_default && (
+                              <button 
+                                onClick={() => { if (confirm("Delete this category?")) deleteCatMutation.mutate(cat.id); }}
+                                className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                              >
+                                <Plus className="h-3 w-3 rotate-45" />
+                              </button>
+                            )}
                           </motion.div>
                         ))
                       )}

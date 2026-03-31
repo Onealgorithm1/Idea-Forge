@@ -36,7 +36,7 @@ export const getIdeas = async (req: any, res: Response) => {
              (SELECT json_agg(t.name) FROM tags t 
               JOIN idea_tags it ON t.id = it.tag_id 
               WHERE it.idea_id = i.id) as tags,
-             EXISTS(SELECT 1 FROM votes WHERE idea_id = i.id AND user_id = $2) as has_voted
+             (SELECT type FROM votes WHERE idea_id = i.id AND user_id = $2 LIMIT 1) as vote_type
       FROM ideas i 
       LEFT JOIN users u ON i.author_id = u.id 
       LEFT JOIN categories c ON i.category_id = c.id
@@ -209,26 +209,34 @@ export const voteIdea = async (req: any, res: Response) => {
   const { id } = req.params;
   const { type } = req.body; 
   const user_id = req.user.id;
+  const tenant_id = req.tenantId;
 
-  // Only 'up' votes are allowed in the new strict voting system
-  if (type !== 'up') {
-    return res.status(400).json({ message: 'Only upvoting is allowed' });
+  if (type !== 'up' && type !== 'down') {
+    return res.status(400).json({ message: 'Invalid vote type' });
   }
+
+  const voteValue = type === 'up' ? 1 : -1;
 
   try {
     // Check if vote already exists
     const existingVote = await query('SELECT * FROM votes WHERE idea_id = $1 AND user_id = $2', [id, user_id]);
     
     if (existingVote.rows.length > 0) {
-      return res.status(400).json({ message: 'You already have done that' });
+      if (existingVote.rows[0].type === type) {
+        // Toggle off if same type
+        await query('DELETE FROM votes WHERE id = $1', [existingVote.rows[0].id]);
+      } else {
+        // Update to new type
+        await query('UPDATE votes SET type = $1, vote_value = $2 WHERE id = $3', [type, voteValue, existingVote.rows[0].id]);
+      }
     } else {
-      // Create new 'up' vote
-      await query('INSERT INTO votes (idea_id, user_id, type, tenant_id) VALUES ($1, $2, \'up\', $3)', [id, user_id, req.tenantId]);
+      // Create new vote
+      await query('INSERT INTO votes (idea_id, user_id, type, vote_value, tenant_id) VALUES ($1, $2, $3, $4, $5)', [id, user_id, type, voteValue, tenant_id]);
     }
 
-    // Update votes_count in ideas table - strictly count 'up' votes
-    const voteCounts = await query('SELECT COUNT(*) as total FROM votes WHERE idea_id = $1 AND type = \'up\'', [id]);
-    const totalVotes = parseInt(voteCounts.rows[0].total || 0);
+    // Update votes_count in ideas table - sum of all vote_values
+    const voteSum = await query('SELECT SUM(vote_value) as total FROM votes WHERE idea_id = $1', [id]);
+    const totalVotes = parseInt(voteSum.rows[0].total || 0);
 
     await query('UPDATE ideas SET votes_count = $1 WHERE id = $2', [totalVotes, id]);
 
@@ -236,10 +244,10 @@ export const voteIdea = async (req: any, res: Response) => {
     emitVoteUpdate(id, totalVotes);
 
     res.json({ message: 'Vote recorded', id, votes_count: totalVotes });
-    await logAudit(req.tenantId, user_id, 'idea', id, 'vote_submitted', null, { type: 'up' });
+    await logAudit(tenant_id, user_id, 'idea', id, 'vote_submitted', null, { type });
 
-    // Trigger Notification for author - only for new votes
-    if (existingVote.rows.length === 0) {
+    // Trigger Notification for author - only for new upvotes
+    if (existingVote.rows.length === 0 && type === 'up') {
       const ideaInfo = await query('SELECT author_id, title, tenant_id FROM ideas WHERE id = $1', [id]);
       if (ideaInfo.rows.length > 0 && ideaInfo.rows[0].author_id !== user_id) {
         await query(
@@ -430,7 +438,7 @@ export const getUserIdeas = async (req: any, res: Response) => {
       (SELECT json_agg(t.name) FROM tags t 
        JOIN idea_tags it ON t.id = it.tag_id 
        WHERE it.idea_id = i.id) as tags,
-      EXISTS(SELECT 1 FROM votes WHERE idea_id = i.id AND user_id = $1) as has_voted
+      (SELECT type FROM votes WHERE idea_id = i.id AND user_id = $1 LIMIT 1) as vote_type
       FROM ideas i
       JOIN users u ON i.author_id = u.id
       LEFT JOIN categories c ON i.category_id = c.id

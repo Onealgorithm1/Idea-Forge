@@ -393,7 +393,7 @@ const IdeaDetail = () => {
                     ideaId={idea.id}
                     initialVotes={idea.votes_count}
                     onVote={(type) => { if (!token) return toast.error("Please login to vote"); voteMutation.mutate({ type }); }}
-                    hasVoted={idea.has_voted}
+                    userVote={idea.vote_type}
                     orientation="horizontal"
                     className="border-none bg-transparent shadow-none"
                   />
