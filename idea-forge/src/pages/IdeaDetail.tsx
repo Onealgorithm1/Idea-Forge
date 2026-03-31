@@ -201,11 +201,43 @@ const IdeaDetail = () => {
   const voteMutation = useMutation({
     mutationFn: ({ type }: { type: "up" | "down" }) =>
       api.post(`/ideas/${id}/vote`, { type }, token!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
-      toast.success("Vote recorded");
+    onMutate: async ({ type }) => {
+      await queryClient.cancelQueries({ queryKey: ["ideas"] });
+      const previousIdeas = queryClient.getQueryData(["ideas"]);
+
+      queryClient.setQueryData(["ideas"], (old: any[] | undefined) => {
+        if (!old) return old;
+        return old.map(item => {
+          if (String(item.id) !== id) return item;
+          
+          let newVotesCount = parseInt(item.votes_count || 0);
+          let newVoteType = item.vote_type;
+
+          if (item.vote_type === type) {
+            newVotesCount -= (type === 'up' ? 1 : -1);
+            newVoteType = null;
+          } else if (item.vote_type) {
+            newVotesCount += (type === 'up' ? 2 : -2);
+            newVoteType = type;
+          } else {
+            newVotesCount += (type === 'up' ? 1 : -1);
+            newVoteType = type;
+          }
+          return { ...item, votes_count: newVotesCount, vote_type: newVoteType };
+        });
+      });
+
+      return { previousIdeas };
     },
-    onError: (error: any) => toast.error(error.message || "Failed to vote"),
+    onError: (err: any, variables, context) => {
+      if (context?.previousIdeas) {
+        queryClient.setQueryData(["ideas"], context.previousIdeas);
+      }
+      toast.error(err.message || "Failed to vote");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+    },
   });
 
   const bookmarkMutation = useMutation({

@@ -42,19 +42,53 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
   const voteMutation = useMutation({
     mutationFn: ({ id, type }: { id: string; type: "up" | "down" }) =>
       api.post(`/ideas/${id}/vote`, { type }, token!),
-    onSuccess: (data) => {
+    onMutate: async ({ id, type }) => {
+      // Cancel any outgoing refetch so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: ["ideas"] });
+
+      // Snapshot the previous value
+      const previousIdeas = queryClient.getQueryData(["ideas"]);
+
+      // Optimistically update to the new value
       queryClient.setQueryData(["ideas"], (old: any[] | undefined) => {
         if (!old) return old;
-        return old.map(idea =>
-          idea.id === data.id ? { ...idea, votes_count: data.votes_count } : idea
-        );
+        return old.map(idea => {
+          if (idea.id !== id) return idea;
+
+          let newVotesCount = parseInt(idea.votes_count || 0);
+          let newVoteType = idea.vote_type;
+
+          if (idea.vote_type === type) {
+            // Toggling off
+            newVotesCount -= (type === 'up' ? 1 : -1);
+            newVoteType = null;
+          } else if (idea.vote_type) {
+            // Switching type (up -> down or down -> up)
+            newVotesCount += (type === 'up' ? 2 : -2);
+            newVoteType = type;
+          } else {
+            // New vote
+            newVotesCount += (type === 'up' ? 1 : -1);
+            newVoteType = type;
+          }
+
+          return { ...idea, votes_count: newVotesCount, vote_type: newVoteType };
+        });
       });
-      // Also refetch to be sure of latest state
+
+      return { previousIdeas };
+    },
+    onError: (err: any, variables, context) => {
+      // Roll back
+      if (context?.previousIdeas) {
+        queryClient.setQueryData(["ideas"], context.previousIdeas);
+      }
+      toast.error(err.message || "Failed to vote");
+    },
+    onSettled: (data) => {
+      // Always refetch after error or success to keep server in sync
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
     },
-    onError: (error: any) => {
-       toast.error(error.message || "Failed to vote");
-    }
   });
 
   const bookmarkMutation = useMutation({

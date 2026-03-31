@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { query } from '../config/db.js';
+import pool, { query } from '../config/db.js';
 
 // ─── Audit log helper ─────────────────────────────────────────────────────────
 async function logAudit(tenantId: string, actorUserId: string | null, entityType: string, entityId: string, action: string, oldValues?: any, newValues?: any) {
@@ -216,49 +216,65 @@ export const voteIdea = async (req: any, res: Response) => {
   }
 
   const voteValue = type === 'up' ? 1 : -1;
+  const client = await pool.connect();
 
   try {
-    // Check if vote already exists
-    const existingVote = await query('SELECT * FROM votes WHERE idea_id = $1 AND user_id = $2', [id, user_id]);
+    await client.query('BEGIN');
+
+    // 1. Check if vote already exists and lock the row for this user+idea
+    const existingVote = await client.query(
+      'SELECT id, type FROM votes WHERE idea_id = $1 AND user_id = $2 AND tenant_id = $3 FOR UPDATE', 
+      [id, user_id, tenant_id]
+    );
     
+    let isNewUpvote = false;
+
     if (existingVote.rows.length > 0) {
       if (existingVote.rows[0].type === type) {
         // Toggle off if same type
-        await query('DELETE FROM votes WHERE id = $1', [existingVote.rows[0].id]);
+        await client.query('DELETE FROM votes WHERE id = $1', [existingVote.rows[0].id]);
       } else {
         // Update to new type
-        await query('UPDATE votes SET type = $1, vote_value = $2 WHERE id = $3', [type, voteValue, existingVote.rows[0].id]);
+        await client.query('UPDATE votes SET type = $1, vote_value = $2 WHERE id = $3', [type, voteValue, existingVote.rows[0].id]);
       }
     } else {
       // Create new vote
-      await query('INSERT INTO votes (idea_id, user_id, type, vote_value, tenant_id) VALUES ($1, $2, $3, $4, $5)', [id, user_id, type, voteValue, tenant_id]);
+      await client.query('INSERT INTO votes (idea_id, user_id, type, vote_value, tenant_id) VALUES ($1, $2, $3, $4, $5)', [id, user_id, type, voteValue, tenant_id]);
+      if (type === 'up') isNewUpvote = true;
     }
 
-    // Update votes_count in ideas table - sum of all vote_values
-    const voteSum = await query('SELECT SUM(vote_value) as total FROM votes WHERE idea_id = $1', [id]);
+    // 2. Update votes_count in ideas table - sum of all vote_values
+    const voteSum = await client.query('SELECT SUM(vote_value) as total FROM votes WHERE idea_id = $1', [id]);
     const totalVotes = parseInt(voteSum.rows[0].total || 0);
 
-    await query('UPDATE ideas SET votes_count = $1 WHERE id = $2', [totalVotes, id]);
+    await client.query('UPDATE ideas SET votes_count = $1 WHERE id = $2', [totalVotes, id]);
 
-    // Emit real-time update
+    await client.query('COMMIT');
+
+    // 3. Post-transaction operations
     emitVoteUpdate(id, totalVotes);
-
+    
     res.json({ message: 'Vote recorded', id, votes_count: totalVotes });
-    await logAudit(tenant_id, user_id, 'idea', id, 'vote_submitted', null, { type });
 
-    // Trigger Notification for author - only for new upvotes
-    if (existingVote.rows.length === 0 && type === 'up') {
+    // Non-blocking background tasks
+    logAudit(tenant_id, user_id, 'idea', id, 'vote_submitted', null, { type }).catch(e => console.error('Delayed audit log error:', e));
+
+    if (isNewUpvote) {
       const ideaInfo = await query('SELECT author_id, title, tenant_id FROM ideas WHERE id = $1', [id]);
       if (ideaInfo.rows.length > 0 && ideaInfo.rows[0].author_id !== user_id) {
         await query(
           'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
           [ideaInfo.rows[0].author_id, 'vote', id, `Someone upvoted your idea: ${ideaInfo.rows[0].title}`, ideaInfo.rows[0].tenant_id]
-        );
+        ).catch(e => console.error('Delayed notification error:', e));
       }
     }
+
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Vote idea error:', error);
     res.status(500).json({ message: 'Server error' });
+  } finally {
+    client.release();
   }
 };
 
