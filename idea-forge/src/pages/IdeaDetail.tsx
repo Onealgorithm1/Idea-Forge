@@ -209,21 +209,14 @@ const IdeaDetail = () => {
         if (!old) return old;
         return old.map(item => {
           if (String(item.id) !== id) return item;
-          
-          let newVotesCount = parseInt(item.votes_count || 0);
-          let newVoteType = item.vote_type;
-
-          if (item.vote_type === type) {
-            newVotesCount -= (type === 'up' ? 1 : -1);
-            newVoteType = null;
-          } else if (item.vote_type) {
-            newVotesCount += (type === 'up' ? 2 : -2);
-            newVoteType = type;
-          } else {
-            newVotesCount += (type === 'up' ? 1 : -1);
-            newVoteType = type;
-          }
-          return { ...item, votes_count: newVotesCount, vote_type: newVoteType };
+          // Only apply optimistic update if user hasn't voted yet
+          if (item.vote_type) return item;
+          const delta = type === 'up' ? 1 : -1;
+          return {
+            ...item,
+            votes_count: parseInt(item.votes_count || 0) + delta,
+            vote_type: type,
+          };
         });
       });
 
@@ -233,7 +226,10 @@ const IdeaDetail = () => {
       if (context?.previousIdeas) {
         queryClient.setQueryData(["ideas"], context.previousIdeas);
       }
-      toast.error(err.message || "Failed to vote");
+      // Suppress 409 toast — UI is already locked, no need to alert
+      if ((err as any)?.status !== 409) {
+        toast.error(err.message || "Failed to vote");
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
@@ -424,10 +420,16 @@ const IdeaDetail = () => {
                   <VotingSystem
                     ideaId={idea.id}
                     initialVotes={idea.votes_count}
-                    onVote={(type) => { if (!token) return toast.error("Please login to vote"); voteMutation.mutate({ type }); }}
+                    onVote={(type) => {
+                      if (!token) return toast.error("Please login to vote");
+                      if (voteMutation.isPending) return;
+                      if (idea.vote_type) return; // Already voted — double-safety guard
+                      voteMutation.mutate({ type });
+                    }}
                     userVote={idea.vote_type}
                     orientation="horizontal"
                     className="border-none bg-transparent shadow-none"
+                    isLoading={voteMutation.isPending}
                   />
                 </div>
 

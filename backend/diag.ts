@@ -1,37 +1,46 @@
-import { query } from './src/config/db.js';
+import { Pool } from 'pg';
+import dotenv from 'dotenv';
+dotenv.config();
 
-async function diagnose() {
+const pool = new Pool({
+  connectionString: 'postgresql://neondb_owner:npg_y0KepXrE4sMF@ep-icy-night-adzbcu6r-pooler.c-2.us-east-1.aws.neon.tech/Ideaforge?sslmode=require',
+  ssl: { rejectUnauthorized: false }
+});
+
+async function main() {
   try {
-    console.log('--- DIAGNOSTIC START ---');
-    
-    // Check constraints
-    const constraints = await query(`
-      SELECT conname, pg_get_constraintdef(c.oid) as def
-      FROM pg_constraint c 
-      JOIN pg_namespace n ON n.oid = c.connamespace 
-      WHERE nspname = 'public' AND contype = 'f' AND conrelid = 'ideas'::regclass
+    console.log('Checking votes table indices...');
+    const indexRes = await pool.query(`
+      SELECT
+          t.relname as table_name,
+          i.relname as index_name,
+          a.attname as column_name
+      FROM
+          pg_class t,
+          pg_class i,
+          pg_index ix,
+          pg_attribute a
+      WHERE
+          t.oid = ix.indrelid
+          AND i.oid = ix.indexrelid
+          AND a.attrelid = t.oid
+          AND a.attnum = ANY(ix.indkey)
+          AND t.relname = 'votes'
+      ORDER BY
+          t.relname,
+          i.relname;
     `);
-    console.log('Ideas foreign keys:', constraints.rows);
+    console.log('Indices:', indexRes.rows);
 
-    // Check recent errors in background (if possible, but we can't easily)
-    // Check categories existence
-    const categories = await query('SELECT id, name, tenant_id FROM categories');
-    console.log('All categories:', categories.rows);
+    console.log('Checking votes table columns...');
+    const columnRes = await pool.query("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'votes'");
+    console.log('Columns:', columnRes.rows);
 
-    // Check tenants
-    const tenants = await query('SELECT id, name, slug FROM tenants');
-    console.log('Tenants:', tenants.rows);
-
-    // Check tags
-    const tags = await query('SELECT id, name, tenant_id FROM tags');
-    console.log('Tags:', tags.rows);
-
-    console.log('--- DIAGNOSTIC END ---');
   } catch (err) {
-    console.error('DIAGNOSTIC ERROR:', err);
+    console.error(err);
   } finally {
-    process.exit(0);
+    await pool.end();
   }
 }
 
-diagnose();
+main();

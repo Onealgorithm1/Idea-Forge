@@ -54,36 +54,28 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
         if (!old) return old;
         return old.map(idea => {
           if (idea.id !== id) return idea;
-
-          let newVotesCount = parseInt(idea.votes_count || 0);
-          let newVoteType = idea.vote_type;
-
-          if (idea.vote_type === type) {
-            // Toggling off
-            newVotesCount -= (type === 'up' ? 1 : -1);
-            newVoteType = null;
-          } else if (idea.vote_type) {
-            // Switching type (up -> down or down -> up)
-            newVotesCount += (type === 'up' ? 2 : -2);
-            newVoteType = type;
-          } else {
-            // New vote
-            newVotesCount += (type === 'up' ? 1 : -1);
-            newVoteType = type;
-          }
-
-          return { ...idea, votes_count: newVotesCount, vote_type: newVoteType };
+          // Only apply optimistic update if user hasn't voted yet
+          if (idea.vote_type) return idea;
+          const delta = type === 'up' ? 1 : -1;
+          return {
+            ...idea,
+            votes_count: parseInt(idea.votes_count || 0) + delta,
+            vote_type: type,
+          };
         });
       });
 
       return { previousIdeas };
     },
     onError: (err: any, variables, context) => {
-      // Roll back
+      // Roll back optimistic update
       if (context?.previousIdeas) {
         queryClient.setQueryData(["ideas"], context.previousIdeas);
       }
-      toast.error(err.message || "Failed to vote");
+      // Only show toast for non-409 errors (409 means already voted, UI already shows lock)
+      if ((err as any)?.status !== 409) {
+        toast.error(err.message || "Failed to vote");
+      }
     },
     onSettled: (data) => {
       // Always refetch after error or success to keep server in sync
@@ -123,6 +115,11 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
 
   const handleVote = (id: string, type: 'up' | 'down') => {
     if (!token) return toast.error("Please login to vote");
+    if (voteMutation.isPending) return;
+    // Check local cache first — if already voted, block without a network call
+    const ideas: any[] | undefined = queryClient.getQueryData(["ideas"]);
+    const idea = ideas?.find((i: any) => i.id === id);
+    if (idea?.vote_type) return; // Already voted — UI is locked, this is a double-safety guard
     voteMutation.mutate({ id, type });
   };
 
@@ -231,6 +228,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                         userVote={item.vote_type}
                         orientation="horizontal"
                         className="scale-95 origin-left"
+                        isLoading={voteMutation.isPending && voteMutation.variables?.id === item.id}
                       />
                       <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded-lg">
                         <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
@@ -321,6 +319,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                         userVote={item.vote_type}
                         orientation="horizontal"
                         className="scale-95 origin-left"
+                        isLoading={voteMutation.isPending && voteMutation.variables?.id === item.id}
                       />
 
                     </div>
@@ -415,6 +414,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                         userVote={item.vote_type}
                         orientation="horizontal"
                         className="scale-95 origin-left"
+                        isLoading={voteMutation.isPending && voteMutation.variables?.id === item.id}
                       />
                       <div className="flex items-center gap-1.5 px-2 py-1 bg-success/5 rounded-lg">
                         <MessageSquare className="h-3 w-3 text-success/60" />

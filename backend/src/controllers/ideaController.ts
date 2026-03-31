@@ -207,12 +207,18 @@ import { emitVoteUpdate, emitStatusUpdate } from '../lib/socket.js';
 
 export const voteIdea = async (req: any, res: Response) => {
   const { id } = req.params;
-  const { type } = req.body; 
+  const { type } = req.body;
   const user_id = req.user.id;
   const tenant_id = req.tenantId;
 
+  // ── Guard: valid vote type ─────────────────────────────────────────────────
   if (type !== 'up' && type !== 'down') {
-    return res.status(400).json({ message: 'Invalid vote type' });
+    return res.status(400).json({ message: 'Invalid vote type. Must be "up" or "down".' });
+  }
+
+  // ── Guard: tenant_id must be present ──────────────────────────────────────
+  if (!tenant_id) {
+    return res.status(400).json({ message: 'Tenant context is missing. Please log in again.' });
   }
 
   const voteValue = type === 'up' ? 1 : -1;
@@ -221,62 +227,80 @@ export const voteIdea = async (req: any, res: Response) => {
   try {
     await client.query('BEGIN');
 
-    // 1. Check if vote already exists and lock the row for this user+idea
-    const existingVote = await client.query(
-      'SELECT id, type FROM votes WHERE idea_id = $1 AND user_id = $2 AND tenant_id = $3 FOR UPDATE', 
-      [id, user_id, tenant_id]
+    // ── Guard: idea must exist in this tenant ─────────────────────────────
+    const ideaCheck = await client.query(
+      'SELECT id, author_id, title FROM ideas WHERE id = $1 AND tenant_id = $2',
+      [id, tenant_id]
     );
-    
-    let isNewUpvote = false;
-
-    if (existingVote.rows.length > 0) {
-      if (existingVote.rows[0].type === type) {
-        // Toggle off if same type
-        await client.query('DELETE FROM votes WHERE id = $1', [existingVote.rows[0].id]);
-      } else {
-        // Update to new type
-        await client.query('UPDATE votes SET type = $1, vote_value = $2 WHERE id = $3', [type, voteValue, existingVote.rows[0].id]);
-      }
-    } else {
-      // Create new vote
-      await client.query('INSERT INTO votes (idea_id, user_id, type, vote_value, tenant_id) VALUES ($1, $2, $3, $4, $5)', [id, user_id, type, voteValue, tenant_id]);
-      if (type === 'up') isNewUpvote = true;
+    if (ideaCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      client.release();
+      return res.status(404).json({ message: 'Idea not found.' });
     }
 
-    // 2. Update votes_count in ideas table - sum of all vote_values
-    const voteSum = await client.query('SELECT SUM(vote_value) as total FROM votes WHERE idea_id = $1', [id]);
-    const totalVotes = parseInt(voteSum.rows[0].total || 0);
+    // ── Guard: one vote per user — lock row to prevent race condition ──────
+    const existingVote = await client.query(
+      'SELECT id, type FROM votes WHERE idea_id = $1 AND user_id = $2 AND tenant_id = $3 FOR UPDATE',
+      [id, user_id, tenant_id]
+    );
 
-    await client.query('UPDATE ideas SET votes_count = $1 WHERE id = $2', [totalVotes, id]);
+    if (existingVote.rows.length > 0) {
+      // Already voted — permanent lock, no toggle, no switch
+      await client.query('ROLLBACK');
+      client.release();
+      return res.status(409).json({
+        message: 'You have already voted on this idea.',
+        currentVote: existingVote.rows[0].type,
+      });
+    }
+
+    // ── First vote: insert ────────────────────────────────────────────────
+    await client.query(
+      'INSERT INTO votes (idea_id, user_id, type, vote_value, tenant_id) VALUES ($1, $2, $3, $4, $5)',
+      [id, user_id, type, voteValue, tenant_id]
+    );
+
+    // ── Recalculate votes_count from source of truth ──────────────────────
+    const voteSum = await client.query(
+      'SELECT COALESCE(SUM(vote_value), 0) as total FROM votes WHERE idea_id = $1 AND tenant_id = $2',
+      [id, tenant_id]
+    );
+    const totalVotes = parseInt(voteSum.rows[0].total);
+
+    await client.query(
+      'UPDATE ideas SET votes_count = $1 WHERE id = $2 AND tenant_id = $3',
+      [totalVotes, id, tenant_id]
+    );
 
     await client.query('COMMIT');
 
-    // 3. Post-transaction operations
+    // ── Post-transaction ──────────────────────────────────────────────────
     emitVoteUpdate(id, totalVotes);
-    
-    res.json({ message: 'Vote recorded', id, votes_count: totalVotes });
+    res.json({ message: 'Vote recorded', id, votes_count: totalVotes, vote_type: type });
 
-    // Non-blocking background tasks
-    logAudit(tenant_id, user_id, 'idea', id, 'vote_submitted', null, { type }).catch(e => console.error('Delayed audit log error:', e));
+    // Non-blocking audit + notification
+    logAudit(tenant_id, user_id, 'idea', id, 'vote_submitted', null, { type })
+      .catch(e => console.error('Audit log error:', e));
 
-    if (isNewUpvote) {
-      const ideaInfo = await query('SELECT author_id, title, tenant_id FROM ideas WHERE id = $1', [id]);
-      if (ideaInfo.rows.length > 0 && ideaInfo.rows[0].author_id !== user_id) {
-        await query(
+    if (type === 'up') {
+      const idea = ideaCheck.rows[0];
+      if (idea.author_id !== user_id) {
+        query(
           'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
-          [ideaInfo.rows[0].author_id, 'vote', id, `Someone upvoted your idea: ${ideaInfo.rows[0].title}`, ideaInfo.rows[0].tenant_id]
-        ).catch(e => console.error('Delayed notification error:', e));
+          [idea.author_id, 'vote', id, `Someone upvoted your idea: ${idea.title}`, tenant_id]
+        ).catch(e => console.error('Notification error:', e));
       }
     }
 
   } catch (error) {
-    await client.query('ROLLBACK');
+    try { await client.query('ROLLBACK'); } catch (_) {}
     console.error('Vote idea error:', error);
-    res.status(500).json({ message: 'Server error' });
+    if (!res.headersSent) res.status(500).json({ message: 'Server error' });
   } finally {
     client.release();
   }
 };
+
 
 export const addComment = async (req: any, res: Response) => {
   const { id } = req.params;
