@@ -123,34 +123,52 @@ export const deleteUser = async (req: Request, res: Response) => {
     }
 
     // ─── Manual Cleanup to satisfy Foreign Key Constraints ───────────
-    
-    // 1. Audit Logs: Set actor_user_id to NULL
-    await query('UPDATE audit_logs SET actor_user_id = NULL WHERE actor_user_id = $1', [id]);
+    await query('BEGIN');
+    try {
+      // 1. Audit Logs: Set actor_user_id to NULL
+      await query('UPDATE audit_logs SET actor_user_id = NULL WHERE actor_user_id = $1', [id]);
 
-    // 2. Ideas: Set owner_id to NULL (author_id usually has ON DELETE SET NULL already)
-    await query('UPDATE ideas SET owner_id = NULL WHERE owner_id = $1', [id]);
+      // 2. Ideas: Set author_id to NULL (Keep the idea, but remove the author link)
+      await query('UPDATE ideas SET author_id = NULL WHERE author_id = $1', [id]);
 
-    // 3. Idea Attachments: Set uploaded_by to NULL
-    await query('UPDATE idea_attachments SET uploaded_by = NULL WHERE uploaded_by = $1', [id]);
+      // 3. Comments: Set user_id to NULL (Keep the feedback/comment history)
+      await query('UPDATE comments SET user_id = NULL WHERE user_id = $1', [id]);
 
-    // 4. Idea Scores: Delete (scored_by is part of a UNIQUE constraint)
-    await query('DELETE FROM idea_scores WHERE scored_by = $1', [id]);
+      // 4. Votes: Delete (Votes are personal and tied to the user identity)
+      await query('DELETE FROM votes WHERE user_id = $1', [id]);
 
-    // 5. Tenant Users & Roles: Clean up association
-    // First find the tenant_user relationship
-    const tuResult = await query('SELECT id FROM tenant_users WHERE user_id = $1 AND tenant_id = $2', [id, tenantId]);
-    if (tuResult.rows.length > 0) {
-      const tuId = tuResult.rows[0].id;
-      // Delete user roles for this tenant
-      await query('DELETE FROM user_roles WHERE tenant_user_id = $1', [tuId]);
-      // Delete tenant user association
-      await query('DELETE FROM tenant_users WHERE id = $1', [tuId]);
+      // 5. Bookmarks: Delete
+      await query('DELETE FROM bookmarks WHERE user_id = $1', [id]);
+
+      // 6. Notifications: Delete
+      await query('DELETE FROM notifications WHERE user_id = $1', [id]);
+
+      // 7. Idea Attachments: Set uploaded_by to NULL
+      await query('UPDATE idea_attachments SET uploaded_by = NULL WHERE uploaded_by = $1', [id]);
+
+      // 8. Idea Scores: Delete (they are part of a unique constraint)
+      await query('DELETE FROM idea_scores WHERE scored_by = $1', [id]);
+
+      // 9. User Idea Spaces: Delete assignments
+      await query('DELETE FROM user_idea_spaces WHERE user_id = $1', [id]);
+
+      // 10. Tenant Users & Roles: Clean up association for this tenant
+      const tuResult = await query('SELECT id FROM tenant_users WHERE user_id = $1 AND tenant_id = $2', [id, tenantId]);
+      if (tuResult.rows.length > 0) {
+        const tuId = tuResult.rows[0].id;
+        await query('DELETE FROM user_roles WHERE tenant_user_id = $1', [tuId]);
+        await query('DELETE FROM tenant_users WHERE id = $1', [tuId]);
+      }
+
+      // 11. Finally delete the user account
+      await query('DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND role != $3', [id, tenantId, 'super_admin']);
+      
+      await query('COMMIT');
+      res.json({ message: 'User and all associated data cleared/deleted successfully' });
+    } catch (dbError) {
+      await query('ROLLBACK');
+      throw dbError;
     }
-
-    // ─── Finally delete the user ─────────────────────────────────────
-    await query('DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND role != $3', [id, tenantId, 'super_admin']);
-    
-    res.json({ message: 'User and associated data updated/deleted successfully' });
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ message: 'Server error' });

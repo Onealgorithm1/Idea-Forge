@@ -33,7 +33,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
   return (
     <div
       className={cn(
-        'flex items-center gap-1 p-1 rounded-xl bg-background/50 backdrop-blur-md border border-slate-200/60 shadow-sm transition-all',
+        'flex items-center gap-2 p-1 px-2 rounded-xl bg-background/50 backdrop-blur-md border border-slate-200/60 shadow-sm transition-all',
         !hasVoted && 'hover:shadow-md hover:border-slate-300',
         orientation === 'vertical' ? 'flex-col' : 'flex-row',
         className
@@ -49,11 +49,8 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
           'h-7 w-7 rounded-lg transition-all',
           userVote === 'up'
             // Active — voted up (locked in green)
-            ? 'bg-emerald-500/20 text-emerald-600 cursor-default'
-            : userVote === 'down'
-              // Opposite voted — fully greyed, no hover
-              ? 'text-slate-300 opacity-40 cursor-not-allowed'
-              : isLoading
+            ? 'bg-emerald-500/20 text-emerald-600'
+            : isLoading
                 // Loading state
                 ? 'text-slate-400 opacity-50 cursor-not-allowed'
                 // No vote yet — interactive
@@ -85,7 +82,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
       </Button>
 
       {/* ── Vote count ── */}
-      <div className="relative h-6 min-w-[1.25rem] flex items-center justify-center overflow-hidden font-bold text-xs">
+      <div className="relative h-6 min-w-[1rem] flex items-center justify-center overflow-hidden font-bold text-xs">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.span
             key={initialVotes}
@@ -95,60 +92,13 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className={cn(
               'absolute',
-              initialVotes > 0 ? 'text-emerald-600' :
-              initialVotes < 0 ? 'text-rose-600' :
-              'text-slate-500'
+              initialVotes > 0 ? 'text-emerald-600' : 'text-slate-500'
             )}
           >
             {initialVotes}
           </motion.span>
         </AnimatePresence>
       </div>
-
-      {/* ── Downvote ── */}
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className={cn(
-          'h-7 w-7 rounded-lg transition-all',
-          userVote === 'down'
-            // Active — voted down (locked in red)
-            ? 'bg-rose-500/20 text-rose-600 cursor-default'
-            : userVote === 'up'
-              // Opposite voted — fully greyed, no hover
-              ? 'text-slate-300 opacity-40 cursor-not-allowed'
-              : isLoading
-                ? 'text-slate-400 opacity-50 cursor-not-allowed'
-                : 'text-slate-500 hover:bg-rose-500/20 hover:text-rose-600 group'
-        )}
-        disabled={isFullyDisabled}
-        title={
-          userVote === 'up' ? 'Remove upvote' :
-          isLoading ? 'Saving...' : 'Downvote (Clears Upvote)'
-        }
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          // Downvote only does something if we have an upvote (to clear it)
-          if (!isFullyDisabled && userVote === 'up') onVote('down');
-        }}
-      >
-        <motion.div
-          whileHover={isFullyDisabled ? {} : { scale: 1.15 }}
-          whileTap={isFullyDisabled ? {} : { scale: 0.9 }}
-        >
-          <ThumbsDown
-            className={cn(
-              'h-4 w-4 transition-all',
-              userVote === 'down' && 'fill-rose-500 text-rose-600 opacity-100',
-              userVote !== 'down' && !isFullyDisabled && 'opacity-70 group-hover:opacity-100',
-              // Hide or dim if we can't downvote (not upvoted)
-              userVote !== 'up' && 'opacity-30'
-            )}
-          />
-        </motion.div>
-      </Button>
     </div>
   );
 };
