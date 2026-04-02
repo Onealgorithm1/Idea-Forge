@@ -36,7 +36,7 @@ const ScoringPanel = ({ ideaId, token, tenantSlug }: { ideaId: string; token: st
     queryFn: () => api.get(`/scoring/ideas/${ideaId}/scores`),
   });
   const { data: scorecards = [] } = useQuery({
-    queryKey: ["scorecards"],
+    queryKey: ["scorecards", tenantSlug],
     queryFn: () => api.get("/scoring/scorecards"),
   });
 
@@ -120,7 +120,7 @@ const IdeaDetail = () => {
   const queryClient = useQueryClient();
 
   const { data: allIdeas = [] } = useQuery({
-    queryKey: ["ideas"],
+    queryKey: ["ideas", tenantSlug],
     queryFn: () => api.get("/ideas"),
     staleTime: 1000 * 5,
   });
@@ -147,7 +147,7 @@ const IdeaDetail = () => {
   const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
   const { data: ideaSpaces = [] } = useQuery({
-    queryKey: ["idea-spaces"],
+    queryKey: ["idea-spaces", tenantSlug],
     queryFn: () => api.get("/ideas/spaces"),
   });
 
@@ -160,7 +160,7 @@ const IdeaDetail = () => {
     onSuccess: () => {
       setNewComment("");
       queryClient.invalidateQueries({ queryKey: ["comments", id] });
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
       toast.success("Comment added");
     },
     onError: (error: any) => toast.error(error.message || "Failed to add comment"),
@@ -182,7 +182,7 @@ const IdeaDetail = () => {
       api.delete(`/ideas/comments/${commentId}`, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments", id] });
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
       toast.success("Comment deleted");
     },
     onError: (error: any) => toast.error(error.message || "Failed to delete comment"),
@@ -191,7 +191,7 @@ const IdeaDetail = () => {
   const editMutation = useMutation({
     mutationFn: (data: any) => api.patch(`/ideas/${id}`, data, token!),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
       setIsEditing(false);
       toast.success("Idea updated");
     },
@@ -202,20 +202,31 @@ const IdeaDetail = () => {
     mutationFn: ({ type }: { type: "up" | "down" }) =>
       api.post(`/ideas/${id}/vote`, { type }, token!),
     onMutate: async ({ type }) => {
-      await queryClient.cancelQueries({ queryKey: ["ideas"] });
-      const previousIdeas = queryClient.getQueryData(["ideas"]);
+      await queryClient.cancelQueries({ queryKey: ["ideas", tenantSlug] });
+      const previousIdeas = queryClient.getQueryData(["ideas", tenantSlug]);
 
-      queryClient.setQueryData(["ideas"], (old: any[] | undefined) => {
+      queryClient.setQueryData(["ideas", tenantSlug], (old: any[] | undefined) => {
         if (!old) return old;
         return old.map(item => {
           if (String(item.id) !== id) return item;
-          // Only apply optimistic update if user hasn't voted yet
-          if (item.vote_type) return item;
-          const delta = type === 'up' ? 1 : -1;
+          
+          let delta = 0;
+          let newVoteType: "up" | "down" | null = null;
+          
+          if (item.vote_type) {
+            // Toggle off: If they had a vote, any click (up or down) removes it
+            delta = -1;
+            newVoteType = null;
+          } else if (type === 'up') {
+            // First vote and it's an upvote
+            delta = 1;
+            newVoteType = 'up';
+          }
+          
           return {
             ...item,
-            votes_count: parseInt(item.votes_count || 0) + delta,
-            vote_type: type,
+            votes_count: Math.max(0, parseInt(item.votes_count || 0) + delta),
+            vote_type: newVoteType,
           };
         });
       });
@@ -224,7 +235,7 @@ const IdeaDetail = () => {
     },
     onError: (err: any, variables, context) => {
       if (context?.previousIdeas) {
-        queryClient.setQueryData(["ideas"], context.previousIdeas);
+        queryClient.setQueryData(["ideas", tenantSlug], context.previousIdeas);
       }
       // Suppress 409 toast — UI is already locked, no need to alert
       if ((err as any)?.status !== 409) {
@@ -423,7 +434,6 @@ const IdeaDetail = () => {
                     onVote={(type) => {
                       if (!token) return toast.error("Please login to vote");
                       if (voteMutation.isPending) return;
-                      if (idea.vote_type) return; // Already voted — double-safety guard
                       voteMutation.mutate({ type });
                     }}
                     userVote={idea.vote_type}

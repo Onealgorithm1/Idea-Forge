@@ -62,7 +62,7 @@ export default function FloatingSubmitIdea() {
 
             </div>
             <div className="bg-white rounded-2xl p-2">
-              <SubmitIdeaForm />
+              <SubmitIdeaForm onSuccess={() => setIsOpen(false)} />
             </div>
           </div>
         </DialogContent>

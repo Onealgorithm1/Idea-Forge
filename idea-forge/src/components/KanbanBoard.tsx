@@ -34,7 +34,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
   const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
 
   const { data: ideas = [], isLoading } = useQuery({
-    queryKey: ["ideas"],
+    queryKey: ["ideas", tenantSlug],
     queryFn: () => api.get("/ideas"),
     staleTime: 1000 * 60, // 1 minute
   });
@@ -44,23 +44,34 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
       api.post(`/ideas/${id}/vote`, { type }, token!),
     onMutate: async ({ id, type }) => {
       // Cancel any outgoing refetch so they don't overwrite our optimistic update
-      await queryClient.cancelQueries({ queryKey: ["ideas"] });
+      await queryClient.cancelQueries({ queryKey: ["ideas", tenantSlug] });
 
       // Snapshot the previous value
-      const previousIdeas = queryClient.getQueryData(["ideas"]);
+      const previousIdeas = queryClient.getQueryData(["ideas", tenantSlug]);
 
       // Optimistically update to the new value
-      queryClient.setQueryData(["ideas"], (old: any[] | undefined) => {
+      queryClient.setQueryData(["ideas", tenantSlug], (old: any[] | undefined) => {
         if (!old) return old;
         return old.map(idea => {
           if (idea.id !== id) return idea;
-          // Only apply optimistic update if user hasn't voted yet
-          if (idea.vote_type) return idea;
-          const delta = type === 'up' ? 1 : -1;
+          
+          let delta = 0;
+          let newVoteType: "up" | "down" | null = null;
+          
+          if (idea.vote_type) {
+            // Toggle off: If they had a vote, any click (up or down) removes it
+            delta = -1;
+            newVoteType = null;
+          } else if (type === 'up') {
+            // First vote and it's an upvote
+            delta = 1;
+            newVoteType = 'up';
+          }
+          
           return {
             ...idea,
-            votes_count: parseInt(idea.votes_count || 0) + delta,
-            vote_type: type,
+            votes_count: Math.max(0, parseInt(idea.votes_count || 0) + delta),
+            vote_type: newVoteType,
           };
         });
       });
@@ -70,7 +81,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
     onError: (err: any, variables, context) => {
       // Roll back optimistic update
       if (context?.previousIdeas) {
-        queryClient.setQueryData(["ideas"], context.previousIdeas);
+        queryClient.setQueryData(["ideas", tenantSlug], context.previousIdeas);
       }
       // Only show toast for non-409 errors (409 means already voted, UI already shows lock)
       if ((err as any)?.status !== 409) {
@@ -79,14 +90,14 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
     },
     onSettled: (data) => {
       // Always refetch after error or success to keep server in sync
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
     },
   });
 
   const bookmarkMutation = useMutation({
     mutationFn: (id: string) => api.post(`/ideas/${id}/bookmark`, {}, token!),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
     }
   });
 
@@ -116,10 +127,6 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
   const handleVote = (id: string, type: 'up' | 'down') => {
     if (!token) return toast.error("Please login to vote");
     if (voteMutation.isPending) return;
-    // Check local cache first — if already voted, block without a network call
-    const ideas: any[] | undefined = queryClient.getQueryData(["ideas"]);
-    const idea = ideas?.find((i: any) => i.id === id);
-    if (idea?.vote_type) return; // Already voted — UI is locked, this is a double-safety guard
     voteMutation.mutate({ id, type });
   };
 

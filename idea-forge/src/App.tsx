@@ -68,12 +68,12 @@ const AppContent = () => (
         {/* <Route path="signup" element={<AuthPage />} /> */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <FloatingSubmitIdea />
     </TenantProvider>} />
 
     {/* Catch-all for very deep unknown paths */}
     <Route path="*" element={<NotFound />} />
     </Routes>
-    <FloatingSubmitIdea />
   </>
 );
 

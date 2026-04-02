@@ -36,7 +36,7 @@ const RoadmapBoard = () => {
   const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
 
   const { data: ideas = [], isLoading } = useQuery({
-    queryKey: ["ideas"],
+    queryKey: ["ideas", tenantSlug],
     queryFn: () => api.get("/ideas"),
     staleTime: 1000 * 60,
   });
@@ -45,11 +45,11 @@ const RoadmapBoard = () => {
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       api.patch(`/ideas/${id}/status`, { status }, token!),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
     },
     onError: (error: any) => {
       toast.error(error.message || "Update failed");
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
     }
   });
 

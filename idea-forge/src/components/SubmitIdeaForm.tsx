@@ -12,10 +12,11 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSimilarIdeas, type SimilarIdea } from "@/data/mockData";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenant } from "@/contexts/TenantContext";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -123,25 +124,47 @@ const SIMILAR_IDEAS = getSimilarIdeas(5);
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-const SubmitIdeaForm = () => {
+const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<string>("");
   const [ideaSpace, setIdeaSpace] = useState<string>("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
-  const [categories, setCategories] = useState<any[]>([]);
-  const [ideaSpaces, setIdeaSpaces] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const { token } = useAuth();
+  const queryClient = useQueryClient();
+  const { token, user } = useAuth();
+  const { tenant } = useTenant();
   const navigate = useNavigate();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
+  
+  // Use tenant context slug if available, fallback to param
+  const currentSlug = tenant?.slug || tenantSlug || "default";
 
   const { data: recentIdeas = [] } = useQuery({
-    queryKey: ["recent-ideas"],
+    queryKey: ["recent-ideas", tenantSlug],
     queryFn: () => api.get("/ideas"),
     select: (data) => data.slice(0, 5),
   });
+
+  const { data: categories = [], isLoading: isCategoriesLoading } = useQuery({
+    queryKey: ["categories", tenantSlug],
+    queryFn: () => api.get("/ideas/categories"),
+  });
+
+  const { data: ideaSpaces = [], isLoading: isSpacesLoading } = useQuery({
+    queryKey: ["idea-spaces", tenantSlug],
+    queryFn: () => api.get("/ideas/spaces"),
+  });
+
+  // Set default values when data is loaded
+  useEffect(() => {
+    if (categories.length > 0 && !category) setCategory(categories[0].id);
+  }, [categories, category]);
+
+  useEffect(() => {
+    if (ideaSpaces.length > 0 && !ideaSpace) setIdeaSpace(ideaSpaces[0].id);
+  }, [ideaSpaces, ideaSpace]);
 
   // Map backend ideas to SimilarIdea format for the panel
   const mappedRecentIdeas: SimilarIdea[] = recentIdeas.map((idea: any) => ({
@@ -155,30 +178,6 @@ const SubmitIdeaForm = () => {
     iconColor: "bg-blue-500"
   }));
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const data = await api.get("/ideas/categories");
-        setCategories(data);
-        if (data.length > 0) setCategory(data[0].id);
-      } catch (error) {
-        console.error("Failed to fetch categories:", error);
-      }
-    };
-
-    const fetchIdeaSpaces = async () => {
-      try {
-        const data = await api.get("/ideas/spaces");
-        setIdeaSpaces(data);
-        if (data.length > 0) setIdeaSpace(data[0].id);
-      } catch (error) {
-        console.error("Failed to fetch idea spaces:", error);
-      }
-    };
-
-    fetchCategories();
-    fetchIdeaSpaces();
-  }, []);
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
@@ -200,6 +199,14 @@ const SubmitIdeaForm = () => {
     if (!validate() || isSubmitting) return;
 
     setIsSubmitting(true);
+    // Final safety check: Ensure user's session matches the tenant they are in
+    const storedTenantId = localStorage.getItem('tenantId');
+    if (user && storedTenantId && user.tenantId !== storedTenantId) {
+      toast.error("Organization mismatch! Please log out and log back in to the correct organization.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       await api.post("/ideas", {
         title,
@@ -214,7 +221,17 @@ const SubmitIdeaForm = () => {
       setDescription("");
       setTags("");
       setErrors({});
-      navigate(`${getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)}`);
+      
+      // Invalidate relevant queries to refresh the board immediately
+      queryClient.invalidateQueries({ queryKey: ["ideas", currentSlug] });
+      queryClient.invalidateQueries({ queryKey: ["recent-ideas", currentSlug] });
+      queryClient.invalidateQueries({ queryKey: ["analytics", "summary", currentSlug] });
+
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate(`${getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}`);
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to post idea");
       if (error.message?.toLowerCase().includes("category")) {

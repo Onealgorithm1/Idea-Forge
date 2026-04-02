@@ -238,27 +238,33 @@ export const voteIdea = async (req: any, res: Response) => {
       return res.status(404).json({ message: 'Idea not found.' });
     }
 
-    // ── Guard: one vote per user — lock row to prevent race condition ──────
+    // ── Guard: one vote per user — check existence ──────
     const existingVote = await client.query(
       'SELECT id, type FROM votes WHERE idea_id = $1 AND user_id = $2 AND tenant_id = $3 FOR UPDATE',
       [id, user_id, tenant_id]
     );
-
+    
+    let currentVoteValue = 0;
+    
     if (existingVote.rows.length > 0) {
-      // Already voted — permanent lock, no toggle, no switch
-      await client.query('ROLLBACK');
+      // Toggle logic: If user already voted, any click (up or down) deletes the existing vote
+      await client.query(
+        'DELETE FROM votes WHERE id = $1',
+        [existingVote.rows[0].id]
+      );
+      // Vote removed, so delta is effectively -1 if it was an upvote
+    } else if (type === 'up') {
+      // First vote and it's an upvote: insert
+      await client.query(
+        'INSERT INTO votes (idea_id, user_id, type, vote_value, tenant_id) VALUES ($1, $2, $3, $4, $5)',
+        [id, user_id, 'up', 1, tenant_id]
+      );
+    } else {
+      // Downvote when no vote exists: NO-OP in binary system
+      await client.query('COMMIT');
       client.release();
-      return res.status(409).json({
-        message: 'You have already voted on this idea.',
-        currentVote: existingVote.rows[0].type,
-      });
+      return res.json({ message: 'No vote to remove', id, votes_count: 0 }); // Better UX than 400
     }
-
-    // ── First vote: insert ────────────────────────────────────────────────
-    await client.query(
-      'INSERT INTO votes (idea_id, user_id, type, vote_value, tenant_id) VALUES ($1, $2, $3, $4, $5)',
-      [id, user_id, type, voteValue, tenant_id]
-    );
 
     // ── Recalculate votes_count from source of truth ──────────────────────
     const voteSum = await client.query(

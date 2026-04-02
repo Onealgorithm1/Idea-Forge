@@ -27,7 +27,8 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
 }) => {
   // Once a user has voted, both buttons lock. The voted button stays highlighted.
   const hasVoted = userVote !== null && userVote !== undefined;
-  const isFullyDisabled = disabled || isLoading || hasVoted;
+  // Buttons remain interactive to allow toggling/undoing
+  const isFullyDisabled = disabled || isLoading;
 
   return (
     <div
@@ -60,8 +61,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
         )}
         disabled={isFullyDisabled}
         title={
-          userVote === 'up' ? 'You upvoted this idea' :
-          userVote === 'down' ? 'You already downvoted' :
+          userVote === 'up' ? 'Remove upvote' :
           isLoading ? 'Saving...' : 'Upvote'
         }
         onClick={(e) => {
@@ -124,14 +124,14 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
         )}
         disabled={isFullyDisabled}
         title={
-          userVote === 'down' ? 'You downvoted this idea' :
-          userVote === 'up' ? 'You already upvoted' :
-          isLoading ? 'Saving...' : 'Downvote'
+          userVote === 'up' ? 'Remove upvote' :
+          isLoading ? 'Saving...' : 'Downvote (Clears Upvote)'
         }
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          if (!isFullyDisabled) onVote('down');
+          // Downvote only does something if we have an upvote (to clear it)
+          if (!isFullyDisabled && userVote === 'up') onVote('down');
         }}
       >
         <motion.div
@@ -143,6 +143,8 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
               'h-4 w-4 transition-all',
               userVote === 'down' && 'fill-rose-500 text-rose-600 opacity-100',
               userVote !== 'down' && !isFullyDisabled && 'opacity-70 group-hover:opacity-100',
+              // Hide or dim if we can't downvote (not upvoted)
+              userVote !== 'up' && 'opacity-30'
             )}
           />
         </motion.div>

@@ -1,3 +1,4 @@
+import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { 
@@ -12,34 +13,35 @@ import { useAuth } from "@/contexts/AuthContext";
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 const AnalyticsView = () => {
+  const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { token, user } = useAuth();
   
   const { data: summary, isLoading: loadingSummary } = useQuery({
-    queryKey: ["analytics", "summary", user?.id],
+    queryKey: ["analytics", "summary", tenantSlug, user?.id],
     queryFn: () => api.get("/analytics/summary", token!),
     enabled: !!token,
   });
 
   const { data: growth, isLoading: loadingGrowth } = useQuery({
-    queryKey: ["analytics", "growth", user?.id],
+    queryKey: ["analytics", "growth", tenantSlug, user?.id],
     queryFn: () => api.get("/analytics/growth", token!),
     enabled: !!token,
   });
 
   const { data: statusDist, isLoading: loadingStatus } = useQuery({
-    queryKey: ["analytics", "distribution-status", user?.id],
+    queryKey: ["analytics", "distribution-status", tenantSlug, user?.id],
     queryFn: () => api.get("/analytics/distribution/status", token!),
     enabled: !!token,
   });
 
   const { data: catDist, isLoading: loadingCat } = useQuery({
-    queryKey: ["analytics", "distribution-category", user?.id],
+    queryKey: ["analytics", "distribution-category", tenantSlug, user?.id],
     queryFn: () => api.get("/analytics/distribution/category", token!),
     enabled: !!token,
   });
 
   const { data: topIdeas, isLoading: loadingTop } = useQuery({
-    queryKey: ["analytics", "top-ideas", user?.id],
+    queryKey: ["analytics", "top-ideas", tenantSlug, user?.id],
     queryFn: () => api.get("/analytics/top-ideas", token!),
     enabled: !!token,
   });

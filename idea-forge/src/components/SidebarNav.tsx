@@ -4,22 +4,36 @@ import { ROUTES, getTenantPath } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 interface SidebarItem {
   icon: LucideIcon;
   label: string;
 }
 
-export const categories: SidebarItem[] = [
-  { icon: LayoutGrid, label: "All" },
-  { icon: Briefcase, label: "Sales / Opportunities" },
-  { icon: Package, label: "Product Development" },
-  { icon: Palette, label: "UI/UX Design" },
-  { icon: Megaphone, label: "Marketing & Content" },
-  { icon: Cpu, label: "Engineering & Tech" },
-  { icon: Settings, label: "Operations" },
-  { icon: LayoutGrid, label: "General" },
-];
+const ICON_MAP: Record<string, LucideIcon> = {
+  "Sales": Briefcase,
+  "Opportunities": Briefcase,
+  "Product": Package,
+  "Design": Palette,
+  "UI/UX": Palette,
+  "Marketing": Megaphone,
+  "Content": Megaphone,
+  "Engineering": Cpu,
+  "Tech": Cpu,
+  "Operations": Settings,
+  "General": LayoutGrid,
+  "Default": Tag
+};
+
+const getCategoryIcon = (name: string): LucideIcon => {
+  if (name === "All") return LayoutGrid;
+  for (const key in ICON_MAP) {
+    if (name.toLowerCase().includes(key.toLowerCase())) return ICON_MAP[key];
+  }
+  return ICON_MAP.Default;
+};
 
 interface SidebarNavProps {
   onCategorySelect?: (category: string) => void;
@@ -73,7 +87,28 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
   const [searchParams] = useSearchParams();
 
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
+  const { tenant } = useTenant();
   const selectedCategory = propCategory || searchParams.get("category") || "All";
+  
+  // Robust slug detection
+  const currentSlug = tenant?.slug || tenantSlug || "default";
+
+  // Fetch tenant-specific categories
+  const { data: dbCategories, isLoading: isCategoriesLoading } = useQuery({
+    queryKey: ["categories", currentSlug],
+    queryFn: () => api.get("/ideas/categories"),
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    retry: 1,
+  });
+
+  // Combine dynamic categories with mandatory 'All' category
+  const displayCategories: SidebarItem[] = [
+    { icon: LayoutGrid, label: "All" },
+    ...(Array.isArray(dbCategories) ? dbCategories.map((cat: any) => ({
+      icon: getCategoryIcon(cat.name),
+      label: cat.name
+    })) : [])
+  ];
 
   const handleCategoryClick = (label: string) => {
     if (onCategorySelect) {
@@ -81,7 +116,8 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
     } else {
       const params = new URLSearchParams();
       if (label !== "All") params.set("category", label);
-      navigate(`${getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)}${params.toString() ? '?' + params.toString() : ''}`);
+      const targetPath = getTenantPath(ROUTES.IDEA_BOARD, tenantSlug);
+      navigate(`${targetPath}${params.toString() ? '?' + params.toString() : ''}`);
     }
   };
 
@@ -97,25 +133,25 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
             </div>
           </div>
           <div className="space-y-0.5 px-2">
-            <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug || "default")} className="block w-full">
+            <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, currentSlug)} className="block w-full">
               <SidebarButton
                 icon={Activity}
                 label="Admin Dashboard"
-                active={pathname === getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug || "default")}
+                active={pathname === getTenantPath(ROUTES.ADMIN_DASHBOARD, currentSlug)}
               />
             </Link>
-            <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default")} className="block w-full">
+            <Link to={getTenantPath(ROUTES.ADMIN_USERS, currentSlug)} className="block w-full">
               <SidebarButton
                 icon={Users}
                 label="Manage Users"
-                active={pathname === getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default")}
+                active={pathname === getTenantPath(ROUTES.ADMIN_USERS, currentSlug)}
               />
             </Link>
-            <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug || "default")} className="block w-full">
+            <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, currentSlug)} className="block w-full">
               <SidebarButton
                 icon={Building}
                 label="Organization Settings"
-                active={pathname === getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug || "default")}
+                active={pathname === getTenantPath(ROUTES.ADMIN_SETTINGS, currentSlug)}
               />
             </Link>
           </div>
@@ -130,13 +166,13 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
           </div>
         </div>
 
-        <div className="flex-1 space-y-0.5 overflow-y-auto custom-scrollbar pb-4 px-2">
-          {categories.map((cat) => (
+        <div className="flex-1 space-y-0.5 overflow-y-auto no-scrollbar pb-4 px-2">
+          {displayCategories.map((cat) => (
             <SidebarButton
               key={cat.label}
               icon={cat.icon}
               label={cat.label}
-              active={selectedCategory === cat.label || (cat.label === "All" && !selectedCategory && pathname !== getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug || "default") && pathname !== getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default"))}
+              active={selectedCategory === cat.label || (cat.label === "All" && !selectedCategory && pathname !== getTenantPath(ROUTES.ADMIN_DASHBOARD, currentSlug) && pathname !== getTenantPath(ROUTES.ADMIN_USERS, currentSlug))}
               onClick={() => handleCategoryClick(cat.label)}
             />
           ))}

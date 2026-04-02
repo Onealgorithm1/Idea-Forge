@@ -32,7 +32,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { categories } from "./SidebarNav";
+import { useQuery } from "@tanstack/react-query";
 import { SupportDialog } from "./SupportDialog";
 import {
   DropdownMenu,
@@ -49,14 +49,28 @@ const Header = () => {
   const location = useLocation();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const [notifications, setNotifications] = useState<any[]>([]);
+  
+  // Robust slug detection
+  const currentSlug = tenant?.slug || tenantSlug || "default";
+
+  const { data: dbCategories = [] } = useQuery({
+    queryKey: ["categories", currentSlug],
+    queryFn: () => api.get("/ideas/categories"),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const displayCategories = [
+    { label: "All" },
+    ...(Array.isArray(dbCategories) ? dbCategories.map((cat: any) => ({ label: cat.name })) : [])
+  ];
 
   const tabs = [
-    { name: "Idea Board", path: getTenantPath(ROUTES.IDEA_BOARD, tenantSlug) },
-    { name: "Roadmap", path: getTenantPath(ROUTES.ROADMAP, tenantSlug) },
+    { name: "Idea Board", path: getTenantPath(ROUTES.IDEA_BOARD, currentSlug) },
+    { name: "Roadmap", path: getTenantPath(ROUTES.ROADMAP, currentSlug) },
   ];
   
   if (user?.role === "admin" || user?.role === "reviewer" || user?.role === "super_admin") {
-    tabs.push({ name: "Analytics", path: getTenantPath(ROUTES.ANALYTICS, tenantSlug) });
+    tabs.push({ name: "Analytics", path: getTenantPath(ROUTES.ANALYTICS, currentSlug) });
   }
 
   const fetchNotifications = async () => {
@@ -128,19 +142,19 @@ const Header = () => {
                       </nav>
                     </div>
 
-                    {(location.pathname === getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)) && (
+                    {(location.pathname === getTenantPath(ROUTES.IDEA_BOARD, currentSlug)) && (
                       <div className="space-y-4">
                         <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2 flex items-center gap-2">
                           <Tag className="h-3 w-3" /> Categories
                         </p>
                         <div className="flex flex-wrap gap-2 px-1">
-                          {categories.map((cat) => {
+                          {displayCategories.map((cat) => {
                             const searchParams = new URLSearchParams(location.search);
                             const currentCat = searchParams.get("category") || "All";
                             const isActive = currentCat === cat.label;
                             const params = new URLSearchParams();
                             if (cat.label !== "All") params.set("category", cat.label);
-                            const path = `${getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)}${params.toString() ? "?" + params.toString() : ""}`;
+                            const path = `${getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}${params.toString() ? "?" + params.toString() : ""}`;
 
                             return (
                               <Link
@@ -164,13 +178,13 @@ const Header = () => {
                           <ShieldCheck className="h-3 w-3" /> Administration
                         </p>
                         <div className="space-y-2">
-                          <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
+                          <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, currentSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
                             Admin Dashboard
                           </Link>
-                          <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
+                          <Link to={getTenantPath(ROUTES.ADMIN_USERS, currentSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
                             Manage Users
                           </Link>
-                          <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
+                          <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, currentSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
                             Organization Settings
                           </Link>
                         </div>
@@ -192,7 +206,7 @@ const Header = () => {
                         {user ? (
                           <>
                             <Link
-                              to={getTenantPath(ROUTES.PROFILE, tenantSlug)}
+                              to={getTenantPath(ROUTES.PROFILE, currentSlug)}
                               className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all"
                             >
                               Profile Settings
@@ -206,7 +220,7 @@ const Header = () => {
                           </>
                         ) : (
                           <Link
-                            to={getTenantPath(ROUTES.LOGIN, tenantSlug)}
+                            to={getTenantPath(ROUTES.LOGIN, currentSlug)}
                             className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold bg-primary text-white text-center justify-center"
                           >
                             Login
@@ -220,7 +234,7 @@ const Header = () => {
             </Sheet>
           </div>
 
-          <Link to={getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)} className="flex items-center gap-3 md:gap-3.5 hover:opacity-90 transition-all group">
+          <Link to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)} className="flex items-center gap-3 md:gap-3.5 hover:opacity-90 transition-all group">
             <div className="bg-primary/20 p-2 md:p-2.5 rounded-xl group-hover:bg-primary/30 transition-colors">
               <Logo imageClassName="h-7 w-7 md:h-10 md:w-10" />
             </div>
@@ -333,7 +347,7 @@ const Header = () => {
                         Admin Controls
                       </DropdownMenuLabel>
                       <DropdownMenuItem asChild className="group cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/90 hover:!text-slate-950 focus:!bg-white/90 focus:!text-slate-950">
-                        <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, tenantSlug)}>
+                        <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, currentSlug)}>
                           <Activity className="mr-3 h-4 w-4 text-primary transition-colors group-hover:text-slate-950 group-focus:text-slate-950" />
                           <div className="flex flex-col">
                             <span className="text-sm font-semibold leading-tight">Admin Dashboard</span>
@@ -342,7 +356,7 @@ const Header = () => {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild className="group cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/90 hover:!text-slate-950 focus:!bg-white/90 focus:!text-slate-950">
-                        <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)}>
+                        <Link to={getTenantPath(ROUTES.ADMIN_USERS, currentSlug)}>
                           <Users className="mr-3 h-4 w-4 text-primary transition-colors group-hover:text-slate-950 group-focus:text-slate-950" />
                           <div className="flex flex-col">
                             <span className="text-sm font-semibold leading-tight">Manage Users</span>
@@ -351,7 +365,7 @@ const Header = () => {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild className="group cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/90 hover:!text-slate-950 focus:!bg-white/90 focus:!text-slate-950">
-                        <Link to={`${getTenantPath(ROUTES.PROFILE, tenantSlug)}?tab=my-account`}>
+                        <Link to={`${getTenantPath(ROUTES.PROFILE, currentSlug)}?tab=my-account`}>
                           <UserCircle2 className="mr-3 h-4 w-4 text-primary transition-colors group-hover:text-slate-950 group-focus:text-slate-950" />
                           <div className="flex flex-col">
                             <span className="text-sm font-semibold leading-tight">User Settings</span>
@@ -364,7 +378,7 @@ const Header = () => {
                         Organization Settings
                       </DropdownMenuLabel>
                       <DropdownMenuItem asChild className="group cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/90 hover:!text-slate-950 focus:!bg-white/90 focus:!text-slate-950">
-                        <Link to={`${getTenantPath(ROUTES.PROFILE, tenantSlug)}?tab=organization`}>
+                        <Link to={`${getTenantPath(ROUTES.PROFILE, currentSlug)}?tab=organization`}>
                           <Settings className="mr-3 h-4 w-4 text-info transition-colors group-hover:text-slate-950 group-focus:text-slate-950" />
                           <div className="flex flex-col">
                             <span className="text-sm font-semibold leading-tight">Organization Profile</span>
@@ -373,7 +387,7 @@ const Header = () => {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild className="group cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/90 hover:!text-slate-950 focus:!bg-white/90 focus:!text-slate-950">
-                        <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, tenantSlug)}>
+                        <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, currentSlug)}>
                           <Layers className="mr-3 h-4 w-4 text-info transition-colors group-hover:text-slate-950 group-focus:text-slate-950" />
                           <div className="flex flex-col">
                             <span className="text-sm font-semibold leading-tight">Organization Idea Spaces</span>
@@ -388,7 +402,7 @@ const Header = () => {
                         Account
                       </DropdownMenuLabel>
                       <DropdownMenuItem asChild className="group cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/90 hover:!text-slate-950 focus:!bg-white/90 focus:!text-slate-950">
-                        <Link to={`${getTenantPath(ROUTES.PROFILE, tenantSlug)}?tab=my-account`}>
+                        <Link to={`${getTenantPath(ROUTES.PROFILE, currentSlug)}?tab=my-account`}>
                           <UserCircle2 className="mr-3 h-4 w-4 text-primary transition-colors group-hover:text-slate-950 group-focus:text-slate-950" />
                           <div className="flex flex-col">
                             <span className="text-sm font-semibold leading-tight">User Settings</span>
@@ -415,7 +429,7 @@ const Header = () => {
           ) : (
             <div className="flex items-center gap-2 ml-2">
               <Button asChild variant="default" size="sm" className="h-8 px-4 rounded-full text-xs font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
-                <Link to={getTenantPath(ROUTES.LOGIN, tenantSlug)}>Login</Link>
+                <Link to={getTenantPath(ROUTES.LOGIN, currentSlug)}>Login</Link>
               </Button>
             </div>
           )}
