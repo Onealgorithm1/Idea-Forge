@@ -28,7 +28,11 @@ initSocket(server);
 const getAllowedOrigins = () => {
   if (!process.env.FRONTEND_URL) return [];
   // Strip literal quotes that might be injected by hosting providers, split, trim, and filter
-  return process.env.FRONTEND_URL.replace(/['"]/g, '').split(',').map(url => url.trim()).filter(Boolean);
+  return process.env.FRONTEND_URL
+    .replace(/['"]/g, '')
+    .split(',')
+    .map(url => url.trim().replace(/\/$/, '')) // Also remove any trailing slash
+    .filter(Boolean);
 };
 
 const allowedOrigins = getAllowedOrigins();

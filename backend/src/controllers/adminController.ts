@@ -47,7 +47,7 @@ export const createUser = async (req: Request, res: Response) => {
     });
 
     // 5. Send Email in Background
-    const primaryFrontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/['"]/g, '').split(',')[0].trim() : 'http://localhost:5173';
+    const primaryFrontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/['"]/g, '').split(',')[0].trim().replace(/\/$/, '') : 'http://localhost:5173';
     const loginUrl = `${primaryFrontendUrl}/${orgSlug}/login`;
     const emailSubject = `Welcome to ${orgName} on IdeaForge`;
     const emailText = `Hello ${name},\n\nYou have been added to ${orgName} on the IdeaForge platform.\n\nOrganization: ${orgName}\nLogin URL: ${loginUrl}\nEmail: ${email}\nPassword: ${password}\n\nPlease change your password after logging in.`;
