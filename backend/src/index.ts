@@ -25,7 +25,19 @@ const PORT = process.env.PORT || 5000;
 initSocket(server);
 
 // Middleware
-app.use(cors());
+const allowedOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(url => url.trim()) : [];
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.length === 0) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 app.use(express.json());
 app.use(morgan('dev'));
 app.use('/uploads', express.static('uploads'));
@@ -57,7 +69,7 @@ app.get('/health', async (req, res) => {
 // Diagnostic route
 app.get('/api/diag/email', async (req, res) => {
   const envVars = {
-    FRONTEND_URL: process.env.FRONTEND_URL ? 'Set' : 'MISSING',
+    FRONTEND_URL: process.env.FRONTEND_URL ? `Set (${process.env.FRONTEND_URL.split(',').length} URLs)` : 'MISSING',
     SMTP_USER: process.env.SMTP_USER ? 'Set' : 'MISSING',
     OAUTH_CLIENT_ID: process.env.OAUTH_CLIENT_ID ? 'Set' : 'MISSING',
     OAUTH_CLIENT_SECRET: process.env.OAUTH_CLIENT_SECRET ? 'Set' : 'MISSING',
