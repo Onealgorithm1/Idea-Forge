@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useSearchParams, useParams, useNavigate } from "react-router-dom";
 import { Plus, GripVertical, ArrowBigUp, MessageSquare, ChevronUp, ChevronDown, Bookmark, ExternalLink, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,10 +9,177 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getInitials } from "@/lib/utils";
+import { getInitials, cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import VotingSystem from "./VotingSystem";
 import ConfirmationModal from "./ConfirmationModal";
+import CommentSection from "./CommentSection";
+
+interface BoardIdeaCardProps {
+  item: any;
+  idx: number;
+  user: any;
+  voteMutation: any;
+  handleVote: (id: string, type: 'up' | 'down') => void;
+  handleSelectIdea: (id: string) => void;
+  handleBookmark: (id: string) => void;
+  setIdeaToDelete: (id: string) => void;
+  handleStatusChange?: (id: string, status: string) => void;
+  type: 'ideation' | 'development' | 'production';
+}
+
+const BoardIdeaCard = ({ 
+  item, 
+  idx, 
+  user, 
+  voteMutation, 
+  handleVote, 
+  handleSelectIdea, 
+  handleBookmark, 
+  setIdeaToDelete,
+  handleStatusChange,
+  type
+}: BoardIdeaCardProps) => {
+  const [isCommentOpen, setIsCommentOpen] = useState(false);
+
+  const onVoteInternal = (voteType: 'up' | 'down') => {
+    handleVote(item.id, voteType);
+    if (voteType === 'up') {
+      setIsCommentOpen(true);
+    }
+  };
+
+  const getIcon = () => {
+    if (type === 'ideation') return "✨";
+    if (type === 'development') return "💡";
+    return "🚀";
+  };
+
+  const getIconBg = () => {
+    if (type === 'ideation') return "bg-slate-100 group-hover:bg-slate-200 border-slate-200/50";
+    if (type === 'development') return "bg-primary/10 group-hover:bg-primary/20 border-primary/10";
+    return "bg-success/10 group-hover:bg-success/20 border-success/10";
+  };
+
+  const getBorderColor = () => {
+    if (type === 'ideation') return "border-slate-100";
+    if (type === 'development') return "border-primary/10";
+    return "border-success/10";
+  };
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ 
+        layout: { duration: 0.3, type: "spring", stiffness: 300, damping: 30 },
+        opacity: { duration: 0.3 },
+        delay: idx * 0.05 
+      }}
+      onClick={() => handleSelectIdea(item.id)}
+      className={cn(
+        "group bg-white rounded-xl border border-border/50 p-4 hover:shadow-premium-hover hover:-translate-y-0.5 transition-all duration-300 cursor-pointer relative overflow-hidden",
+        isCommentOpen && "ring-1 ring-primary/20 shadow-premium"
+      )}
+    >
+      <div className="flex flex-col h-full">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center text-xl shrink-0 transition-all duration-300 group-hover:scale-110 shadow-sm border", getIconBg())}>
+              {getIcon()}
+            </div>
+            <div>
+              <p className="text-sm font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2">{item.title}</p>
+              <span className={cn("text-[10px] font-bold uppercase tracking-wider", type === 'ideation' ? "text-slate-500" : type === 'development' ? "text-primary/70" : "text-success/70")}>{item.category}</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
+            <button 
+              onClick={(e) => { e.stopPropagation(); handleBookmark(item.id); }} 
+              className={cn(
+                "p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl transition-all hover:scale-110",
+                item.is_bookmarked ? "text-amber-500" : "text-muted-foreground hover:text-amber-500"
+              )}
+              title={item.is_bookmarked ? "Remove Bookmark" : "Bookmark Idea"}
+            >
+              <Bookmark className={cn("h-3.5 w-3.5", item.is_bookmarked && "fill-current")} />
+            </button>
+            {(user?.role === 'admin' || user?.id === item.author_id) && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); setIdeaToDelete(item.id); }} 
+                className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-red-500 hover:scale-110 transition-all"
+                title="Delete Idea"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {type === 'production' && user?.role === 'admin' && handleStatusChange && (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleStatusChange(item.id, item.status === 'Shipped' ? 'In Development' : 'In Progress'); }}
+                className="p-1.5 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-primary transition-all"
+                title="Revert"
+              >
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {item.tags && item.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {item.tags.map((tag: string) => (
+              <Badge key={tag} variant="secondary" className={cn("text-[9px] px-2 py-0.5 h-auto border-none", type === 'ideation' ? "bg-slate-100 text-slate-600 font-bold" : type === 'development' ? "bg-primary/5 text-primary" : "bg-success/5 text-success")}>#{tag}</Badge>
+            ))}
+          </div>
+        )}
+
+        <div className={cn("flex items-center justify-between mt-auto pt-4 border-t", getBorderColor())}>
+          <div className="flex items-center gap-4">
+            <VotingSystem
+              ideaId={item.id}
+              initialVotes={item.votes_count}
+              onVote={onVoteInternal}
+              userVote={item.vote_type}
+              orientation="horizontal"
+              className="scale-95 origin-left"
+              isLoading={voteMutation.isPending && voteMutation.variables?.id === item.id}
+            />
+            <div 
+              className="relative"
+              onClick={(e) => { e.stopPropagation(); setIsCommentOpen(!isCommentOpen); }}
+            >
+              <div className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors", type === 'ideation' ? "bg-slate-100 hover:bg-slate-200" : type === 'development' ? "bg-primary/5 hover:bg-primary/10" : "bg-success/5 hover:bg-success/10")}>
+                <MessageSquare className={cn("h-3.5 w-3.5", type === 'ideation' ? "text-slate-500" : type === 'development' ? "text-primary/60" : "text-success/60")} />
+                <span className={cn("text-xs font-black tracking-tighter", type === 'ideation' ? "text-slate-600" : type === 'development' ? "text-primary/80" : "text-success")}>{item.comments_count || 0}</span>
+              </div>
+            </div>
+          </div>
+
+          <Avatar className={cn("h-7 w-7 ring-2 ring-white shadow-sm border", type === 'ideation' ? "border-slate-200" : type === 'development' ? "border-primary/20" : "border-success/20")}>
+            <AvatarFallback className={cn("text-[9px] font-black uppercase", type === 'ideation' ? "bg-slate-200 text-slate-500" : type === 'development' ? "bg-primary/20 text-primary" : "bg-success/20 text-success")}>
+              {getInitials(item.author || "Guest")}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+
+        <AnimatePresence>
+          {isCommentOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <CommentSection ideaId={item.id} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+};
 
 const statusColor: Record<string, string> = {
   "Pending": "bg-muted text-muted-foreground",
@@ -176,75 +343,18 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
           </div>
           <div className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar">
             {ideaPoolItems.map((item, idx) => (
-              <motion.div
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
+              <BoardIdeaCard
                 key={item.id}
-                onMouseEnter={() => prefetchIdea(item.id)}
-                onClick={() => handleSelectIdea(item.id)}
-                className={`group bg-white rounded-xl border border-border/50 p-4 hover:shadow-premium-hover hover:-translate-y-1 transition-all duration-300 cursor-pointer relative`}
-              >
-                <div className="flex flex-col h-full">
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-xl shrink-0 group-hover:bg-slate-200 transition-all duration-300 group-hover:scale-110 shadow-sm border border-slate-200/50">✨</div>
-                      <div>
-                        <p className="text-sm font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2">{item.title}</p>
-                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{item.category}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1.5 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-                      <button onClick={(e) => { e.stopPropagation(); handleBookmark(item.id); }} className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-amber-500 hover:scale-110 transition-all">
-                        <Bookmark className="h-3.5 w-3.5 fill-current" />
-                      </button>
-                      {(user?.role === 'admin' || user?.id === item.author_id) && (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setIdeaToDelete(item.id); }} 
-                          className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-red-500 hover:scale-110 transition-all"
-                          title="Delete Idea"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-
-                    </div>
-                  </div>
-
-                  {item.tags && item.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-4">
-                      {item.tags.map((tag: string) => (
-                        <Badge key={tag} variant="secondary" className="text-[9px] px-2 py-0.5 h-auto bg-slate-100 text-slate-600 border-none font-bold">#{tag}</Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
-                    <div className="flex items-center gap-4">
-                      <VotingSystem
-                        ideaId={item.id}
-                        initialVotes={item.votes_count}
-                        onVote={(type: any) => handleVote(item.id, type)}
-                        userVote={item.vote_type}
-                        orientation="horizontal"
-                        className="scale-95 origin-left"
-                        isLoading={voteMutation.isPending && voteMutation.variables?.id === item.id}
-                      />
-                      <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded-lg">
-                        <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
-                        <span className="text-xs font-bold text-slate-600">{item.comments_count || 0}</span>
-                      </div>
-                    </div>
-
-                    <Avatar className="h-7 w-7 ring-2 ring-white shadow-sm border border-slate-200">
-                      <AvatarFallback className="text-[9px] font-black bg-slate-200 text-slate-500 uppercase">
-                        {getInitials(item.author || "Guest")}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                </div>
-              </motion.div>
+                item={item}
+                idx={idx}
+                user={user}
+                voteMutation={voteMutation}
+                handleVote={handleVote}
+                handleSelectIdea={handleSelectIdea}
+                handleBookmark={handleBookmark}
+                setIdeaToDelete={setIdeaToDelete}
+                type="ideation"
+              />
             ))}
           </div>
         </Card>
@@ -262,77 +372,18 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
           </div>
           <div className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar">
             {votingItems.map((item, idx) => (
-              <motion.div
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
+              <BoardIdeaCard
                 key={item.id}
-                onClick={() => handleSelectIdea(item.id)}
-                className={`group bg-white rounded-xl border border-border/50 p-4 hover:shadow-premium-hover hover:-translate-y-1 transition-all duration-300 cursor-pointer relative`}
-              >
-                <div className="flex flex-col h-full">
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0 group-hover:bg-primary/20 transition-all duration-300 group-hover:scale-110 shadow-sm border border-primary/10">💡</div>
-                      <div>
-                        <p className="text-sm font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2">{item.title}</p>
-                        <span className="text-[10px] text-primary/70 font-bold uppercase tracking-wider">{item.category}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1.5 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-                      <button onClick={(e) => { e.stopPropagation(); handleBookmark(item.id); }} className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-amber-500 hover:scale-110 transition-all">
-                        <Bookmark className="h-3.5 w-3.5 fill-current" />
-                      </button>
-                      {(user?.role === 'admin' || user?.id === item.author_id) && (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setIdeaToDelete(item.id); }} 
-                          className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-red-500 hover:scale-110 transition-all"
-                          title="Delete Idea"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-
-                    </div>
-                  </div>
-
-                  {item.tags && item.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-4">
-                      {item.tags.map((tag: string) => (
-                        <Badge key={tag} variant="secondary" className="text-[9px] px-2 py-0.5 h-auto bg-primary/5 text-primary border-none">#{tag}</Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-primary/10">
-                    <div className="flex items-center gap-2">
-                      <VotingSystem
-                        ideaId={item.id}
-                        initialVotes={item.votes_count}
-                        onVote={(type: any) => handleVote(item.id, type)}
-                        userVote={item.vote_type}
-                        orientation="horizontal"
-                        className="scale-95 origin-left"
-                        isLoading={voteMutation.isPending && voteMutation.variables?.id === item.id}
-                      />
-
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1 text-[10px] text-primary/60 font-bold bg-primary/5 px-2 py-1 rounded-lg">
-                        <MessageSquare className="h-3 w-3" />
-                        {item.comments_count || 0}
-                      </div>
-                      <Avatar className="h-7 w-7 ring-2 ring-white shadow-sm border border-primary/20">
-                        <AvatarFallback className="text-[9px] font-black bg-primary/20 text-primary">
-                          {getInitials(item.author || "Guest")}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
+                item={item}
+                idx={idx}
+                user={user}
+                voteMutation={voteMutation}
+                handleVote={handleVote}
+                handleSelectIdea={handleSelectIdea}
+                handleBookmark={handleBookmark}
+                setIdeaToDelete={setIdeaToDelete}
+                type="development"
+              />
             ))}
           </div>
         </Card>
@@ -350,80 +401,19 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
           </div>
           <div className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar">
             {devItems.map((item, idx) => (
-              <motion.div
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
+              <BoardIdeaCard
                 key={item.id}
-                onClick={() => handleSelectIdea(item.id)}
-                className={`group bg-white rounded-xl border border-border/50 p-4 hover:shadow-premium-hover hover:-translate-y-1 transition-all duration-300 cursor-pointer relative`}
-              >
-                <div className="flex flex-col h-full">
-                  <div className="flex items-center justify-between gap-3 mb-4">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="h-10 w-10 rounded-xl bg-success/10 flex items-center justify-center text-xl shrink-0 group-hover:bg-success/20 transition-all duration-300 group-hover:scale-110 shadow-sm border border-success/10">🚀</div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold truncate group-hover:text-primary transition-colors">{item.title}</p>
-                        <Badge variant="outline" className={`text-[9px] font-black uppercase tracking-tighter px-1.5 py-0 border-none ${statusColor[item.status]}`}>
-                          {PLATFORM_STATUS_LABELS[item.status] || item.status}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1.5 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-                      {user?.role === 'admin' && (
-                        <>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleStatusChange(item.id, item.status === 'Shipped' ? 'In Development' : 'In Progress'); }}
-                            className="p-1.5 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-primary transition-all"
-                            title="Revert"
-                          >
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleStatusChange(item.id, 'Shipped'); }}
-                            className={`p-1.5 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-success transition-all ${item.status === 'Shipped' ? 'hidden' : ''}`}
-                            title="Ship It"
-                          >
-                            <ChevronUp className="h-3.5 w-3.5" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {item.tags && item.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-4">
-                      {item.tags.map((tag: string) => (
-                        <Badge key={tag} variant="secondary" className="text-[9px] px-2 py-0.5 h-auto bg-success/5 text-success border-none">#{tag}</Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-success/10">
-                    <div className="flex items-center gap-3">
-                      <VotingSystem
-                        ideaId={item.id}
-                        initialVotes={item.votes_count}
-                        onVote={(type: any) => handleVote(item.id, type)}
-                        userVote={item.vote_type}
-                        orientation="horizontal"
-                        className="scale-95 origin-left"
-                        isLoading={voteMutation.isPending && voteMutation.variables?.id === item.id}
-                      />
-                      <div className="flex items-center gap-1.5 px-2 py-1 bg-success/5 rounded-lg">
-                        <MessageSquare className="h-3 w-3 text-success/60" />
-                        <span className="text-[10px] font-bold text-success">{item.comments_count || 0}</span>
-                      </div>
-                    </div>
-                    <Avatar className="h-7 w-7 ring-2 ring-white shadow-sm border border-success/20">
-                      <AvatarFallback className="text-[9px] font-black bg-success/20 text-success uppercase">
-                        {getInitials(item.author || "Guest")}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                </div>
-              </motion.div>
+                item={item}
+                idx={idx}
+                user={user}
+                voteMutation={voteMutation}
+                handleVote={handleVote}
+                handleSelectIdea={handleSelectIdea}
+                handleBookmark={handleBookmark}
+                setIdeaToDelete={setIdeaToDelete}
+                handleStatusChange={handleStatusChange}
+                type="production"
+              />
             ))}
           </div>
         </Card>

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import pool, { query } from '../config/db.js';
+import { sendEmail } from '../config/mail.js';
 
 // ─── Audit log helper ─────────────────────────────────────────────────────────
 async function logAudit(tenantId: string, actorUserId: string | null, entityType: string, entityId: string, action: string, oldValues?: any, newValues?: any) {
@@ -36,7 +37,8 @@ export const getIdeas = async (req: any, res: Response) => {
              (SELECT json_agg(t.name) FROM tags t 
               JOIN idea_tags it ON t.id = it.tag_id 
               WHERE it.idea_id = i.id) as tags,
-             (SELECT type FROM votes WHERE idea_id = i.id AND user_id = $2 LIMIT 1) as vote_type
+             (SELECT type FROM votes WHERE idea_id = i.id AND user_id = $2 LIMIT 1) as vote_type,
+             (EXISTS (SELECT 1 FROM bookmarks WHERE idea_id = i.id AND user_id = $2 AND tenant_id = $1)) as is_bookmarked
       FROM ideas i 
       LEFT JOIN users u ON i.author_id = u.id 
       LEFT JOIN categories c ON i.category_id = c.id
@@ -331,13 +333,55 @@ export const addComment = async (req: any, res: Response) => {
 
     res.status(201).json(result.rows[0]);
 
-    // Trigger Notification for author
+    // ── Notify author and bookmarkers ──────────────────────────────────────
     const ideaInfo = await query('SELECT author_id, title, tenant_id FROM ideas WHERE id = $1', [id]);
-    if (ideaInfo.rows.length > 0 && ideaInfo.rows[0].author_id !== user_id) {
-       await query(
-        'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
-        [ideaInfo.rows[0].author_id, 'comment', id, `Someone commented on your idea: ${ideaInfo.rows[0].title}`, ideaInfo.rows[0].tenant_id]
-      );
+    if (ideaInfo.rows.length > 0) {
+      const idea = ideaInfo.rows[0];
+      const commenter = await query('SELECT name FROM users WHERE id = $1', [user_id]);
+      const commenterName = commenter.rows[0]?.name || 'Someone';
+
+      // 1. Notify author (if not the commenter)
+      if (idea.author_id !== user_id) {
+         await query(
+          'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
+          [idea.author_id, 'comment', id, `${commenterName} commented on your idea: ${idea.title}`, idea.tenant_id]
+        );
+
+        const author = await query('SELECT email FROM users WHERE id = $1', [idea.author_id]);
+        if (author.rows[0]?.email) {
+          sendEmail(
+            author.rows[0].email,
+            `New Comment on: ${idea.title}`,
+            `${commenterName} commented on your idea "${idea.title}":\n\n"${content.substring(0, 100)}${content.length > 100 ? '...' : ''}"`,
+            `<h3>New Comment on Idea</h3>
+             <p><strong>${commenterName}</strong> commented on your idea "<strong>${idea.title}</strong>":</p>
+             <blockquote style="border-left: 4px solid #eee; padding-left: 10px; color: #666 italic;">${content}</blockquote>
+             <p><a href="${process.env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View on IdeaForge</a></p>`
+          ).catch(e => console.error('Author email notification failed:', e));
+        }
+      }
+
+      // 2. Notify bookmarkers
+      const bookmarkers = await query(`
+        SELECT u.email 
+        FROM users u 
+        JOIN bookmarks b ON u.id = b.user_id 
+        WHERE b.idea_id = $1 AND b.user_id != $2 AND b.user_id != $3
+      `, [id, user_id, idea.author_id]);
+
+      bookmarkers.rows.forEach(b => {
+        if (b.email) {
+          sendEmail(
+            b.email,
+            `Activity on saved idea: ${idea.title}`,
+            `${commenterName} commented on an idea you saved: "${idea.title}"`,
+            `<h3>Discussion Activity</h3>
+             <p><strong>${commenterName}</strong> commented on an idea you bookmarked: "<strong>${idea.title}</strong>":</p>
+             <blockquote style="border-left: 4px solid #eee; padding-left: 10px; color: #666 italic;">${content}</blockquote>
+             <p><a href="${process.env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View Discussion</a></p>`
+          ).catch(e => console.error('Bookmarker email notification failed:', e));
+        }
+      });
     }
   } catch (error) {
     console.error('Add comment error:', error);
@@ -440,6 +484,32 @@ export const bookmarkIdea = async (req: any, res: Response) => {
   }
 };
 
+export const getBookmarkedIdeas = async (req: any, res: Response) => {
+  const user_id = req.user.id;
+  const tenant_id = req.tenantId;
+  try {
+    const result = await query(`
+      SELECT i.*, u.name as author, c.name as category, s.name as space_name,
+      (SELECT json_agg(t.name) FROM tags t 
+       JOIN idea_tags it ON t.id = it.tag_id 
+       WHERE it.idea_id = i.id) as tags,
+      (SELECT type FROM votes WHERE idea_id = i.id AND user_id = $1 LIMIT 1) as vote_type,
+      TRUE as is_bookmarked
+      FROM ideas i
+      JOIN bookmarks b ON i.id = b.idea_id
+      JOIN users u ON i.author_id = u.id
+      LEFT JOIN categories c ON i.category_id = c.id
+      LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
+      WHERE b.user_id = $1 AND i.tenant_id = $2
+      ORDER BY b.created_at DESC
+    `, [user_id, tenant_id]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get bookmarked ideas error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const getTags = async (req: any, res: Response) => {
   try {
     const result = await query('SELECT * FROM tags WHERE tenant_id = $1', [req.tenantId]);
@@ -484,7 +554,8 @@ export const getUserIdeas = async (req: any, res: Response) => {
       (SELECT json_agg(t.name) FROM tags t 
        JOIN idea_tags it ON t.id = it.tag_id 
        WHERE it.idea_id = i.id) as tags,
-      (SELECT type FROM votes WHERE idea_id = i.id AND user_id = $1 LIMIT 1) as vote_type
+      (SELECT type FROM votes WHERE idea_id = i.id AND user_id = $1 LIMIT 1) as vote_type,
+      (EXISTS (SELECT 1 FROM bookmarks WHERE idea_id = i.id AND user_id = $1 AND tenant_id = $2)) as is_bookmarked
       FROM ideas i
       JOIN users u ON i.author_id = u.id
       LEFT JOIN categories c ON i.category_id = c.id
@@ -523,6 +594,45 @@ export const updateIdeaStatus = async (req: any, res: Response) => {
     emitStatusUpdate(id as string, status);
 
     res.json(result.rows[0]);
+
+    // ── Notify author and bookmarkers about status change ──────────────────
+    const actorId = req.user?.id;
+    const idea = result.rows[0];
+    const author = await query('SELECT email FROM users WHERE id = $1', [idea.author_id]);
+    
+    // 1. Notify author (if not the person who changed it)
+    if (idea.author_id !== actorId && author.rows[0]?.email) {
+      sendEmail(
+        author.rows[0].email,
+        `Status Updated: ${idea.title}`,
+        `Your idea "${idea.title}" is now "${status}".`,
+        `<h3>Idea Status Update</h3>
+         <p>Great news! Your idea "<strong>${idea.title}</strong>" has been updated to: <span style="font-weight: bold; color: #4f46e5;">${status}</span></p>
+         <p><a href="${process.env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">Track Progress</a></p>`
+      ).catch(e => console.error('Author status update email failed:', e));
+    }
+
+    // 2. Notify bookmarkers
+    const bookmarkers = await query(`
+      SELECT u.email 
+      FROM users u 
+      JOIN bookmarks b ON u.id = b.user_id 
+      WHERE b.idea_id = $1 AND b.user_id != $2
+    `, [id, actorId]);
+
+    bookmarkers.rows.forEach(b => {
+      if (b.email) {
+        sendEmail(
+          b.email,
+          `Saved Idea Updated: ${idea.title}`,
+          `An idea you saved, "${idea.title}", is now "${status}".`,
+          `<h3>Followed Idea Status Update</h3>
+           <p>An idea you bookmarked, "<strong>${idea.title}</strong>", has progressed to: <span style="font-weight: bold; color: #4f46e5;">${status}</span></p>
+           <p><a href="${process.env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View Idea</a></p>`
+        ).catch(e => console.error('Bookmarker status update email failed:', e));
+      }
+    });
+
     await logAudit(tenant_id, req.user?.id || null, 'idea', id, 'status_changed', { status: result.rows[0].status }, { status });
   } catch (error) {
     console.error('Update idea status error:', error);

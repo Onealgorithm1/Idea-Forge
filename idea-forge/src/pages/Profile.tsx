@@ -315,9 +315,13 @@ const IdeaCard = ({ idea, tenantSlug, onBookmark }: { idea: any; tenantSlug: str
           </Badge>
           <button
             onClick={(e) => onBookmark(e, idea.id)}
-            className="p-1.5 hover:bg-amber-50 rounded-xl text-slate-300 hover:text-amber-500 transition-all border border-transparent hover:border-amber-100"
+            className={cn(
+              "p-1.5 rounded-xl transition-all border border-transparent hover:scale-110",
+              idea.is_bookmarked ? "text-amber-500 bg-amber-50 border-amber-100" : "text-slate-300 hover:text-amber-500 hover:bg-amber-50 hover:border-amber-100"
+            )}
+            title={idea.is_bookmarked ? "Remove Bookmark" : "Save Idea"}
           >
-            <Bookmark className="h-3.5 w-3.5 fill-current opacity-20" />
+            <Bookmark className={cn("h-3.5 w-3.5", idea.is_bookmarked && "fill-current")} />
           </button>
         </div>
       </div>
@@ -408,6 +412,13 @@ const Profile = () => {
     staleTime: 1000 * 60 * 5,
   });
 
+  const { data: bookmarkedIdeas = [], isLoading: loadingBookmarks } = useQuery({
+    queryKey: ["bookmarked-ideas", user?.id],
+    queryFn: () => api.get("/ideas/bookmarked", token!),
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5,
+  });
+
   useEffect(() => {
     if (profile) {
       setEditName(profile.name);
@@ -441,7 +452,11 @@ const Profile = () => {
 
   const bookmarkMutation = useMutation({
     mutationFn: (id: string) => api.post(`/ideas/${id}/bookmark`, {}, token!),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["user-ideas", user?.id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-ideas", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["bookmarked-ideas", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+    },
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -468,7 +483,7 @@ const Profile = () => {
       : "my-account";
 
   /* ─── Loading skeleton ─── */
-  if (loadingProfile || loadingIdeas || loadingOrg) {
+  if (loadingProfile || loadingIdeas || loadingBookmarks || loadingOrg) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Header />
@@ -763,6 +778,43 @@ const Profile = () => {
                   )}
                 </motion.div>
               )}
+
+              {/* ── Saved Ideas section ────────────────── */}
+              <div className="pt-8 border-t border-slate-200/60 mt-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-2xl bg-amber-100 shadow-sm text-amber-600">
+                    <Bookmark className="h-4 w-4 fill-current" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black tracking-tight text-slate-900">Saved Ideas</h2>
+                    <p className="text-xs text-slate-400 font-medium">{bookmarkedIdeas.length} ideas bookmarked</p>
+                  </div>
+                </div>
+
+                {bookmarkedIdeas.length === 0 ? (
+                  <div className="text-center py-16 bg-white/50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-3 grayscale opacity-60">
+                    <Bookmark className="h-10 w-10 text-slate-300" />
+                    <p className="text-sm font-bold text-slate-400 font-mono tracking-tighter">You haven't saved any ideas yet.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <AnimatePresence mode="popLayout">
+                      {bookmarkedIdeas.map((idea: any) => (
+                        <motion.div
+                          layout
+                          key={`bookmark-${idea.id}`}
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ duration: 0.18 }}
+                        >
+                          <IdeaCard idea={idea} tenantSlug={tenantSlug} onBookmark={handleBookmark} />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </div>
             </motion.div>
               </TabsContent>
 
