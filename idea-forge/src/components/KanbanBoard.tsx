@@ -35,7 +35,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
 
   const { data: ideas = [], isLoading } = useQuery({
     queryKey: ["ideas", tenantSlug],
-    queryFn: () => api.get("/ideas"),
+    queryFn: () => api.get("/ideas", token || undefined),
     staleTime: 1000 * 60, // 1 minute
   });
 
@@ -157,8 +157,8 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
     : ideas.filter(i => i.category === category);
 
   const ideaPoolItems = filteredIdeas.filter(i => i.status === 'Pending');
-  const votingItems = filteredIdeas.filter(i => i.status === 'Under Review' || i.status === 'In Progress');
-  const devItems = filteredIdeas.filter(i => i.status === 'In Development' || i.status === 'Shipped');
+  const votingItems = filteredIdeas.filter(i => i.status === 'Under Review' || i.status === 'In Progress' || i.status === 'In Development' || i.status === 'QA');
+  const devItems = filteredIdeas.filter(i => i.status === 'Shipped');
 
   return (
     <div className="space-y-6">
@@ -208,13 +208,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       )}
-                      <Link
-                        to={getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', item.id), tenantSlug)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-primary hover:scale-110 transition-all"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Link>
+
                     </div>
                   </div>
 
@@ -299,13 +293,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       )}
-                      <Link
-                        to={getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', item.id), tenantSlug)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-primary hover:scale-110 transition-all"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Link>
+
                     </div>
                   </div>
 

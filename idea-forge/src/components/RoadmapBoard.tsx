@@ -37,7 +37,7 @@ const RoadmapBoard = () => {
 
   const { data: ideas = [], isLoading } = useQuery({
     queryKey: ["ideas", tenantSlug],
-    queryFn: () => api.get("/ideas"),
+    queryFn: () => api.get("/ideas", token || undefined),
     staleTime: 1000 * 60,
   });
 

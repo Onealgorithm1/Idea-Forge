@@ -1,19 +1,24 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, MessageSquare, Bookmark, Calendar, Target, User, Loader2, Pencil, Star, X, Check, Trash2, Layers } from "lucide-react";
+import {
+  ChevronLeft, MessageSquare, Bookmark, BookmarkCheck, Calendar,
+  Target, Loader2, Pencil, Star, X, Check, Trash2, Layers,
+  Send, AlertCircle, Hash, ChevronDown, ChevronUp,
+} from "lucide-react";
 import Header from "@/components/Header";
 import SidebarNav from "@/components/SidebarNav";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ROUTES, getTenantPath, PLATFORM_STATUS_LABELS } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import VotingSystem from "@/components/VotingSystem";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { Input } from "@/components/ui/input";
@@ -26,11 +31,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const STATUSES = ['Pending', 'Under Review', 'In Progress', 'In Development', 'Shipped'];
+const STATUSES = [
+  { value: "Pending", label: "Ideation" },
+  { value: "In Progress", label: "In Development" },
+  { value: "Shipped", label: "In Production" },
+];
 
 // ─── Scoring Panel ────────────────────────────────────────────────────────────
-const ScoringPanel = ({ ideaId, token, tenantSlug }: { ideaId: string; token: string | null; tenantSlug: string }) => {
+const ScoringPanel = ({
+  ideaId,
+  token,
+  tenantSlug,
+}: {
+  ideaId: string;
+  token: string | null;
+  tenantSlug: string;
+}) => {
   const queryClient = useQueryClient();
+  const [isOpen, setIsOpen] = useState(false);
+
   const { data: scoreData } = useQuery({
     queryKey: ["scores", ideaId],
     queryFn: () => api.get(`/scoring/ideas/${ideaId}/scores`),
@@ -46,7 +65,11 @@ const ScoringPanel = ({ ideaId, token, tenantSlug }: { ideaId: string; token: st
 
   const scoreMutation = useMutation({
     mutationFn: ({ criterion_id, score }: { criterion_id: string; score: number }) =>
-      api.post(`/scoring/ideas/${ideaId}/scores`, { criterion_id, score, scorecard_id: scorecard?.id || 'default' }, token!),
+      api.post(
+        `/scoring/ideas/${ideaId}/scores`,
+        { criterion_id, score, scorecard_id: scorecard?.id || "default" },
+        token!
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scores", ideaId] });
       toast.success("Score submitted");
@@ -55,60 +78,107 @@ const ScoringPanel = ({ ideaId, token, tenantSlug }: { ideaId: string; token: st
   });
 
   return (
-    <Card className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold flex items-center gap-2">
-          <Star className="h-5 w-5 text-amber-500" />
-          Scoring
-        </h3>
-        {scoreData?.overall_avg > 0 && (
-          <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-sm font-bold">
-            Avg: {scoreData.overall_avg} / 10
-          </Badge>
-        )}
-      </div>
-
-      {criteria.length === 0 ? (
-        <p className="text-sm text-muted-foreground italic">No scorecard criteria found.</p>
-      ) : (
-        <div className="space-y-4">
-          {criteria.map((c: any) => {
-            const avg = scoreData?.averages?.find((a: any) => a.criterion_id === c.id || a.criterion_name === c.name);
-            return (
-              <div key={c.id} className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{c.name}</span>
-                  {avg && <span className="text-xs text-muted-foreground">Avg: {avg.avg_score} ({avg.count} scores)</span>}
-                </div>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min={c.min_score ?? 0}
-                    max={c.max_score ?? 10}
-                    step="1"
-                    value={localScores[c.id] ?? 5}
-                    onChange={(e) => setLocalScores(prev => ({ ...prev, [c.id]: Number(e.target.value) }))}
-                    className="flex-1 accent-primary"
-                    disabled={!token}
-                  />
-                  <span className="w-8 text-center font-bold text-sm">{localScores[c.id] ?? 5}</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 px-3 text-xs"
-                    disabled={!token || scoreMutation.isPending}
-                    onClick={() => scoreMutation.mutate({ criterion_id: c.id, score: localScores[c.id] ?? 5 })}
-                  >
-                    {scoreMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Submit"}
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+    <div className="border-t border-slate-100">
+      {/* Collapsible header */}
+      <button
+        onClick={() => setIsOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-6 py-3.5 hover:bg-amber-50/50 transition-colors group"
+      >
+        <div className="flex items-center gap-2">
+          <Star className="h-3.5 w-3.5 text-amber-500" />
+          <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">
+            Admin Scoring
+          </span>
+          {scoreData?.overall_avg > 0 && (
+            <span className="text-[10px] font-bold text-amber-600 bg-amber-100 rounded-full px-1.5 py-0.5">
+              {scoreData.overall_avg} / 10
+            </span>
+          )}
         </div>
-      )}
-      {!token && <p className="text-xs text-muted-foreground mt-3 italic">Login to score this idea.</p>}
-    </Card>
+        {isOpen ? (
+          <ChevronUp className="h-3.5 w-3.5 text-amber-400" />
+        ) : (
+          <ChevronDown className="h-3.5 w-3.5 text-amber-400" />
+        )}
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-6 pb-5 space-y-4">
+              {criteria.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">No scorecard criteria configured.</p>
+              ) : (
+                <div className="space-y-4">
+                  {criteria.map((c: any) => {
+                    const avg = scoreData?.averages?.find(
+                      (a: any) => a.criterion_id === c.id || a.criterion_name === c.name
+                    );
+                    const val = localScores[c.id] ?? 5;
+                    return (
+                      <div key={c.id} className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-slate-700">{c.name}</span>
+                          <div className="flex items-center gap-2">
+                            {avg && (
+                              <span className="text-muted-foreground">
+                                avg {avg.avg_score} ({avg.count})
+                              </span>
+                            )}
+                            <span className="w-7 text-center font-black text-slate-800 bg-slate-100 rounded-lg py-0.5">
+                              {val}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range"
+                            min={c.min_score ?? 0}
+                            max={c.max_score ?? 10}
+                            step="1"
+                            value={val}
+                            onChange={(e) =>
+                              setLocalScores((p) => ({ ...p, [c.id]: Number(e.target.value) }))
+                            }
+                            className="flex-1 accent-primary"
+                            disabled={!token}
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-3 text-xs rounded-xl hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
+                            disabled={!token || scoreMutation.isPending}
+                            onClick={() => scoreMutation.mutate({ criterion_id: c.id, score: val })}
+                          >
+                            {scoreMutation.isPending ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              "Submit"
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {!token && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  Login to score this idea.
+                </p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
@@ -120,8 +190,8 @@ const IdeaDetail = () => {
   const queryClient = useQueryClient();
 
   const { data: allIdeas = [] } = useQuery({
-    queryKey: ["ideas", tenantSlug],
-    queryFn: () => api.get("/ideas"),
+    queryKey: ["ideas", tenantSlug, user?.id],
+    queryFn: () => api.get("/ideas", token || undefined),
     staleTime: 1000 * 5,
   });
 
@@ -133,7 +203,6 @@ const IdeaDetail = () => {
     enabled: !!idea,
   });
 
-  // Edit state
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -141,8 +210,6 @@ const IdeaDetail = () => {
   const [newComment, setNewComment] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState("");
-  
-  // Custom Confirmation States
   const [isDeleteIdeaModalOpen, setIsDeleteIdeaModalOpen] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
@@ -153,7 +220,8 @@ const IdeaDetail = () => {
 
   const commentMutation = useMutation({
     mutationFn: (content: string) => {
-      if (!content || content.trim().length < 2) throw new Error("Comment must be at least 2 characters");
+      if (!content || content.trim().length < 2)
+        throw new Error("Comment must be at least 2 characters");
       if (content.length > 500) throw new Error("Comment is too long (max 500)");
       return api.post(`/ideas/${id}/comments`, { content }, token!);
     },
@@ -167,7 +235,7 @@ const IdeaDetail = () => {
   });
 
   const editCommentMutation = useMutation({
-    mutationFn: ({ commentId, content }: { commentId: string, content: string }) =>
+    mutationFn: ({ commentId, content }: { commentId: string; content: string }) =>
       api.patch(`/ideas/comments/${commentId}`, { content }, token!),
     onSuccess: () => {
       setEditingCommentId(null);
@@ -204,25 +272,19 @@ const IdeaDetail = () => {
     onMutate: async ({ type }) => {
       await queryClient.cancelQueries({ queryKey: ["ideas", tenantSlug] });
       const previousIdeas = queryClient.getQueryData(["ideas", tenantSlug]);
-
       queryClient.setQueryData(["ideas", tenantSlug], (old: any[] | undefined) => {
         if (!old) return old;
-        return old.map(item => {
+        return old.map((item) => {
           if (String(item.id) !== id) return item;
-          
           let delta = 0;
           let newVoteType: "up" | "down" | null = null;
-          
           if (item.vote_type) {
-            // Toggle off: If they had a vote, any click (up or down) removes it
             delta = -1;
             newVoteType = null;
-          } else if (type === 'up') {
-            // First vote and it's an upvote
+          } else if (type === "up") {
             delta = 1;
-            newVoteType = 'up';
+            newVoteType = "up";
           }
-          
           return {
             ...item,
             votes_count: Math.max(0, parseInt(item.votes_count || 0) + delta),
@@ -230,21 +292,14 @@ const IdeaDetail = () => {
           };
         });
       });
-
       return { previousIdeas };
     },
-    onError: (err: any, variables, context) => {
-      if (context?.previousIdeas) {
+    onError: (err: any, _variables, context) => {
+      if (context?.previousIdeas)
         queryClient.setQueryData(["ideas", tenantSlug], context.previousIdeas);
-      }
-      // Suppress 409 toast — UI is already locked, no need to alert
-      if ((err as any)?.status !== 409) {
-        toast.error(err.message || "Failed to vote");
-      }
+      if ((err as any)?.status !== 409) toast.error(err.message || "Failed to vote");
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
-    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["ideas"] }),
   });
 
   const bookmarkMutation = useMutation({
@@ -261,7 +316,7 @@ const IdeaDetail = () => {
     },
     onError: (error: any) => toast.error(error.message || "Failed to update status"),
   });
-  
+
   const deleteMutation = useMutation({
     mutationFn: () => api.delete(`/ideas/${id}`, token!),
     onSuccess: () => {
@@ -273,19 +328,20 @@ const IdeaDetail = () => {
   });
 
   const isAuthor = idea?.author_id === user?.id;
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === "admin";
   const canEdit = isAuthor || isAdmin;
-  const canChangeStatus = ['admin', 'reviewer'].includes(user?.role ?? '');
+  const canChangeStatus = ["admin", "reviewer"].includes(user?.role ?? "");
 
-  // Edit Locks
-  const isInDevelopment = idea?.status === 'In Development';
+  const isInDevelopment = idea?.status === "In Development";
   const oneDay = 24 * 60 * 60 * 1000;
-  const isOlderThan24h = idea ? (Date.now() - new Date(idea.created_at).getTime()) > oneDay : false;
+  const isOlderThan24h = idea
+    ? Date.now() - new Date(idea.created_at).getTime() > oneDay
+    : false;
   const isEditLocked = isInDevelopment || (isOlderThan24h && !isAdmin);
 
   const getLockReason = () => {
     if (isInDevelopment) return "Ideas in Development stage cannot be edited";
-    if (isOlderThan24h && !isAdmin) return "Ideas cannot be edited after 24 hours of creation";
+    if (isOlderThan24h && !isAdmin) return "Ideas cannot be edited after 24 hours";
     return "";
   };
 
@@ -296,16 +352,16 @@ const IdeaDetail = () => {
     setIsEditing(true);
   };
 
-  const cancelEdit = () => setIsEditing(false);
-
   const saveEdit = () => {
-    if (!editTitle.trim() || editTitle.trim().length < 5) {
-      return toast.error("Title must be at least 5 characters long");
-    }
-    if (!editDescription.trim() || editDescription.trim().length < 20) {
-      return toast.error("Description must be at least 20 characters long");
-    }
-    editMutation.mutate({ title: editTitle, description: editDescription, idea_space_id: editIdeaSpace });
+    if (!editTitle.trim() || editTitle.trim().length < 5)
+      return toast.error("Title must be at least 5 characters");
+    if (!editDescription.trim() || editDescription.trim().length < 20)
+      return toast.error("Description must be at least 20 characters");
+    editMutation.mutate({
+      title: editTitle,
+      description: editDescription,
+      idea_space_id: editIdeaSpace,
+    });
   };
 
   const isLoading = !idea && !allIdeas.length;
@@ -315,7 +371,7 @@ const IdeaDetail = () => {
       <div className="min-h-screen bg-background flex flex-col">
         <Header />
         <div className="flex flex-1 items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
         </div>
       </div>
     );
@@ -326,8 +382,8 @@ const IdeaDetail = () => {
       <div className="min-h-screen bg-background flex flex-col">
         <Header />
         <div className="flex flex-1 items-center justify-center flex-col gap-4">
-          <h2 className="text-2xl font-bold">Idea not found</h2>
-          <Button asChild variant="outline">
+          <h2 className="text-2xl font-black text-slate-900">Idea not found</h2>
+          <Button asChild variant="outline" className="rounded-2xl">
             <Link to={getTenantPath(ROUTES.DASHBOARD, tenantSlug)}>Back to Dashboard</Link>
           </Button>
         </div>
@@ -336,301 +392,498 @@ const IdeaDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-[#f4f5f7] flex flex-col relative overflow-hidden">
+      {/* Soft gradient blobs */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] rounded-full bg-violet-200/30 blur-[160px]" />
+        <div className="absolute bottom-0 right-[-5%] w-[40%] h-[40%] rounded-full bg-blue-200/20 blur-[120px]" />
+      </div>
+
       <Header />
-      <div className="flex flex-1 overflow-hidden">
+
+      <div className="flex flex-1 overflow-hidden relative z-10">
         <SidebarNav />
-        <main className="flex-1 overflow-y-auto p-6 bg-muted/30">
+
+        <main className="flex-1 overflow-y-auto no-scrollbar px-6 py-8 md:px-10">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="max-w-4xl mx-auto space-y-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="max-w-4xl mx-auto space-y-5"
           >
-            <Link to={`${getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)}?category=All`} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-4 w-fit">
-              <ChevronLeft className="h-4 w-4" />
+            {/* Breadcrumb back link */}
+            <Link
+              to={`${getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)}?category=All`}
+              className="flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-slate-700 transition-colors w-fit group"
+            >
+              <ChevronLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
               Back to Board
             </Link>
 
-            {/* Header row */}
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-              <div className="space-y-2 flex-1">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className={cn("bg-primary/5 text-primary border-primary/20", idea.status === 'Shipped' && "bg-green-100 text-green-700 border-green-200")}>
-                    {PLATFORM_STATUS_LABELS[idea.status] || idea.status}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">•</span>
-                  <span className="text-xs text-muted-foreground">{idea.category}</span>
-                  {idea.space_name && (
-                    <>
-                      <span className="text-xs text-muted-foreground">•</span>
-                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 text-[10px] h-5">
-                        <Layers className="h-3 w-3 mr-1" />
-                        {idea.space_name}
-                      </Badge>
-                    </>
-                  )}
-                  <span className="text-xs text-muted-foreground">•</span>
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {format(new Date(idea.created_at), "MMM d, yyyy")}
-                  </span>
-                </div>
+            {/* ── Main Idea Card ─────────────────────────────────────────────────── */}
+            <div className="relative">
+              <Card className="border border-slate-200/80 shadow-[0_4px_32px_-8px_rgba(0,0,0,0.09)] rounded-2xl bg-white overflow-hidden relative pt-[3px]">
+                {/* Rainbow gradient top border */}
+                <div
+                  className="absolute top-0 left-0 right-0 h-[3px] z-10"
+                  style={{
+                    background:
+                      "linear-gradient(to right, #a78bfa, #60a5fa, #34d399, #a3e635)",
+                  }}
+                />
+                <div className="p-6 sm:p-8 pt-7">
 
-                {isEditing ? (
-                  <div className="space-y-3">
-                    <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="text-2xl font-bold h-12" />
-                    <div className="flex items-center gap-2">
-                       <span className="text-xs font-semibold text-muted-foreground uppercase">Space:</span>
-                       <Select value={editIdeaSpace} onValueChange={setEditIdeaSpace}>
-                        <SelectTrigger className="w-[200px] h-9 text-sm">
-                          <SelectValue placeholder="Select space" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ideaSpaces.map((s: any) => (
-                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  {/* ── Breadcrumb pills row */}
+                  <div className="flex flex-wrap items-center gap-1.5 mb-5 text-[12px] font-semibold text-slate-500">
+                    {/* Status pill */}
+                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-full px-2.5 py-0.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 inline-block" />
+                      {PLATFORM_STATUS_LABELS[idea.status] || idea.status}
+                    </span>
+
+                    {idea.category && (
+                      <>
+                        <span className="text-slate-300 text-xs">◆</span>
+                        <span className="text-slate-500">{idea.category}</span>
+                      </>
+                    )}
+
+                    {idea.space_name && (
+                      <>
+                        <span className="text-slate-300 text-xs">◆</span>
+                        <span className="inline-flex items-center gap-1 bg-primary/5 text-primary border border-primary/20 rounded-full px-2.5 py-0.5">
+                          <Layers className="h-3 w-3" />
+                          {idea.space_name}
+                        </span>
+                      </>
+                    )}
+
+                    <span className="text-slate-300 text-xs">◆</span>
+                    <span className="inline-flex items-center gap-1 text-slate-400">
+                      <Calendar className="h-3 w-3" />
+                      {format(new Date(idea.created_at), "MMM d, yyyy")}
+                    </span>
+                  </div>
+
+                  {/* ── Title */}
+                  {isEditing ? (
+                    <div className="space-y-3 mb-4">
+                      <Input
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        className="text-xl font-black h-12 border-slate-200 focus:border-primary rounded-2xl"
+                        placeholder="Idea title…"
+                      />
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Space:</span>
+                        <Select value={editIdeaSpace} onValueChange={setEditIdeaSpace}>
+                          <SelectTrigger className="w-[200px] h-9 text-sm rounded-xl border-slate-200">
+                            <SelectValue placeholder="Select space" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ideaSpaces.map((s: any) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
+                  ) : (
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 mb-4 leading-snug">
+                      {idea.title}
+                    </h1>
+                  )}
+
+                  {/* ── Author + date */}
+                  <div className="flex items-center gap-2 mb-6">
+                    <Avatar className="h-7 w-7 ring-2 ring-white shadow-sm border border-slate-200">
+                      <AvatarFallback className="text-[9px] font-black bg-primary/10 text-primary uppercase">
+                        {getInitials(idea.author || "Guest")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-bold text-slate-700">{idea.author}</span>
+                    <span className="text-slate-300">·</span>
+                    <span className="flex items-center gap-1 text-xs text-slate-400 font-semibold">
+                      <Calendar className="h-3 w-3" />
+                      {format(new Date(idea.created_at), "MMM d, yyyy 'at' HH:mm")}
+                    </span>
                   </div>
-                ) : (
-                  <h1 className="text-3xl font-bold tracking-tight">{idea.title}</h1>
-                )}
 
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <User className="h-3.5 w-3.5" />
-                    {idea.author}
-                  </span>
-                </div>
-              </div>
+                  {/* ── Action toolbar */}
+                  <div className="flex flex-wrap items-center gap-2 py-3 border-t border-b border-slate-100 mb-0">
+                    {/* Voting */}
+                    <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                      <VotingSystem
+                        ideaId={idea.id}
+                        initialVotes={idea.votes_count}
+                        onVote={(type) => {
+                          if (!token) return toast.error("Please login to vote");
+                          if (voteMutation.isPending) return;
+                          voteMutation.mutate({ type });
+                        }}
+                        userVote={idea.vote_type}
+                        orientation="horizontal"
+                        className="border-none bg-transparent shadow-none"
+                        isLoading={voteMutation.isPending}
+                      />
+                    </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Admin/Reviewer Status Controls */}
-                {canChangeStatus && (
-                  <div className="flex items-center gap-1 mr-2 bg-muted/50 p-1 rounded-md border border-dashed">
-                    <span className="text-[10px] font-bold uppercase text-muted-foreground px-2">Status:</span>
-                    {STATUSES.map((s) => (
-                      <Button
-                        key={s}
-                        variant={idea.status === s ? "default" : "ghost"}
-                        size="sm"
-                        className="h-7 text-[10px] px-2"
-                        onClick={() => statusMutation.mutate(s)}
-                        disabled={statusMutation.isPending}
-                      >
-                        {statusMutation.isPending && statusMutation.variables === s ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (PLATFORM_STATUS_LABELS[s] || s)}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex items-center bg-background border rounded-md overflow-hidden">
-                  <VotingSystem
-                    ideaId={idea.id}
-                    initialVotes={idea.votes_count}
-                    onVote={(type) => {
-                      if (!token) return toast.error("Please login to vote");
-                      if (voteMutation.isPending) return;
-                      voteMutation.mutate({ type });
-                    }}
-                    userVote={idea.vote_type}
-                    orientation="horizontal"
-                    className="border-none bg-transparent shadow-none"
-                    isLoading={voteMutation.isPending}
-                  />
-                </div>
-
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => { if (!token) return toast.error("Please login"); bookmarkMutation.mutate(); }}>
-                  <Bookmark className="h-4 w-4" />
-                  Save
-                </Button>
-
-                {canEdit && !isEditing && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className={cn("gap-2", isEditLocked && "opacity-50 cursor-not-allowed")} 
-                    onClick={() => {
-                      if (isEditLocked) {
-                        toast.error(getLockReason());
-                        return;
-                      }
-                      startEdit();
-                    }}
-                  >
-                    <Pencil className="h-4 w-4" />
-                    Edit
-                  </Button>
-                )}
-                
-                {canEdit && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="gap-2 text-destructive hover:text-white hover:bg-destructive transition-all" 
-                    disabled={deleteMutation.isPending}
-                    onClick={() => setIsDeleteIdeaModalOpen(true)}
-                  >
-                    {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                    Delete
-                  </Button>
-                )}
-                {isEditing && (
-                  <>
-                    <Button size="sm" className="gap-2" onClick={saveEdit} disabled={editMutation.isPending}>
-                      {editMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-4 w-4" />}
-                      Save
+                    {/* Bookmark */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "gap-1.5 rounded-xl border-slate-200 font-semibold text-slate-600 transition-all",
+                        idea.is_bookmarked
+                          ? "text-amber-500 border-amber-200 bg-amber-50 hover:bg-amber-100"
+                          : "hover:border-amber-200 hover:text-amber-500"
+                      )}
+                      onClick={() => {
+                        if (!token) return toast.error("Please login");
+                        bookmarkMutation.mutate();
+                      }}
+                    >
+                      {idea.is_bookmarked ? (
+                        <BookmarkCheck className="h-3.5 w-3.5" />
+                      ) : (
+                        <Bookmark className="h-3.5 w-3.5" />
+                      )}
+                      {idea.is_bookmarked ? "Saved" : "Save"}
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
-                  </>
+
+                    {/* Edit */}
+                    {canEdit && !isEditing && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "gap-1.5 rounded-xl border-slate-200 font-semibold text-slate-600 hover:border-primary/30 hover:text-primary hover:bg-primary/5 transition-all",
+                          isEditLocked && "opacity-40"
+                        )}
+                        onClick={() => {
+                          if (isEditLocked) { toast.error(getLockReason()); return; }
+                          startEdit();
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit
+                      </Button>
+                    )}
+
+                    {/* Save / Cancel when editing */}
+                    {isEditing && (
+                      <>
+                        <Button
+                          size="sm"
+                          className="gap-1.5 rounded-xl font-bold shadow-md shadow-primary/20"
+                          onClick={saveEdit}
+                          disabled={editMutation.isPending}
+                        >
+                          {editMutation.isPending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Check className="h-3.5 w-3.5" />
+                          )}
+                          Save Changes
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="rounded-xl font-semibold text-slate-500"
+                          onClick={() => setIsEditing(false)}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
+                    )}
+
+                    {/* Delete */}
+                    {canEdit && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1.5 rounded-xl font-semibold text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition-all"
+                        disabled={deleteMutation.isPending}
+                        onClick={() => setIsDeleteIdeaModalOpen(true)}
+                      >
+                        {deleteMutation.isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                        Delete
+                      </Button>
+                    )}
+
+                    {/* Status pills — pushed to right, admin/reviewer only */}
+                    {canChangeStatus && (
+                      <div className="ml-auto flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          STATUS:
+                        </span>
+                        {STATUSES.map((s) => {
+                          const currentLabel = PLATFORM_STATUS_LABELS[idea.status] || idea.status;
+                          const isActive =
+                            s.value === "Pending"
+                              ? ["Pending", "Under Review"].includes(idea.status)
+                              : s.value === "In Progress"
+                              ? ["In Progress", "In Development", "QA"].includes(idea.status)
+                              : idea.status === s.value;
+                          return (
+                            <button
+                              key={s.value}
+                              onClick={() => statusMutation.mutate(s.value)}
+                              disabled={statusMutation.isPending}
+                              className={cn(
+                                "text-[11px] font-semibold px-3 py-1 rounded-full border transition-all",
+                                isActive
+                                  ? "bg-amber-50 text-amber-600 border-amber-300"
+                                  : "text-slate-400 border-slate-200 hover:text-slate-600 hover:border-slate-300 bg-white"
+                              )}
+                            >
+                              {statusMutation.isPending && statusMutation.variables === s.value ? (
+                                <Loader2 className="h-3 w-3 animate-spin inline" />
+                              ) : (
+                                s.label
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Admin Scoring (collapsible) */}
+                {user?.role === "admin" && (
+                  <ScoringPanel ideaId={id!} token={token} tenantSlug={tenantSlug!} />
                 )}
-              </div>
+
+                {/* ── Idea Description section */}
+                <div className="border-t border-slate-100">
+                  <div className="px-6 sm:px-8 pt-4 pb-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Target className="h-3.5 w-3.5 text-slate-400" />
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Idea Description
+                      </span>
+                    </div>
+
+                    {isEditing ? (
+                      <Textarea
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        rows={8}
+                        className="w-full text-base border-slate-200 focus:border-primary rounded-2xl"
+                        maxLength={2000}
+                      />
+                    ) : (
+                      <p className="text-[15px] text-slate-600 leading-relaxed whitespace-pre-wrap">
+                        {idea.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Tags */}
+                  {idea.tags && idea.tags.length > 0 && (
+                    <div className="px-6 sm:px-8 pt-3 pb-5 flex flex-wrap items-center gap-2">
+                      <Hash className="h-3.5 w-3.5 text-slate-400" />
+                      {idea.tags.map((tag: string) => (
+                        <Badge
+                          key={tag}
+                          variant="secondary"
+                          className="text-[11px] font-semibold bg-slate-100 text-slate-600 border-0 rounded-lg px-3 py-1 hover:bg-slate-200 cursor-default transition-colors"
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Spacer if no tags */}
+                  {(!idea.tags || idea.tags.length === 0) && <div className="pb-4" />}
+                </div>
+              </Card>
             </div>
 
-            {/* Description card */}
-            <Card className="p-8">
-              <div className="prose prose-sm max-w-none">
-                {isEditing ? (
-                  <Textarea 
-                    value={editDescription} 
-                    onChange={(e) => setEditDescription(e.target.value)} 
-                    rows={8} 
-                    className="w-full text-base" 
-                    maxLength={2000}
-                  />
-                ) : (
-                  <p className="text-lg leading-relaxed text-muted-foreground">{idea.description}</p>
-                )}
+            {/* ── Discussion section (below the card) */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.12 }}
+            >
+              {/* Discussion header */}
+              <div className="flex items-center gap-3 mb-5">
+                <MessageSquare className="h-5 w-5 text-slate-500" />
+                <div>
+                  <h2 className="text-lg font-black tracking-tight text-slate-900">Discussion</h2>
+                  <p className="text-xs text-slate-400 font-medium">
+                    {comments.length} comment{comments.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
               </div>
 
-              {idea.tags && idea.tags.length > 0 && (
-                <div className="mt-8 pt-6 border-t flex flex-wrap gap-2">
-                  <Target className="h-4 w-4 text-muted-foreground mr-1" />
-                  {idea.tags.map((tag: string) => (
-                    <Badge key={tag} variant="secondary" className="hover:bg-accent cursor-default">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </Card>
-
-            {/* Scoring Panel — admin only */}
-            {user?.role === 'admin' && (
-              <ScoringPanel ideaId={id!} token={token} tenantSlug={tenantSlug!} />
-            )}
-
-            {/* Comments */}
-            <div className="space-y-4">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Comments ({comments.length})
-              </h3>
-
-              <div className="flex gap-3 mb-6">
+              {/* Comment input */}
+              <div className="flex gap-3 mb-5">
                 <input
                   type="text"
-                  placeholder="Share your thoughts or feedback..."
+                  placeholder={
+                    token
+                      ? "Share your thoughts or feedback…"
+                      : "Login to leave a comment"
+                  }
                   value={newComment}
+                  disabled={!token}
                   onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { if (!newComment.trim()) return; if (!token) return toast.error("Please login to comment"); commentMutation.mutate(newComment); }}}
-                  className="flex-1 bg-background border border-border shadow-sm rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      if (!newComment.trim()) return;
+                      if (!token) return toast.error("Please login to comment");
+                      commentMutation.mutate(newComment);
+                    }
+                  }}
+                  className="flex-1 bg-white border border-slate-200 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all shadow-sm placeholder:text-slate-400"
                 />
                 <Button
-                  onClick={() => { if (!newComment.trim()) return; if (!token) return toast.error("Please login to comment"); commentMutation.mutate(newComment); }}
-                  disabled={!newComment.trim() || commentMutation.isPending}
-                  className="font-medium px-6 py-2.5 rounded-lg shadow-sm"
+                  onClick={() => {
+                    if (!newComment.trim()) return;
+                    if (!token) return toast.error("Please login to comment");
+                    commentMutation.mutate(newComment);
+                  }}
+                  disabled={!newComment.trim() || commentMutation.isPending || !token}
+                  className="gap-2 rounded-2xl font-bold shadow-md shadow-primary/20 px-6 h-auto"
                 >
-                  {commentMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post"}
+                  {commentMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  Post
                 </Button>
               </div>
 
-              <div className="space-y-4">
-                {comments.map((c: any) => (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    key={c.id}
-                    className="bg-background border rounded-lg p-4 shadow-sm group"
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm">{c.author}</span>
-                        {c.is_edited && <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded italic">Edited</span>}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] text-muted-foreground">
-                          {format(new Date(c.created_at), "MMM d, HH:mm")}
-                        </span>
-                        
-                        {(c.user_id === user?.id || isAdmin) && (
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
-                              onClick={() => {
-                                setEditingCommentId(c.id);
-                                setEditingCommentContent(c.content);
-                              }}
-                              className="p-1 hover:text-primary transition-colors"
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </button>
-                            <button 
-                              onClick={() => setCommentToDelete(c.id)}
-                              className="p-1 hover:text-red-500 transition-colors"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
+              {/* Comment list */}
+              <div className="space-y-3">
+                <AnimatePresence>
+                  {comments.map((c: any, i: number) => (
+                    <motion.div
+                      key={c.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                      transition={{ duration: 0.2, delay: i * 0.03 }}
+                      className="group bg-white border border-slate-200 rounded-2xl p-5 hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                    >
+                      <div className="flex gap-4">
+                        <Avatar className="h-9 w-9 ring-2 ring-white shadow-sm border border-slate-200 shrink-0">
+                          <AvatarFallback className="text-xs font-black bg-primary/10 text-primary uppercase">
+                            {getInitials(c.author || "?")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-black text-slate-800">{c.author}</span>
+                              {c.is_edited && (
+                                <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg italic font-medium">
+                                  edited
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-slate-400 font-semibold">
+                                {format(new Date(c.created_at), "MMM d, HH:mm")}
+                              </span>
+                              {(c.user_id === user?.id || isAdmin) && (
+                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                                  <button
+                                    onClick={() => {
+                                      setEditingCommentId(c.id);
+                                      setEditingCommentContent(c.content);
+                                    }}
+                                    className="p-1.5 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary transition-all"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => setCommentToDelete(c.id)}
+                                    className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-all"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
 
-                    {editingCommentId === c.id ? (
-                      <div className="space-y-2 mt-2">
-                        <Textarea 
-                          value={editingCommentContent}
-                          onChange={(e) => setEditingCommentContent(e.target.value)}
-                          className="min-h-[80px] text-sm"
-                        />
-                        <div className="flex gap-2 justify-end">
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="h-8 text-xs" 
-                            onClick={() => setEditingCommentId(null)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            className="h-8 text-xs" 
-                            onClick={() => editCommentMutation.mutate({ commentId: c.id, content: editingCommentContent })}
-                            disabled={editCommentMutation.isPending}
-                          >
-                            {editCommentMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Update"}
-                          </Button>
+                          {editingCommentId === c.id ? (
+                            <div className="space-y-2 mt-1">
+                              <Textarea
+                                value={editingCommentContent}
+                                onChange={(e) => setEditingCommentContent(e.target.value)}
+                                className="min-h-[72px] text-sm rounded-xl border-slate-200 focus:border-primary"
+                              />
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 text-xs rounded-xl text-slate-500 font-semibold"
+                                  onClick={() => setEditingCommentId(null)}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="h-7 text-xs rounded-xl font-bold"
+                                  onClick={() =>
+                                    editCommentMutation.mutate({
+                                      commentId: c.id,
+                                      content: editingCommentContent,
+                                    })
+                                  }
+                                  disabled={editCommentMutation.isPending}
+                                >
+                                  {editCommentMutation.isPending ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    "Update"
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-slate-600 leading-relaxed mt-1">{c.content}</p>
+                          )}
                         </div>
                       </div>
-                    ) : (
-                      <p className="text-sm leading-relaxed">{c.content}</p>
-                    )}
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+
                 {comments.length === 0 && (
-                  <div className="text-center py-10 bg-background border rounded-lg border-dashed">
-                    <p className="text-sm text-muted-foreground italic">No comments yet. Be the first to share your thoughts!</p>
+                  <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center gap-3 bg-white/60">
+                    <div className="h-12 w-12 bg-slate-100 rounded-full flex items-center justify-center text-xl">
+                      💬
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-slate-700">No comments yet</p>
+                      <p className="text-xs text-slate-400 font-medium">
+                        Be the first to share your thoughts!
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         </main>
       </div>
 
-      <ConfirmationModal 
+
+
+      <ConfirmationModal
         isOpen={isDeleteIdeaModalOpen}
         onClose={() => setIsDeleteIdeaModalOpen(false)}
         onConfirm={() => deleteMutation.mutate()}
@@ -640,7 +893,7 @@ const IdeaDetail = () => {
         type="danger"
       />
 
-      <ConfirmationModal 
+      <ConfirmationModal
         isOpen={!!commentToDelete}
         onClose={() => setCommentToDelete(null)}
         onConfirm={() => commentToDelete && deleteCommentMutation.mutate(commentToDelete)}

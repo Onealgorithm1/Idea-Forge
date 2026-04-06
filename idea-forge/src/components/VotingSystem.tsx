@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ThumbsUp, ThumbsDown, Lock } from 'lucide-react';
+import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -46,15 +46,15 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
         variant="ghost"
         size="icon"
         className={cn(
-          'h-7 w-7 rounded-lg transition-all',
+          'h-8 w-8 rounded-full transition-all',
           userVote === 'up'
             // Active — voted up (locked in green)
             ? 'bg-emerald-500/20 text-emerald-600'
             : isLoading
                 // Loading state
-                ? 'text-slate-400 opacity-50 cursor-not-allowed'
+                ? 'text-slate-300 opacity-50 cursor-not-allowed'
                 // No vote yet — interactive
-                : 'text-slate-500 hover:bg-emerald-500/20 hover:text-emerald-600 group'
+                : 'text-slate-300 hover:bg-emerald-50 hover:text-emerald-500 group'
         )}
         disabled={isFullyDisabled}
         title={
@@ -68,14 +68,15 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
         }}
       >
         <motion.div
-          whileHover={isFullyDisabled ? {} : { scale: 1.15 }}
+          whileHover={isFullyDisabled ? {} : { scale: 1.1 }}
           whileTap={isFullyDisabled ? {} : { scale: 0.9 }}
         >
           <ThumbsUp
+            strokeWidth={2.5}
             className={cn(
-              'h-4 w-4 transition-all',
+              'h-[18px] w-[18px] transition-all',
               userVote === 'up' && 'fill-emerald-500 text-emerald-600 opacity-100',
-              userVote !== 'up' && !isFullyDisabled && 'opacity-70 group-hover:opacity-100',
+              userVote !== 'up' && !isFullyDisabled && 'opacity-80 group-hover:opacity-100',
             )}
           />
         </motion.div>
