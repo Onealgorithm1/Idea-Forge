@@ -74,7 +74,7 @@ export const createTenantAdmin = async (req: Request, res: Response) => {
     // 5. Send Email in Background
     const orgName = tenant.rows[0]?.name || 'your organization';
     const orgSlug = tenant.rows[0]?.slug || 'default';
-    const primaryFrontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',')[0].trim() : 'http://localhost:5173';
+    const primaryFrontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/['"]/g, '').split(',')[0].trim() : 'http://localhost:5173';
     const loginUrl = `${primaryFrontendUrl}/${orgSlug}/login`;
     
     const emailSubject = `Welcome to IdeaForge - Admin Credentials for ${orgName}`;

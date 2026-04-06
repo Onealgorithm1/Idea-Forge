@@ -25,7 +25,14 @@ const PORT = process.env.PORT || 5000;
 initSocket(server);
 
 // Middleware
-const allowedOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(url => url.trim()) : [];
+const getAllowedOrigins = () => {
+  if (!process.env.FRONTEND_URL) return [];
+  // Strip literal quotes that might be injected by hosting providers, split, trim, and filter
+  return process.env.FRONTEND_URL.replace(/['"]/g, '').split(',').map(url => url.trim()).filter(Boolean);
+};
+
+const allowedOrigins = getAllowedOrigins();
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -33,6 +40,7 @@ app.use(cors({
     if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.length === 0) {
       callback(null, true);
     } else {
+      console.warn(`[CORS] Rejected origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
