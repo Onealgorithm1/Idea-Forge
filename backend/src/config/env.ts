@@ -25,10 +25,17 @@ export function validateEnv() {
   // Helper to remove any accidental quotes or whitespace from dashboard inputs
   const clean = (val?: string) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
 
+  // Railway's Neon integration often injects the un-pooled DATABASE_URL which rejects passwords.
+  // This automatically upgrades the URL to the working pooler endpoint if needed.
+  let dbUrl = clean(process.env.DATABASE_URL);
+  if (dbUrl.includes('ep-icy-night-adzbcu6r.us-east-1.aws.neon.tech')) {
+    dbUrl = dbUrl.replace('ep-icy-night-adzbcu6r.us-east-1.aws.neon.tech', 'ep-icy-night-adzbcu6r-pooler.c-2.us-east-1.aws.neon.tech');
+  }
+
   const env = {
     PORT: clean(process.env.PORT) || '5000',
     NODE_ENV: clean(process.env.NODE_ENV) || 'development',
-    DATABASE_URL: clean(process.env.DATABASE_URL),
+    DATABASE_URL: dbUrl,
     JWT_SECRET: clean(process.env.JWT_SECRET),
     FRONTEND_URL: clean(process.env.FRONTEND_URL),
     SMTP_USER: clean(process.env.SMTP_USER),
@@ -38,6 +45,11 @@ export function validateEnv() {
     RESEND_API_KEY: clean(process.env.RESEND_API_KEY),
     RESEND_FROM_EMAIL: clean(process.env.RESEND_FROM_EMAIL) || 'onboarding@resend.dev',
   };
+
+  try {
+    const maskedDb = env.DATABASE_URL.replace(/:[^:@]+@/, ':***@');
+    console.log(`🔍 [DIAGNOSTIC] Using DATABASE_URL starting with: ${maskedDb.substring(0, 50)}... and host: ${env.DATABASE_URL.split('@')[1]?.split('/')[0]}`);
+  } catch (e) {}
 
   console.log('✅ Environment variables validated successfully.\n');
   
