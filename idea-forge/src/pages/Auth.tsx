@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Zap, Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -164,8 +165,13 @@ export default function AuthPage() {
                           placeholder="John"
                           value={firstName}
                           onChange={(e) => setFirstName(e.target.value)}
-                          className="pl-10 h-10 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600 focus:ring-primary/50"
+                          required
+                          className={cn(
+                            "pl-10 h-10 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600 focus:ring-primary/50",
+                            errors.firstName && "border-red-400/50 focus:ring-red-400/20"
+                          )}
                         />
+                        {errors.firstName && <p className="text-[10px] text-red-400 mt-1 ml-1 font-bold animate-in fade-in slide-in-from-top-1">{errors.firstName}</p>}
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -175,8 +181,13 @@ export default function AuthPage() {
                         placeholder="Doe"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        className="h-10 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600"
+                        required
+                        className={cn(
+                          "h-10 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600",
+                          errors.lastName && "border-red-400/50"
+                        )}
                       />
+                      {errors.lastName && <p className="text-[10px] text-red-400 mt-1 ml-1 font-bold animate-in fade-in slide-in-from-top-1">{errors.lastName}</p>}
                     </div>
                   </motion.div>
                 )}
@@ -192,8 +203,13 @@ export default function AuthPage() {
                     placeholder="name@organization.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-10 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600 focus:ring-primary/50"
+                    required
+                    className={cn(
+                      "pl-10 h-10 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600 focus:ring-primary/50",
+                      errors.email && "border-red-400/50 focus:ring-red-400/20"
+                    )}
                   />
+                  {errors.email && <p className="text-[10px] text-red-400 mt-1 ml-1 font-bold animate-in fade-in slide-in-from-top-1">{errors.email}</p>}
                 </div>
               </div>
 
@@ -217,8 +233,13 @@ export default function AuthPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="pl-10 h-10 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600"
+                    required
+                    className={cn(
+                      "pl-10 h-10 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600",
+                      errors.password && "border-red-400/50"
+                    )}
                   />
+                  {errors.password && <p className="text-[10px] text-red-400 mt-1 ml-1 font-bold animate-in fade-in slide-in-from-top-1">{errors.password}</p>}
                 </div>
               </div>
 

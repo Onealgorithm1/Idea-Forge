@@ -466,6 +466,17 @@ const IdeaDetail = () => {
                     </span>
                   </div>
 
+                  {/* ── Community Score Badge (Floating on right) */}
+                  <div className="absolute top-12 right-8 hidden sm:flex flex-col items-center justify-center p-3 sm:p-4 rounded-3xl bg-muted/40 border border-border/50 backdrop-blur-sm shadow-premium transition-all hover:scale-105 group">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={cn("w-2 h-2 rounded-full", (idea.votes_count || 0) > 0 ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/30")} />
+                      <span className="text-2xl font-black tracking-tight text-foreground/90 group-hover:text-primary transition-colors">
+                        {(idea.votes_count || 0) * 10} points
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Community Score</span>
+                  </div>
+
                   {/* ── Title */}
                   {isEditing ? (
                     <div className="space-y-3 mb-4">

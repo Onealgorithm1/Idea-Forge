@@ -127,10 +127,22 @@ const BoardIdeaCard = ({
         </div>
 
         {item.tags && item.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-4">
-            {item.tags.map((tag: string) => (
-              <Badge key={tag} variant="secondary" className={cn("text-[9px] px-2 py-0.5 h-auto border-none", type === 'ideation' ? "bg-muted text-muted-foreground font-bold" : type === 'development' ? "bg-primary/10 text-primary" : "bg-success/10 text-success")}>#{tag}</Badge>
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-1.5 mb-4">
+            <div className="flex flex-wrap gap-1.5">
+              {item.tags.map((tag: string) => (
+                <Badge key={tag} variant="secondary" className={cn("text-[9px] px-2 py-0.5 h-auto border-none", type === 'ideation' ? "bg-muted text-muted-foreground font-bold" : type === 'development' ? "bg-primary/10 text-primary" : "bg-success/10 text-success")}>#{tag}</Badge>
+              ))}
+            </div>
+            {/* Points Display */}
+            <div className={cn(
+              "flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-black tracking-tight transition-all shadow-sm",
+              (item.votes_count || 0) > 0 
+                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
+                : "bg-muted text-muted-foreground border-border/50"
+            )}>
+              <div className={cn("w-1.5 h-1.5 rounded-full", (item.votes_count || 0) > 0 ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/30")} />
+              {(item.votes_count || 0) * 10} points
+            </div>
           </div>
         )}
 
