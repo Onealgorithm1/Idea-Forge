@@ -22,19 +22,21 @@ export function validateEnv() {
     process.exit(1);
   }
 
-  // Handle Boolean/Numeric conversion and normalization if needed
+  // Helper to remove any accidental quotes or whitespace from dashboard inputs
+  const clean = (val?: string) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
+
   const env = {
-    PORT: process.env.PORT || '5000',
-    NODE_ENV: process.env.NODE_ENV || 'development',
-    DATABASE_URL: process.env.DATABASE_URL!,
-    JWT_SECRET: process.env.JWT_SECRET!,
-    FRONTEND_URL: process.env.FRONTEND_URL!,
-    SMTP_USER: process.env.SMTP_USER,
-    OAUTH_CLIENT_ID: process.env.OAUTH_CLIENT_ID,
-    OAUTH_CLIENT_SECRET: process.env.OAUTH_CLIENT_SECRET,
-    OAUTH_REFRESH_TOKEN: process.env.OAUTH_REFRESH_TOKEN,
-    RESEND_API_KEY: process.env.RESEND_API_KEY,
-    RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+    PORT: clean(process.env.PORT) || '5000',
+    NODE_ENV: clean(process.env.NODE_ENV) || 'development',
+    DATABASE_URL: clean(process.env.DATABASE_URL),
+    JWT_SECRET: clean(process.env.JWT_SECRET),
+    FRONTEND_URL: clean(process.env.FRONTEND_URL),
+    SMTP_USER: clean(process.env.SMTP_USER),
+    OAUTH_CLIENT_ID: clean(process.env.OAUTH_CLIENT_ID),
+    OAUTH_CLIENT_SECRET: clean(process.env.OAUTH_CLIENT_SECRET),
+    OAUTH_REFRESH_TOKEN: clean(process.env.OAUTH_REFRESH_TOKEN),
+    RESEND_API_KEY: clean(process.env.RESEND_API_KEY),
+    RESEND_FROM_EMAIL: clean(process.env.RESEND_FROM_EMAIL) || 'onboarding@resend.dev',
   };
 
   console.log('✅ Environment variables validated successfully.\n');
