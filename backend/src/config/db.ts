@@ -1,10 +1,8 @@
 import { Pool } from 'pg';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { env } from './env.js';
 
 const pool = new Pool({
-  connectionString: 'postgresql://neondb_owner:npg_y0KepXrE4sMF@ep-icy-night-adzbcu6r-pooler.c-2.us-east-1.aws.neon.tech/Ideaforge?sslmode=require',
+  connectionString: env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
   }

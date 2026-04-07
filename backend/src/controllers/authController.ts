@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { query } from '../config/db.js';
 import { sendEmail } from '../config/mail.js';
 import crypto from 'crypto';
+import { env } from '../config/env.js';
 
 // ─── Regular User Login ──────────────────────────────────────────────────────
 export const login = async (req: Request, res: Response) => {
@@ -39,7 +40,7 @@ export const login = async (req: Request, res: Response) => {
       tenantId: user.rows[0].tenant_id,
     };
 
-    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET as string, { expiresIn: '24h' });
+    const token = jwt.sign(tokenPayload, env.JWT_SECRET as string, { expiresIn: '24h' });
 
     res.json({
       user: {
@@ -98,7 +99,7 @@ export const register = async (req: Request, res: Response) => {
 
     const token = jwt.sign(
       { id: newUser.rows[0].id, role: newUser.rows[0].role, tenantId: tenant.id },
-      process.env.JWT_SECRET as string,
+      env.JWT_SECRET as string,
       { expiresIn: '24h' }
     );
 
@@ -124,7 +125,7 @@ export const superAdminLogin = async (req: Request, res: Response) => {
 
     const token = jwt.sign(
       { id: user.rows[0].id, role: 'super_admin', isSuperAdmin: true },
-      process.env.JWT_SECRET as string,
+      env.JWT_SECRET as string,
       { expiresIn: '8h' }
     );
 

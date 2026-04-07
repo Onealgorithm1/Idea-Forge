@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import ideaRoutes from './routes/ideaRoutes.js';
 import scoringRoutes from './routes/scoringRoutes.js';
@@ -25,9 +24,9 @@ initSocket(server);
 
 // Middleware
 const getAllowedOrigins = () => {
-  if (!process.env.FRONTEND_URL) return [];
+  if (!env.FRONTEND_URL) return [];
   // Strip literal quotes that might be injected by hosting providers, split, trim, and filter
-  return process.env.FRONTEND_URL
+  return env.FRONTEND_URL
     .replace(/['"]/g, '')
     .split(',')
     .map(url => url.trim().replace(/\/$/, '')) // Also remove any trailing slash
@@ -80,11 +79,11 @@ app.get('/health', async (req, res) => {
 // Diagnostic route
 app.get('/api/diag/email', async (req, res) => {
   const envVars = {
-    FRONTEND_URL: process.env.FRONTEND_URL ? `Set (${process.env.FRONTEND_URL.split(',').length} URLs)` : 'MISSING',
-    SMTP_USER: process.env.SMTP_USER ? 'Set' : 'MISSING',
-    OAUTH_CLIENT_ID: process.env.OAUTH_CLIENT_ID ? 'Set' : 'MISSING',
-    OAUTH_CLIENT_SECRET: process.env.OAUTH_CLIENT_SECRET ? 'Set' : 'MISSING',
-    OAUTH_REFRESH_TOKEN: process.env.OAUTH_REFRESH_TOKEN ? 'Set' : 'MISSING',
+    FRONTEND_URL: env.FRONTEND_URL ? `Set (${env.FRONTEND_URL.split(',').length} URLs)` : 'MISSING',
+    SMTP_USER: env.SMTP_USER ? 'Set' : 'MISSING',
+    OAUTH_CLIENT_ID: env.OAUTH_CLIENT_ID ? 'Set' : 'MISSING',
+    OAUTH_CLIENT_SECRET: env.OAUTH_CLIENT_SECRET ? 'Set' : 'MISSING',
+    OAUTH_REFRESH_TOKEN: env.OAUTH_REFRESH_TOKEN ? 'Set' : 'MISSING',
   };
 
   try {
@@ -105,7 +104,7 @@ app.get('/api/diag/email', async (req, res) => {
 
 // Test email diagnostic route
 app.get('/api/diag/send-test-email', async (req, res) => {
-  const to = req.query.to as string || process.env.SMTP_USER;
+  const to = req.query.to as string || env.SMTP_USER;
   if (!to) return res.status(400).json({ message: 'SMTP_USER not set and no "to" query param provided' });
 
   try {

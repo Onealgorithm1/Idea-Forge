@@ -1,16 +1,15 @@
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
-import dotenv from 'dotenv';
-dotenv.config();
+import { env } from './env.js';
 
 const oauth2Client = new OAuth2Client(
-  process.env.OAUTH_CLIENT_ID,
-  process.env.OAUTH_CLIENT_SECRET,
+  env.OAUTH_CLIENT_ID,
+  env.OAUTH_CLIENT_SECRET,
   'https://developers.google.com/oauthplayground'
 );
 
 oauth2Client.setCredentials({
-  refresh_token: process.env.OAUTH_REFRESH_TOKEN,
+  refresh_token: env.OAUTH_REFRESH_TOKEN,
 });
 
 const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
@@ -24,7 +23,7 @@ export const sendEmail = async (to: string, subject: string, text: string, html?
   // Gmail API requires a RFC 2822 formatted base64url encoded string
   const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
   const messageParts = [
-    `From: "IdeaForge Support" <${process.env.SMTP_USER}>`,
+    `From: "IdeaForge Support" <${env.SMTP_USER}>`,
     `To: ${to}`,
     `Content-Type: text/html; charset=utf-8`,
     `MIME-Version: 1.0`,

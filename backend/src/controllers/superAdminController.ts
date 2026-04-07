@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { query } from '../config/db.js';
 import { sendEmail } from '../config/mail.js';
+import { env } from '../config/env.js';
 
 export const getTenantDetail = async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -74,7 +75,7 @@ export const createTenantAdmin = async (req: Request, res: Response) => {
     // 5. Send Email in Background
     const orgName = tenant.rows[0]?.name || 'your organization';
     const orgSlug = tenant.rows[0]?.slug || 'default';
-    const primaryFrontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/['"]/g, '').split(',')[0].trim().replace(/\/$/, '') : 'http://localhost:5173';
+    const primaryFrontendUrl = env.FRONTEND_URL ? env.FRONTEND_URL.replace(/['"]/g, '').split(',')[0].trim().replace(/\/$/, '') : 'http://localhost:5173';
     const loginUrl = `${primaryFrontendUrl}/${orgSlug}/login`;
     
     const emailSubject = `Welcome to IdeaForge - Admin Credentials for ${orgName}`;
@@ -130,7 +131,7 @@ export const submitSupportRequest = async (req: Request, res: Response) => {
     );
 
     // Notify Platform Support (Configured in .env)
-    const adminEmail = process.env.SMTP_USER;
+    const adminEmail = env.SMTP_USER;
 
     if (adminEmail) {
       const tenantInfo = await query('SELECT name FROM tenants WHERE id = $1', [tenantId]);

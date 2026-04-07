@@ -1,6 +1,4 @@
 import dotenv from 'dotenv';
-import { z } from 'zod'; // If Zod is not available, I'll use a simple approach
-
 // Initialize dotenv
 dotenv.config();
 
@@ -32,7 +30,11 @@ export function validateEnv() {
     JWT_SECRET: process.env.JWT_SECRET!,
     FRONTEND_URL: process.env.FRONTEND_URL!,
     SMTP_USER: process.env.SMTP_USER,
-    // Add other vars here...
+    OAUTH_CLIENT_ID: process.env.OAUTH_CLIENT_ID,
+    OAUTH_CLIENT_SECRET: process.env.OAUTH_CLIENT_SECRET,
+    OAUTH_REFRESH_TOKEN: process.env.OAUTH_REFRESH_TOKEN,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
   };
 
   console.log('✅ Environment variables validated successfully.\n');

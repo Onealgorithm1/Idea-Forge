@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import pool, { query } from '../config/db.js';
 import { sendEmail } from '../config/mail.js';
+import { env } from '../config/env.js';
 
 // ─── Audit log helper ─────────────────────────────────────────────────────────
 async function logAudit(tenantId: string, actorUserId: string | null, entityType: string, entityId: string, action: string, oldValues?: any, newValues?: any) {
@@ -25,7 +26,7 @@ export const getIdeas = async (req: any, res: Response) => {
     if (authHeader) {
       const token = authHeader.split(' ')[1];
       try {
-        const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
+        const decoded: any = jwt.verify(token, env.JWT_SECRET as string);
         userId = decoded.id;
       } catch (e) { /* ignore */ }
     }
@@ -356,7 +357,7 @@ export const addComment = async (req: any, res: Response) => {
             `<h3>New Comment on Idea</h3>
              <p><strong>${commenterName}</strong> commented on your idea "<strong>${idea.title}</strong>":</p>
              <blockquote style="border-left: 4px solid #eee; padding-left: 10px; color: #666 italic;">${content}</blockquote>
-             <p><a href="${process.env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View on IdeaForge</a></p>`
+             <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View on IdeaForge</a></p>`
           ).catch(e => console.error('Author email notification failed:', e));
         }
       }
@@ -378,7 +379,7 @@ export const addComment = async (req: any, res: Response) => {
             `<h3>Discussion Activity</h3>
              <p><strong>${commenterName}</strong> commented on an idea you bookmarked: "<strong>${idea.title}</strong>":</p>
              <blockquote style="border-left: 4px solid #eee; padding-left: 10px; color: #666 italic;">${content}</blockquote>
-             <p><a href="${process.env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View Discussion</a></p>`
+             <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View Discussion</a></p>`
           ).catch(e => console.error('Bookmarker email notification failed:', e));
         }
       });
@@ -608,7 +609,7 @@ export const updateIdeaStatus = async (req: any, res: Response) => {
         `Your idea "${idea.title}" is now "${status}".`,
         `<h3>Idea Status Update</h3>
          <p>Great news! Your idea "<strong>${idea.title}</strong>" has been updated to: <span style="font-weight: bold; color: #4f46e5;">${status}</span></p>
-         <p><a href="${process.env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">Track Progress</a></p>`
+         <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">Track Progress</a></p>`
       ).catch(e => console.error('Author status update email failed:', e));
     }
 
@@ -628,7 +629,7 @@ export const updateIdeaStatus = async (req: any, res: Response) => {
           `An idea you saved, "${idea.title}", is now "${status}".`,
           `<h3>Followed Idea Status Update</h3>
            <p>An idea you bookmarked, "<strong>${idea.title}</strong>", has progressed to: <span style="font-weight: bold; color: #4f46e5;">${status}</span></p>
-           <p><a href="${process.env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View Idea</a></p>`
+           <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View Idea</a></p>`
         ).catch(e => console.error('Bookmarker status update email failed:', e));
       }
     });

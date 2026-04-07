@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { query } from '../config/db.js';
 import { sendEmail } from '../config/mail.js';
+import { env } from '../config/env.js';
 
 // =====================================================
 // Tenant Management (Super Admin only)
@@ -266,7 +267,7 @@ export const registerWorkspace = async (req: Request, res: Response) => {
     await query(`INSERT INTO tenant_details (tenant_id) VALUES ($1)`, [tenantId]);
 
     // 6. Notify Platform Support
-    const supportEmail = process.env.SMTP_USER;
+    const supportEmail = env.SMTP_USER;
 
     // Create a support request record for tracking
     await query(
