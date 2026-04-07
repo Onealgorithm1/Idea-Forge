@@ -9,6 +9,8 @@ export const ROUTES = {
   IDEA_BOARD: "/idea-board",
   ROADMAP: "/roadmap",
   ANALYTICS: "/analytics",
+  MY_IDEAS: "/my-ideas",
+  SAVED_IDEAS: "/saved-ideas",
   SUBMIT_IDEA: "/submit-idea",
   LOGIN: "/login",
   SIGNUP: "/signup",

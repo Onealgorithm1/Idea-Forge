@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SocketProvider } from "./contexts/SocketContext";
+import { ThemeProvider } from "next-themes";
 import { TenantProvider } from "./contexts/TenantContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -44,6 +45,8 @@ const AppContent = () => (
     <Route path="/idea-board" element={<Navigate to="/default/idea-board" replace />} />
     <Route path="/roadmap" element={<Navigate to="/default/roadmap" replace />} />
     <Route path="/analytics" element={<Navigate to="/default/analytics" replace />} />
+    <Route path="/my-ideas" element={<Navigate to="/default/my-ideas" replace />} />
+    <Route path="/saved-ideas" element={<Navigate to="/default/saved-ideas" replace />} />
     <Route path="/submit-idea" element={<Navigate to="/default/submit-idea" replace />} />
     <Route path="/profile" element={<Navigate to="/default/profile" replace />} />
     <Route path="/admin/*" element={<Navigate to="/default/admin/dashboard" replace />} />
@@ -56,6 +59,8 @@ const AppContent = () => (
           <Route path="idea-board" element={<Index />} />
           <Route path="roadmap" element={<Index />} />
           <Route path="analytics" element={<Index />} />
+          <Route path="my-ideas" element={<Index />} />
+          <Route path="saved-ideas" element={<Index />} />
           <Route path="submit-idea" element={<SubmitIdea />} />
           <Route path="ideas/:id" element={<IdeaDetail />} />
           <Route path="profile" element={<Profile />} />
@@ -79,17 +84,19 @@ const AppContent = () => (
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <SocketProvider>
-          <AuthProvider>
-            <AppContent />
-          </AuthProvider>
-        </SocketProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <SocketProvider>
+            <AuthProvider>
+              <AppContent />
+            </AuthProvider>
+          </SocketProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

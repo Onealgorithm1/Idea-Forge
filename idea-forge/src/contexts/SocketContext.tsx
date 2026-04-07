@@ -17,8 +17,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || 
-                      (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') : 'http://localhost:5001');
+    const socketUrl = import.meta.env.VITE_SOCKET_URL ||
+      (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') : 'http://localhost:5000');
     const newSocket = io(socketUrl, {
       transports: ['websocket']
     });
@@ -35,18 +35,18 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     newSocket.on('vote_update', (data: { id: string, votes_count: number }) => {
       console.log('Real-time vote update:', data);
-      
+
       // Manually update TanStack Query cache for all relevant queries
       queryClient.setQueriesData({ queryKey: ['ideas'] }, (oldData: any) => {
         if (!oldData) return oldData;
-        return oldData.map((idea: any) => 
+        return oldData.map((idea: any) =>
           idea.id === data.id ? { ...idea, votes_count: data.votes_count } : idea
         );
       });
 
       queryClient.setQueriesData({ queryKey: ['user-ideas'] }, (oldData: any) => {
         if (!oldData) return oldData;
-        return oldData.map((idea: any) => 
+        return oldData.map((idea: any) =>
           idea.id === data.id ? { ...idea, votes_count: data.votes_count } : idea
         );
       });
@@ -60,17 +60,17 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     newSocket.on('status_update', (data: { id: string, status: string }) => {
       console.log('Real-time status update:', data);
-      
+
       queryClient.setQueriesData({ queryKey: ['ideas'] }, (oldData: any) => {
         if (!oldData) return oldData;
-        return oldData.map((idea: any) => 
+        return oldData.map((idea: any) =>
           idea.id === data.id ? { ...idea, status: data.status } : idea
         );
       });
 
       queryClient.setQueriesData({ queryKey: ['user-ideas'] }, (oldData: any) => {
         if (!oldData) return oldData;
-        return oldData.map((idea: any) => 
+        return oldData.map((idea: any) =>
           idea.id === data.id ? { ...idea, status: data.status } : idea
         );
       });
@@ -79,7 +79,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (!oldData) return oldData;
         return { ...oldData, status: data.status };
       });
-      
+
       // Also invalidate ideas query after a short delay to ensure consistency
       // queryClient.invalidateQueries({ queryKey: ['ideas'] });
     });

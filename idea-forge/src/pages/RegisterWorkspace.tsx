@@ -43,7 +43,7 @@ export default function RegisterWorkspacePage() {
     if (!adminEmail.includes("@")) newErrors.adminEmail = "Valid email is required";
     if (!adminPhone.trim()) newErrors.adminPhone = "Mobile number is required";
     if (adminPassword.length < 6) newErrors.adminPassword = "Password must be at least 6 characters";
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -54,7 +54,7 @@ export default function RegisterWorkspacePage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5001/api"}/register/workspace`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/register/workspace`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -84,7 +84,7 @@ export default function RegisterWorkspacePage() {
     return (
       <div className="flex min-h-screen items-center justify-center px-4 relative overflow-hidden bg-slate-950">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/90 to-primary/20" />
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-[500px] z-10 text-center space-y-8"
@@ -97,11 +97,11 @@ export default function RegisterWorkspacePage() {
           <div className="space-y-4">
             <h1 className="text-4xl font-black text-white tracking-tight">Request Submitted.</h1>
             <p className="text-slate-400 text-lg leading-relaxed">
-              We've received your registration for <span className="text-white font-bold">{orgName}</span>. 
+              We've received your registration for <span className="text-white font-bold">{orgName}</span>.
               Our Super Admin will review your request and notify you once your workspace is ready.
             </p>
           </div>
-          <Button 
+          <Button
             onClick={() => navigate("/login")}
             className="h-12 px-8 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-2xl font-bold transition-all"
           >
@@ -117,14 +117,14 @@ export default function RegisterWorkspacePage() {
       {/* Background elements similar to Auth.tsx */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/90 to-primary/20" />
-        <motion.div 
+        <motion.div
           animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px]" 
+          className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px]"
         />
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-[500px] z-10"
@@ -239,9 +239,9 @@ export default function RegisterWorkspacePage() {
               )}
             </CardContent>
             <CardFooter className="flex flex-col space-y-6 pb-10 px-8">
-              <Button 
-                type="submit" 
-                className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]" 
+              <Button
+                type="submit"
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 disabled={isLoading}
               >
                 {isLoading ? (

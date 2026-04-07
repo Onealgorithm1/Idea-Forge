@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { 
-  Building2, Users, Lightbulb, TrendingUp, Plus, Search, 
+import {
+  Building2, Users, Lightbulb, TrendingUp, Plus, Search,
   ShieldCheck, MoreHorizontal, ExternalLink, Loader2, Power, Trash2, Settings, MessageSquare
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -11,15 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { 
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
-  DropdownMenuTrigger, DropdownMenuSeparator 
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuTrigger, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 
-const SUPER_ADMIN_API = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+const SUPER_ADMIN_API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const saApi = {
   get: async (endpoint: string) => {
@@ -123,7 +123,7 @@ const SuperAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<"tenants" | "support">("tenants");
 
   const filteredSupport = supportRequests.filter((s: any) =>
-    s.subject.toLowerCase().includes(search.toLowerCase()) || 
+    s.subject.toLowerCase().includes(search.toLowerCase()) ||
     s.tenant_name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -162,9 +162,9 @@ const SuperAdminDashboard = () => {
             <p className="text-white/40 mt-2 text-lg">Manage all tenants and platform health.</p>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setActiveTab("support")} 
+            <Button
+              variant="outline"
+              onClick={() => setActiveTab("support")}
               className={`rounded-xl border-white/10 font-bold ${activeTab === 'support' ? 'bg-white/10' : ''}`}
             >
               <MessageSquare className="mr-2 h-4 w-4" /> Support {supportRequests.length > 0 && <Badge className="ml-2 bg-primary">{supportRequests.length}</Badge>}
@@ -195,13 +195,13 @@ const SuperAdminDashboard = () => {
         <Card className="bg-white/5 border-white/5 rounded-2xl overflow-hidden">
           <div className="p-6 border-b border-white/5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-6">
-              <button 
+              <button
                 onClick={() => setActiveTab("tenants")}
                 className={`text-lg font-black transition-colors ${activeTab === 'tenants' ? 'text-white' : 'text-white/30 hover:text-white/50'}`}
               >
                 All Tenants
               </button>
-              <button 
+              <button
                 onClick={() => setActiveTab("support")}
                 className={`text-lg font-black transition-colors ${activeTab === 'support' ? 'text-white' : 'text-white/30 hover:text-white/50'}`}
               >
@@ -277,14 +277,14 @@ const SuperAdminDashboard = () => {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-white/5" />
                             {tenant.status === 'pending' ? (
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => toggleStatus.mutate({ id: tenant.id, status: 'active' })}
                                 className="hover:bg-white/10 cursor-pointer text-success"
                               >
                                 <ShieldCheck className="mr-2 h-4 w-4" /> Approve Tenant
                               </DropdownMenuItem>
                             ) : (
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => toggleStatus.mutate({ id: tenant.id, status: tenant.status === 'active' ? 'suspended' : 'active' })}
                                 className={`hover:bg-white/10 cursor-pointer ${tenant.status === 'active' ? 'text-amber-400' : 'text-success'}`}
                               >
@@ -331,10 +331,10 @@ const SuperAdminDashboard = () => {
                       </td>
                       <td className="px-6 py-4 text-white/30 text-xs">{new Date(req.created_at).toLocaleString()}</td>
                       <td className="px-6 py-4 text-right">
-                         <Button variant="ghost" size="sm" className="text-primary hover:text-primary hover:bg-primary/10 font-bold text-xs"
-                           onClick={() => toast.info(`Message: ${req.message}`, { duration: 5000 })}>
-                           Read More
-                         </Button>
+                        <Button variant="ghost" size="sm" className="text-primary hover:text-primary hover:bg-primary/10 font-bold text-xs"
+                          onClick={() => toast.info(`Message: ${req.message}`, { duration: 5000 })}>
+                          Read More
+                        </Button>
                       </td>
                     </tr>
                   ))}

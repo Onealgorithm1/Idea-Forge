@@ -6,6 +6,7 @@ import SidebarNav from "@/components/SidebarNav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -79,7 +80,7 @@ const AdminSettings = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#fafbfc] flex flex-col relative overflow-hidden text-slate-900">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden text-foreground transition-colors duration-300">
       <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[120px]" />
         <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] rounded-full bg-success/10 blur-[100px]" />
@@ -99,9 +100,9 @@ const AdminSettings = () => {
                 <div className="p-2 bg-primary/10 rounded-xl text-primary">
                   <Building className="h-5 w-5" />
                 </div>
-                <h1 className="text-3xl font-black tracking-tight">{tenant?.name || "Organization"} Settings</h1>
+                <h1 className="text-3xl font-black tracking-tight text-foreground">{tenant?.name || "Organization"} Settings</h1>
               </div>
-              <p className="text-slate-500 text-lg font-medium">
+              <p className="text-muted-foreground text-lg font-medium">
                 Configure your organization's idea spaces, categories, and governance.
               </p>
             </motion.div>
@@ -114,17 +115,17 @@ const AdminSettings = () => {
                 transition={{ delay: 0.1 }}
                 className="space-y-6"
               >
-                <Card className="p-8 border-none shadow-premium bg-white/80 backdrop-blur-md rounded-[2rem] space-y-6">
+                <Card className="p-8 border-none shadow-premium bg-card/80 backdrop-blur-md rounded-[2rem] space-y-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 rounded-xl text-blue-600">
+                      <div className="p-2 bg-primary/10 rounded-xl text-primary">
                         <Layers className="h-5 w-5" />
                       </div>
-                      <h2 className="text-xl font-black tracking-tight">Idea Spaces</h2>
+                      <h2 className="text-xl font-black tracking-tight text-foreground">Idea Spaces</h2>
                     </div>
                   </div>
                   
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-muted-foreground">
                     Define separate areas for different types of innovation (e.g., Public, Internal, R&D).
                   </p>
 
@@ -150,8 +151,8 @@ const AdminSettings = () => {
                       {spacesLoading ? (
                         Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)
                       ) : spaces.length === 0 ? (
-                        <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                          <p className="text-sm text-slate-400 italic">No spaces defined yet.</p>
+                        <div className="p-8 text-center bg-muted/50 rounded-2xl border border-dashed border-border">
+                          <p className="text-sm text-muted-foreground italic">No spaces defined yet.</p>
                         </div>
                       ) : (
                         spaces.map((sp: any) => (
@@ -160,16 +161,16 @@ const AdminSettings = () => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl group hover:border-blue-200 hover:shadow-md transition-all"
+                            className="flex items-center justify-between p-4 bg-muted/30 border border-border rounded-2xl group hover:border-primary/20 hover:shadow-md transition-all"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full bg-blue-400" />
-                              <span className="font-bold text-slate-700">{sp.name}</span>
+                              <div className="w-2 h-2 rounded-full bg-primary" />
+                              <span className="font-bold text-foreground">{sp.name}</span>
                             </div>
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                              className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all"
                               onClick={() => { if (confirm("Delete this space?")) deleteSpaceMutation.mutate(sp.id); }}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -189,15 +190,15 @@ const AdminSettings = () => {
                 transition={{ delay: 0.2 }}
                 className="space-y-6"
               >
-                <Card className="p-8 border-none shadow-premium bg-white/80 backdrop-blur-md rounded-[2rem] space-y-6">
+                <Card className="p-8 border-none shadow-premium bg-card/80 backdrop-blur-md rounded-[2rem] space-y-6">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-100 rounded-xl text-amber-600">
+                    <div className="p-2 bg-warning/10 rounded-xl text-warning">
                       <Tag className="h-5 w-5" />
                     </div>
-                    <h2 className="text-xl font-black tracking-tight">Idea Categories</h2>
+                    <h2 className="text-xl font-black tracking-tight text-foreground">Idea Categories</h2>
                   </div>
 
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-muted-foreground">
                     Group ideas into themes for easier discovery and filtering.
                   </p>
 
@@ -212,7 +213,7 @@ const AdminSettings = () => {
                     <Button
                       onClick={() => { if (newCategory.trim()) createCatMutation.mutate(newCategory.trim()); }}
                       disabled={createCatMutation.isPending}
-                      className="rounded-xl h-11 px-5 bg-amber-600 hover:bg-amber-700"
+                      className="rounded-xl h-11 px-5 bg-warning hover:bg-warning/90 text-warning-foreground"
                     >
                       {createCatMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Category"}
                     </Button>
@@ -223,24 +224,24 @@ const AdminSettings = () => {
                       {catsLoading ? (
                         Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-8 w-20 rounded-lg" />)
                       ) : categories.length === 0 ? (
-                        <p className="text-sm text-slate-400 italic">No categories.</p>
+                        <p className="text-sm text-muted-foreground italic">No categories.</p>
                       ) : (
                         categories.map((cat: any) => (
-                          <motion.div 
+                           <motion.div 
                             key={cat.id} 
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.8 }}
-                            className={`hover:bg-amber-50 border px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 group transition-all ${cat.is_default ? 'bg-amber-50/50 border-amber-200 text-amber-700' : 'bg-slate-100 border-slate-200 text-slate-600 hover:border-amber-200'}`}
+                            className={`hover:bg-warning/5 border px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 group transition-all ${cat.is_default ? 'bg-warning/10 border-warning/20 text-warning' : 'bg-muted border-border text-muted-foreground hover:border-warning/20 hover:text-warning'}`}
                           >
                             {cat.name}
                             {cat.is_default && (
-                              <Badge variant="outline" className="h-4 px-1 text-[8px] bg-amber-100 text-amber-700 border-amber-200 uppercase">Default</Badge>
+                              <Badge variant="outline" className="h-4 px-1 text-[8px] bg-warning text-warning border-warning/20 uppercase">Default</Badge>
                             )}
                             {!cat.is_default && (
                               <button 
                                 onClick={() => { if (confirm("Delete this category?")) deleteCatMutation.mutate(cat.id); }}
-                                className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                                className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all font-bold"
                               >
                                 <Plus className="h-3 w-3 rotate-45" />
                               </button>
@@ -252,7 +253,7 @@ const AdminSettings = () => {
                   </div>
                 </Card>
                 
-                <Card className="p-8 border-none shadow-premium bg-slate-900 text-white rounded-[2rem] space-y-4">
+                <Card className="p-8 border-none shadow-premium bg-slate-900 text-white rounded-[2rem] space-y-4 dark:bg-slate-900/50 dark:border dark:border-white/5">
                   <div className="flex items-center gap-3">
                     <ShieldCheck className="h-5 w-5 text-primary" />
                     <h3 className="font-bold">Governance Settings</h3>

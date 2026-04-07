@@ -46,6 +46,7 @@ import { toast } from "sonner";
 import { useTenant } from "@/contexts/TenantContext";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import ProfileIdeaCard from "@/components/ProfileIdeaCard";
 
 /* ─── Role badge colours ───────────────────────────────────────────────── */
 const ROLE_STYLES: Record<string, string> = {
@@ -91,10 +92,10 @@ const ChangePasswordModal = ({
   onClose: () => void;
 }) => {
   const [current, setCurrent] = useState("");
-  const [next, setNext]       = useState("");
+  const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showCurrent, setShowCurrent] = useState(false);
-  const [showNext, setShowNext]       = useState(false);
+  const [showNext, setShowNext] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const mutation = useMutation({
@@ -139,7 +140,7 @@ const ChangePasswordModal = ({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.93, y: 20 }}
         transition={{ type: "spring", stiffness: 350, damping: 28 }}
-        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 z-10"
+        className="relative bg-card rounded-3xl shadow-2xl w-full max-w-md p-8 z-10 border border-border/50"
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -148,8 +149,8 @@ const ChangePasswordModal = ({
               <Lock className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-slate-900">Change Password</h2>
-              <p className="text-xs text-slate-400">Keep your account secure</p>
+              <h2 className="text-lg font-black text-foreground">Change Password</h2>
+              <p className="text-xs text-muted-foreground">Keep your account secure</p>
             </div>
           </div>
           <button
@@ -163,14 +164,14 @@ const ChangePasswordModal = ({
         <div className="space-y-4">
           {/* Current Password */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current Password</label>
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Current Password</label>
             <div className="relative">
               <Input
                 type={showCurrent ? "text" : "password"}
                 value={current}
                 onChange={(e) => setCurrent(e.target.value)}
                 placeholder="Enter current password"
-                className="pr-10 h-11 rounded-xl border-slate-200 focus:border-primary"
+                className="pr-10 h-11 rounded-xl border-border focus:border-primary bg-background"
               />
               <button
                 type="button"
@@ -208,9 +209,8 @@ const ChangePasswordModal = ({
                   {[1, 2, 3, 4].map((i) => (
                     <div
                       key={i}
-                      className={`flex-1 rounded-full transition-all duration-300 ${
-                        i <= strength ? strengthColor : "bg-slate-100"
-                      }`}
+                      className={`flex-1 rounded-full transition-all duration-300 ${i <= strength ? strengthColor : "bg-slate-100"
+                        }`}
                     />
                   ))}
                 </div>
@@ -230,9 +230,8 @@ const ChangePasswordModal = ({
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder="Re-enter new password"
-                className={`pr-10 h-11 rounded-xl border-slate-200 focus:border-primary ${
-                  confirm && next !== confirm ? "border-rose-300 focus:border-rose-400" : ""
-                }`}
+                className={`pr-10 h-11 rounded-xl border-slate-200 focus:border-primary ${confirm && next !== confirm ? "border-rose-300 focus:border-rose-400" : ""
+                  }`}
               />
               <button
                 type="button"
@@ -267,67 +266,7 @@ const ChangePasswordModal = ({
 };
 
 /* ─── Idea Card ─────────────────────────────────────────────────────────── */
-const IdeaCard = ({ idea, tenantSlug, onBookmark }: { idea: any; tenantSlug: string; onBookmark: (e: React.MouseEvent, id: string) => void }) => (
-  <Link to={getTenantPath(ROUTES.IDEA_DETAIL.replace(":id", idea.id), tenantSlug)}>
-    <Card className="h-full border-0 shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_32px_-8px_rgba(99,102,241,0.22)] bg-white group p-5 flex flex-col justify-between transition-all duration-300 rounded-2xl hover:-translate-y-1">
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Badge
-            variant="outline"
-            className="bg-primary/5 text-primary border-primary/15 uppercase text-[9px] font-black tracking-widest px-2 py-0.5 rounded-lg"
-          >
-            {idea.category}
-          </Badge>
-          <div className="flex items-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-            <Calendar className="h-3 w-3" />
-            {format(new Date(idea.created_at), "MMM d, yyyy")}
-          </div>
-        </div>
-        <h3 className="text-sm font-black text-slate-800 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
-          {idea.title}
-        </h3>
-        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{idea.description}</p>
-      </div>
 
-      <div className="flex items-center gap-3 mt-5 pt-4 border-t border-slate-50">
-        <div className="flex items-center gap-3">
-          <span className={cn(
-            "flex items-center gap-1 text-[10px] font-black transition-colors",
-            idea.votes_count > 0 ? "text-emerald-600" : idea.votes_count < 0 ? "text-rose-600" : "text-slate-400"
-          )}>
-            <ThumbsUp className={cn(
-              "h-3.5 w-3.5",
-              idea.vote_type === 'up' ? "fill-emerald-200 text-emerald-600" : (idea.vote_type === 'down' ? "text-rose-600 rotate-180" : "text-slate-400")
-            )} />
-            {idea.votes_count || 0}
-          </span>
-          <span className="flex items-center gap-1 text-[10px] font-black text-slate-400 group-hover:text-primary transition-colors">
-            <MessageSquare className="h-3.5 w-3.5 fill-primary/5 text-primary/70" />
-            {idea.comments_count || 0}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 ml-auto">
-          <Badge
-            variant="secondary"
-            className="text-[8px] px-2 py-0.5 h-5 bg-slate-100 text-slate-500 border-0 font-bold uppercase tracking-tighter rounded-md"
-          >
-            {PLATFORM_STATUS_LABELS[idea.status] || idea.status}
-          </Badge>
-          <button
-            onClick={(e) => onBookmark(e, idea.id)}
-            className={cn(
-              "p-1.5 rounded-xl transition-all border border-transparent hover:scale-110",
-              idea.is_bookmarked ? "text-amber-500 bg-amber-50 border-amber-100" : "text-slate-300 hover:text-amber-500 hover:bg-amber-50 hover:border-amber-100"
-            )}
-            title={idea.is_bookmarked ? "Remove Bookmark" : "Save Idea"}
-          >
-            <Bookmark className={cn("h-3.5 w-3.5", idea.is_bookmarked && "fill-current")} />
-          </button>
-        </div>
-      </div>
-    </Card>
-  </Link>
-);
 
 /* ─── Main Component ────────────────────────────────────────────────────── */
 const Profile = () => {
@@ -380,7 +319,7 @@ const Profile = () => {
     onSuccess: (data: any, variables) => {
       queryClient.invalidateQueries({ queryKey: ["org-details"] });
       toast.success("Organization details updated successfully");
-      
+
       if (variables.slug && variables.slug !== orgData?.slug) {
         toast.info("Organization URL changed. Redirecting...");
         setTimeout(() => {
@@ -487,8 +426,9 @@ const Profile = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Header />
-        <div className="flex flex-1 items-center justify-center">
+        <div className="flex flex-col items-center justify-center p-20 space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+          <p className="text-muted-foreground font-medium animate-pulse">Loading profile...</p>
         </div>
       </div>
     );
@@ -496,7 +436,7 @@ const Profile = () => {
 
   const VITE_API_URL = import.meta.env.VITE_API_URL
     ? import.meta.env.VITE_API_URL.replace(/\/api$/, "")
-    : "http://localhost:5001";
+    : "http://localhost:5000";
   const avatarUrl = profile?.avatar_url
     ? profile.avatar_url.startsWith("http")
       ? profile.avatar_url
@@ -509,7 +449,7 @@ const Profile = () => {
   const totalVotes = ideas.reduce((sum: number, i: any) => sum + (i.votes_count || 0), 0);
 
   return (
-    <div className="min-h-screen bg-[#F5F6FB] flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col transition-colors duration-300">
       <Header />
       <div className="flex flex-1 overflow-auto">
         <SidebarNav />
@@ -526,13 +466,13 @@ const Profile = () => {
               {tenant?.name || "Organization"}
             </div>
             {/* Bottom fade from banner into content */}
-            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-b from-transparent to-[#F5F6FB]" />
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-b from-transparent to-background" />
           </div>
 
           <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-12 pb-12 space-y-8 relative z-10">
             {/* ── Profile card ─────────────────────── */}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-              <Card className="border-0 shadow-[0_4px_40px_-8px_rgba(0,0,0,0.12)] rounded-3xl bg-white p-6 sm:p-8">
+              <Card className="border-0 shadow-[0_4px_40px_-8px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_40px_-8px_rgba(0,0,0,0.5)] rounded-3xl bg-card p-6 sm:p-8 transition-colors">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                   {/* Left: avatar + info */}
                   <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 flex-1">
@@ -542,9 +482,9 @@ const Profile = () => {
                       onClick={() => fileInputRef.current?.click()}
                     >
                       <div className="rounded-full p-1 bg-gradient-to-br from-primary via-violet-500 to-fuchsia-500 shadow-xl shadow-primary/30">
-                        <Avatar className="h-24 w-24 border-4 border-white">
+                        <Avatar className="h-24 w-24 border-4 border-background">
                           {avatarUrl && <AvatarImage src={avatarUrl} className="object-cover" />}
-                          <AvatarFallback className="text-3xl font-black bg-gradient-to-br from-primary/20 to-violet-100 text-primary">
+                          <AvatarFallback className="text-3xl font-black bg-gradient-to-br from-primary/20 to-violet-100 dark:to-violet-900/30 text-primary">
                             {profile?.name ? getInitials(profile.name) : "U"}
                           </AvatarFallback>
                         </Avatar>
@@ -601,7 +541,7 @@ const Profile = () => {
                               size="sm"
                               variant="ghost"
                               onClick={() => setIsEditing(false)}
-                              className="gap-2 rounded-xl font-bold text-slate-500"
+                              className="gap-2 rounded-xl font-bold text-muted-foreground"
                             >
                               <X className="h-4 w-4" /> Cancel
                             </Button>
@@ -610,26 +550,26 @@ const Profile = () => {
                       ) : (
                         <>
                           <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                            <h1 className="text-3xl font-black tracking-tight text-slate-900">
+                            <h1 className="text-3xl font-black tracking-tight text-foreground">
                               {profile?.name}
                             </h1>
                             <button
                               onClick={() => setIsEditing(true)}
-                              className="p-1.5 rounded-lg hover:bg-primary/8 hover:text-primary text-slate-400 transition-all"
+                              className="p-1.5 rounded-lg hover:bg-primary/8 hover:text-primary text-muted-foreground transition-all"
                             >
                               <Edit2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
 
-                          <p className="text-sm text-slate-400 font-medium">{profile?.email}</p>
+                          <p className="text-sm text-muted-foreground font-medium">{profile?.email}</p>
 
                           {/* Tenant row */}
-                          <div className="flex items-center justify-center sm:justify-start gap-1.5 text-sm text-slate-500">
+                          <div className="flex items-center justify-center sm:justify-start gap-1.5 text-sm text-muted-foreground">
                             <Building2 className="h-3.5 w-3.5 text-primary/60" />
-                            <span className="font-semibold text-slate-700">{tenant?.name || "—"}</span>
+                            <span className="font-semibold text-foreground/80">{tenant?.name || "—"}</span>
                           </div>
 
-                          <p className="text-sm text-slate-500 leading-relaxed max-w-xl italic">
+                          <p className="text-sm text-muted-foreground leading-relaxed max-w-xl italic">
                             {profile?.bio || "No bio added yet. Click the edit icon to tell us about yourself!"}
                           </p>
 
@@ -661,7 +601,7 @@ const Profile = () => {
                       <Button
                         variant="outline"
                         onClick={() => setShowPasswordModal(true)}
-                        className="gap-2 font-bold h-10 px-5 rounded-2xl border-slate-200 hover:border-primary/30 hover:text-primary hover:bg-primary/5 transition-all"
+                        className="gap-2 font-bold h-10 px-5 rounded-2xl border-border hover:border-primary/30 hover:text-primary hover:bg-primary/5 transition-all text-foreground"
                       >
                         <Lock className="h-4 w-4" />
                         Change Password
@@ -696,265 +636,265 @@ const Profile = () => {
               </div>
 
               <TabsContent value="my-account" className="focus:outline-none">
-            {/* ── My Ideas section ─────────────────── */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.12 }}
-              className="space-y-5"
-            >
-              {/* Section header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-9 h-9 rounded-2xl bg-primary/10 shadow-sm">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black tracking-tight text-slate-900">My Ideas</h2>
-                    <p className="text-xs text-slate-400 font-medium">{ideas.length} submissions total</p>
-                  </div>
-                </div>
-
-                {/* Search */}
-                <div className="relative w-full sm:w-60 group">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-                  <input
-                    type="text"
-                    placeholder="Search ideas…"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-2xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all shadow-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Ideas grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                <AnimatePresence mode="popLayout">
-                  {filteredIdeas.map((idea: any) => (
-                    <motion.div
-                      layout
-                      key={idea.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ duration: 0.18 }}
-                    >
-                      <IdeaCard idea={idea} tenantSlug={tenantSlug} onBookmark={handleBookmark} />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-
-              {/* Empty state */}
-              {filteredIdeas.length === 0 && (
+                {/* ── My Ideas section ─────────────────── */}
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center py-24 bg-white border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.12 }}
+                  className="space-y-5"
                 >
-                  {searchQuery ? (
-                    <>
-                      <div className="h-16 w-16 bg-slate-100 rounded-full flex items-center justify-center text-2xl">🔍</div>
-                      <p className="text-slate-500 font-bold">No ideas match "{searchQuery}"</p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="h-20 w-20 bg-primary/8 rounded-full flex items-center justify-center text-3xl">✨</div>
-                      <div className="space-y-1">
-                        <p className="text-xl font-black text-slate-800 tracking-tight">No ideas yet</p>
-                        <p className="text-slate-400 font-medium text-sm">Be the first to spark something new!</p>
+                  {/* Section header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-9 h-9 rounded-2xl bg-primary/10 shadow-sm transition-colors">
+                        <Sparkles className="h-4 w-4 text-primary" />
                       </div>
-                      <Button
-                        asChild
-                        className="rounded-2xl font-black shadow-lg shadow-primary/20 gap-2"
-                      >
-                        <Link to={getTenantPath(ROUTES.SUBMIT_IDEA, tenantSlug)}>
-                          <Plus className="h-4 w-4" />
-                          Share an Idea
-                        </Link>
-                      </Button>
-                    </>
-                  )}
-                </motion.div>
-              )}
+                      <div>
+                        <h2 className="text-xl font-black tracking-tight text-foreground transition-colors">My Ideas</h2>
+                        <p className="text-xs text-muted-foreground font-medium transition-colors">{ideas.length} submissions total</p>
+                      </div>
+                    </div>
 
-              {/* ── Saved Ideas section ────────────────── */}
-              <div className="pt-8 border-t border-slate-200/60 mt-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="flex items-center justify-center w-9 h-9 rounded-2xl bg-amber-100 shadow-sm text-amber-600">
-                    <Bookmark className="h-4 w-4 fill-current" />
+                    {/* Search */}
+                    <div className="relative w-full sm:w-60 group">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                      <input
+                        type="text"
+                        placeholder="Search ideas…"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-2xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all shadow-sm"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-xl font-black tracking-tight text-slate-900">Saved Ideas</h2>
-                    <p className="text-xs text-slate-400 font-medium">{bookmarkedIdeas.length} ideas bookmarked</p>
-                  </div>
-                </div>
 
-                {bookmarkedIdeas.length === 0 ? (
-                  <div className="text-center py-16 bg-white/50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-3 grayscale opacity-60">
-                    <Bookmark className="h-10 w-10 text-slate-300" />
-                    <p className="text-sm font-bold text-slate-400 font-mono tracking-tighter">You haven't saved any ideas yet.</p>
-                  </div>
-                ) : (
+                  {/* Ideas grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     <AnimatePresence mode="popLayout">
-                      {bookmarkedIdeas.map((idea: any) => (
+                      {filteredIdeas.map((idea: any) => (
                         <motion.div
                           layout
-                          key={`bookmark-${idea.id}`}
+                          key={idea.id}
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.9 }}
                           transition={{ duration: 0.18 }}
                         >
-                          <IdeaCard idea={idea} tenantSlug={tenantSlug} onBookmark={handleBookmark} />
+                          <ProfileIdeaCard idea={idea} tenantSlug={tenantSlug} onBookmark={handleBookmark} />
                         </motion.div>
                       ))}
                     </AnimatePresence>
                   </div>
-                )}
-              </div>
-            </motion.div>
+
+                  {/* Empty state */}
+                  {filteredIdeas.length === 0 && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-center py-24 bg-white border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-4"
+                    >
+                      {searchQuery ? (
+                        <>
+                          <div className="h-16 w-16 bg-slate-100 rounded-full flex items-center justify-center text-2xl">🔍</div>
+                          <p className="text-slate-500 font-bold">No ideas match "{searchQuery}"</p>
+                        </>
+                      ) : (
+                        <>
+                          <div className="h-20 w-20 bg-primary/8 rounded-full flex items-center justify-center text-3xl">✨</div>
+                          <div className="space-y-1">
+                            <p className="text-xl font-black text-slate-800 tracking-tight">No ideas yet</p>
+                            <p className="text-slate-400 font-medium text-sm">Be the first to spark something new!</p>
+                          </div>
+                          <Button
+                            asChild
+                            className="rounded-2xl font-black shadow-lg shadow-primary/20 gap-2"
+                          >
+                            <Link to={getTenantPath(ROUTES.SUBMIT_IDEA, tenantSlug)}>
+                              <Plus className="h-4 w-4" />
+                              Share an Idea
+                            </Link>
+                          </Button>
+                        </>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {/* ── Saved Ideas section ────────────────── */}
+                  <div className="pt-8 border-t border-border mt-8 transition-colors">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="flex items-center justify-center w-9 h-9 rounded-2xl bg-amber-500/10 shadow-sm text-amber-500">
+                        <Bookmark className="h-4 w-4 fill-current" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-black tracking-tight text-foreground transition-colors">Saved Ideas</h2>
+                        <p className="text-xs text-muted-foreground font-medium transition-colors">{bookmarkedIdeas.length} ideas bookmarked</p>
+                      </div>
+                    </div>
+
+                    {bookmarkedIdeas.length === 0 ? (
+                      <div className="text-center py-16 bg-card/50 border-2 border-dashed border-border rounded-3xl flex flex-col items-center justify-center gap-3 grayscale opacity-60">
+                        <Bookmark className="h-10 w-10 text-muted-foreground/30" />
+                        <p className="text-sm font-bold text-muted-foreground font-mono tracking-tighter">You haven't saved any ideas yet.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <AnimatePresence mode="popLayout">
+                          {bookmarkedIdeas.map((idea: any) => (
+                            <motion.div
+                              layout
+                              key={`bookmark-${idea.id}`}
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.9 }}
+                              transition={{ duration: 0.18 }}
+                            >
+                              <ProfileIdeaCard idea={idea} tenantSlug={tenantSlug} onBookmark={handleBookmark} />
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
               </TabsContent>
 
               {user?.role === "admin" && (
-              <TabsContent value="organization" className="focus:outline-none">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.12 }}
-                  className="space-y-6"
-                >
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-primary/10 shadow-sm">
-                      <Building2 className="h-5 w-5 text-primary" />
+                <TabsContent value="organization" className="focus:outline-none">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.12 }}
+                    className="space-y-6"
+                  >
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-primary/10 shadow-sm">
+                        <Building2 className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-black tracking-tight text-foreground">Organization Profile</h2>
+                        <p className="text-xs text-muted-foreground font-medium">Manage how your organization looks to members</p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-xl font-black tracking-tight text-slate-900">Organization Profile</h2>
-                      <p className="text-xs text-slate-500 font-medium">Manage how your organization looks to members</p>
-                    </div>
-                  </div>
-                  
-                  <form onSubmit={handleOrgSubmit} className="space-y-6">
-                     <Card className="border-0 shadow-[0_4px_40px_-8px_rgba(0,0,0,0.12)] rounded-3xl bg-white p-6 sm:p-8">
-                       <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-6">Basic Information</h3>
-                       <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <Label htmlFor="org-name" className="text-xs font-bold text-slate-500 uppercase">Name</Label>
-                            <div className="relative">
-                              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                              <Input 
-                                id="org-name" 
-                                value={orgForm.name} 
-                                onChange={e => setOrgForm({ ...orgForm, name: e.target.value })}
-                                className={cn("pl-10 h-11 rounded-xl border-slate-200 focus:border-primary", isNameLocked && "bg-slate-50 opacity-80 cursor-not-allowed")} 
-                                placeholder="Acme Corp"
-                                readOnly={isNameLocked}
-                              />
-                            </div>
-                            {isNameLocked && <p className="text-[10px] text-slate-400 font-medium">Locked: Organization name cannot be changed.</p>}
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="slug" className="text-xs font-bold text-slate-500 uppercase">URL Slug</Label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-mono">/</span>
-                              <Input 
-                                id="slug" 
-                                value={orgForm.slug} 
-                                onChange={e => setOrgForm({ ...orgForm, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
-                                className={cn("pl-7 h-11 rounded-xl font-mono text-sm border-slate-200 focus:border-primary", isSlugLocked && "bg-slate-50 opacity-80 cursor-not-allowed")} 
-                                placeholder="acme-corp"
-                                readOnly={isSlugLocked}
-                              />
-                            </div>
-                            {isSlugLocked ? (
-                              <p className="text-[10px] text-slate-400 font-medium">Locked: URL slug cannot be changed.</p>
-                            ) : (
-                              <p className="text-[10px] text-amber-500 font-bold">Caution: Changing this URL will redirect all members.</p>
-                            )}
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="website" className="text-xs font-bold text-slate-500 uppercase">Website</Label>
-                            <div className="relative">
-                              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                              <Input 
-                                id="website" 
-                                value={orgForm.website} 
-                                onChange={e => setOrgForm({ ...orgForm, website: e.target.value })}
-                                className="pl-10 h-11 rounded-xl border-slate-200 focus:border-primary" 
-                                placeholder="https://acme.com"
-                              />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="industry" className="text-xs font-bold text-slate-500 uppercase">Industry</Label>
-                            <div className="relative">
-                              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                              <Input 
-                                id="industry" 
-                                value={orgForm.industry} 
-                                onChange={e => setOrgForm({ ...orgForm, industry: e.target.value })}
-                                className="pl-10 h-11 rounded-xl border-slate-200 focus:border-primary" 
-                                placeholder="Technology, Healthcare..."
-                              />
-                            </div>
-                          </div>
-                        </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="description" className="text-xs font-bold text-slate-500 uppercase">Description / Tagline</Label>
-                          <div className="relative">
-                            <FileText className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
-                            <Textarea 
-                              id="description" 
-                              value={orgForm.description} 
-                              onChange={e => setOrgForm({ ...orgForm, description: e.target.value })}
-                              className="pl-10 min-h-[100px] resize-none rounded-xl border-slate-200 focus:border-primary" 
-                              placeholder="Tell your members what this space is about..."
-                            />
+                    <form onSubmit={handleOrgSubmit} className="space-y-6">
+                      <Card className="border-0 shadow-[0_4px_40px_-8px_rgba(0,0,0,0.12)] rounded-3xl bg-card p-6 sm:p-8">
+                        <h3 className="text-sm font-black text-foreground uppercase tracking-widest mb-6">Basic Information</h3>
+                        <div className="space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                              <Label htmlFor="org-name" className="text-xs font-bold text-muted-foreground uppercase">Name</Label>
+                              <div className="relative">
+                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  id="org-name"
+                                  value={orgForm.name}
+                                  onChange={e => setOrgForm({ ...orgForm, name: e.target.value })}
+                                  className={cn("pl-10 h-11 rounded-xl border-border focus:border-primary bg-background", isNameLocked && "bg-muted opacity-80 cursor-not-allowed")}
+                                  placeholder="Acme Corp"
+                                  readOnly={isNameLocked}
+                                />
+                              </div>
+                              {isNameLocked && <p className="text-[10px] text-muted-foreground font-medium">Locked: Organization name cannot be changed.</p>}
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="slug" className="text-xs font-bold text-muted-foreground uppercase">URL Slug</Label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-mono">/</span>
+                                <Input
+                                  id="slug"
+                                  value={orgForm.slug}
+                                  onChange={e => setOrgForm({ ...orgForm, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                                  className={cn("pl-7 h-11 rounded-xl font-mono text-sm border-slate-200 focus:border-primary", isSlugLocked && "bg-slate-50 opacity-80 cursor-not-allowed")}
+                                  placeholder="acme-corp"
+                                  readOnly={isSlugLocked}
+                                />
+                              </div>
+                              {isSlugLocked ? (
+                                <p className="text-[10px] text-slate-400 font-medium">Locked: URL slug cannot be changed.</p>
+                              ) : (
+                                <p className="text-[10px] text-amber-500 font-bold">Caution: Changing this URL will redirect all members.</p>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="website" className="text-xs font-bold text-slate-500 uppercase">Website</Label>
+                              <div className="relative">
+                                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input
+                                  id="website"
+                                  value={orgForm.website}
+                                  onChange={e => setOrgForm({ ...orgForm, website: e.target.value })}
+                                  className="pl-10 h-11 rounded-xl border-slate-200 focus:border-primary"
+                                  placeholder="https://acme.com"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="industry" className="text-xs font-bold text-slate-500 uppercase">Industry</Label>
+                              <div className="relative">
+                                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input
+                                  id="industry"
+                                  value={orgForm.industry}
+                                  onChange={e => setOrgForm({ ...orgForm, industry: e.target.value })}
+                                  className="pl-10 h-11 rounded-xl border-slate-200 focus:border-primary"
+                                  placeholder="Technology, Healthcare..."
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="description" className="text-xs font-bold text-slate-500 uppercase">Description / Tagline</Label>
+                            <div className="relative">
+                              <FileText className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                              <Textarea
+                                id="description"
+                                value={orgForm.description}
+                                onChange={e => setOrgForm({ ...orgForm, description: e.target.value })}
+                                className="pl-10 min-h-[100px] resize-none rounded-xl border-border focus:border-primary bg-background"
+                                placeholder="Tell your members what this space is about..."
+                              />
+                            </div>
                           </div>
                         </div>
-                       </div>
-                     </Card>
-                     
-                     <Card className="border-0 shadow-[0_4px_40px_-8px_rgba(0,0,0,0.12)] rounded-3xl bg-white p-6 sm:p-8">
-                       <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-6">Branding</h3>
-                       <div className="space-y-4">
-                         <div className="space-y-2">
-                            <Label htmlFor="logo_url" className="text-xs font-bold text-slate-500 uppercase">Logo URL</Label>
-                            <Input 
-                              id="logo_url" 
-                              value={orgForm.logo_url} 
+                      </Card>
+
+                      <Card className="border-0 shadow-[0_4px_40px_-8px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_40px_-8px_rgba(0,0,0,0.5)] rounded-3xl bg-card p-6 sm:p-8 transition-colors">
+                        <h3 className="text-sm font-black text-foreground uppercase tracking-widest mb-6">Branding</h3>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="logo_url" className="text-xs font-bold text-muted-foreground uppercase">Logo URL</Label>
+                            <Input
+                              id="logo_url"
+                              value={orgForm.logo_url}
                               onChange={e => setOrgForm({ ...orgForm, logo_url: e.target.value })}
                               placeholder="https://example.com/logo.png"
-                              className={cn("h-11 rounded-xl border-slate-200 focus:border-primary", isLogoLocked && "bg-slate-50 opacity-80 cursor-not-allowed")}
+                              className={cn("h-11 rounded-xl border-border focus:border-primary bg-background text-foreground", isLogoLocked && "bg-muted opacity-80 cursor-not-allowed")}
                               readOnly={isLogoLocked}
                             />
-                            {isLogoLocked && <p className="text-[10px] text-slate-400 font-medium">Locked: Logo URL cannot be changed.</p>}
+                            {isLogoLocked && <p className="text-[10px] text-muted-foreground font-medium">Locked: Logo URL cannot be changed.</p>}
                             {orgForm.logo_url && (
-                              <div className="mt-4 p-6 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center bg-slate-50">
+                              <div className="mt-4 p-6 border-2 border-dashed border-border rounded-2xl flex items-center justify-center bg-muted">
                                 <img src={orgForm.logo_url} alt="Logo Preview" className="h-16 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
                               </div>
                             )}
-                         </div>
-                       </div>
-                     </Card>
+                          </div>
+                        </div>
+                      </Card>
 
-                     <div className="flex justify-end pt-2">
-                       <Button 
-                         type="submit" 
-                         className="h-11 px-8 rounded-xl font-bold shadow-lg shadow-primary/20 gap-2 w-full sm:w-auto"
-                         disabled={updateOrgMutation.isPending}
-                       >
-                         {updateOrgMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                         Save Organization Changes
-                       </Button>
-                     </div>
-                  </form>
-                </motion.div>
-              </TabsContent>
+                      <div className="flex justify-end pt-2">
+                        <Button
+                          type="submit"
+                          className="h-11 px-8 rounded-xl font-bold shadow-lg shadow-primary/20 gap-2 w-full sm:w-auto"
+                          disabled={updateOrgMutation.isPending}
+                        >
+                          {updateOrgMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                          Save Organization Changes
+                        </Button>
+                      </div>
+                    </form>
+                  </motion.div>
+                </TabsContent>
               )}
             </Tabs>
           </div>

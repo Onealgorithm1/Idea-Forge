@@ -22,7 +22,7 @@ const roadmapStages = [
 ];
 
 const stageColors: Record<string, string> = {
-  slate: "border-t-slate-400 bg-slate-50/50",
+  slate: "border-t-muted bg-muted/20",
   primary: "border-t-primary/40 bg-primary/5",
   warning: "border-t-warning/40 bg-warning/5",
   success: "border-t-success/40 bg-success/5",
@@ -89,7 +89,7 @@ const RoadmapBoard = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-pulse">
         {[1, 2, 3, 4].map(i => (
-          <div key={i} className="h-96 bg-slate-100 rounded-3xl border border-slate-200" />
+          <div key={i} className="h-96 bg-muted rounded-3xl border border-border" />
         ))}
       </div>
     );
@@ -107,12 +107,12 @@ const RoadmapBoard = () => {
               <Card key={stage.id} className={`flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]}`}>
                 <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-black/5">
                   <div className="flex items-center gap-2.5">
-                    <div className={`p-1.5 rounded-lg bg-${stage.color === 'slate' ? 'slate-200' : stage.color + '/20'}`}>
-                      <Icon className={`h-4 w-4 text-${stage.color === 'slate' ? 'slate-500' : stage.color}`} />
+                    <div className={`p-1.5 rounded-lg bg-${stage.color === 'slate' ? 'muted' : stage.color + '/20'}`}>
+                      <Icon className={`h-4 w-4 text-${stage.color === 'slate' ? 'muted-foreground' : stage.color}`} />
                     </div>
-                    <h3 className="font-bold text-sm tracking-tight text-slate-800">{stage.name}</h3>
+                    <h3 className="font-bold text-sm tracking-tight text-foreground">{stage.name}</h3>
                   </div>
-                  <Badge variant="secondary" className="bg-white/50 text-slate-500 border-none font-bold text-[10px]">
+                  <Badge variant="secondary" className="bg-card/50 text-muted-foreground border-none font-bold text-[10px]">
                     {stageIdeas.length}
                   </Badge>
                 </div>
@@ -131,12 +131,12 @@ const RoadmapBoard = () => {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className={`group bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm hover:shadow-md transition-all cursor-pointer relative ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-primary/20 scale-[1.02] z-50' : ''}`}
+                              className={`group bg-card rounded-2xl border border-border p-4 shadow-sm hover:shadow-md transition-all cursor-pointer relative ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-primary/20 scale-[1.02] z-50' : ''}`}
                               onClick={() => navigate(getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', idea.id), tenantSlug))}
                             >
                               <div className="flex flex-col gap-3">
                                 <div className="flex justify-between items-start">
-                                  <Badge variant="outline" className="text-[9px] uppercase tracking-widest font-bold bg-slate-50 text-slate-400 border-none px-1.5 py-0">
+                                  <Badge variant="outline" className="text-[9px] uppercase tracking-widest font-bold bg-muted text-muted-foreground border-none px-1.5 py-0">
                                     {idea.category}
                                   </Badge>
                                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -163,7 +163,7 @@ const RoadmapBoard = () => {
                                         </button>
                                         <button 
                                           onClick={(e) => { e.stopPropagation(); handleStatusUpdate(idea.id, getNextStatus(idea.status)); }}
-                                          className="p-1 hover:bg-slate-100 rounded-md text-slate-400"
+                                          className="p-1 hover:bg-muted rounded-md text-muted-foreground/60 hover:text-foreground"
                                           title="Next Stage"
                                         >
                                           <ChevronRight className="h-3.5 w-3.5" />
@@ -173,24 +173,24 @@ const RoadmapBoard = () => {
                                   </div>
                                 </div>
                                 
-                                <h4 className="font-bold text-sm text-slate-800 line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                                <h4 className="font-bold text-sm text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                                   {idea.title}
                                 </h4>
                                 
                                 {stage.id !== 'done' && (
-                                  <div className="flex items-center justify-between mt-1 pt-3 border-t border-slate-50">
+                                  <div className="flex items-center justify-between mt-1 pt-3 border-t border-border/50">
                                     <div className="flex items-center gap-3">
-                                      <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+                                      <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
                                         <MessageSquare className="h-3 w-3" />
                                         {idea.comments_count || 0}
                                       </div>
-                                      <div className="h-1 w-1 rounded-full bg-slate-200" />
-                                      <span className="text-[10px] font-bold text-emerald-600">
+                                      <div className="h-1 w-1 rounded-full bg-border" />
+                                      <span className="text-[10px] font-bold text-emerald-500">
                                         {idea.votes_count || 0} Votes
                                       </span>
                                     </div>
-                                    <Avatar className="h-6 w-6 border border-white shadow-sm ring-1 ring-slate-100">
-                                      <AvatarFallback className="text-[8px] font-black bg-slate-100 text-slate-500">
+                                    <Avatar className="h-6 w-6 border border-background shadow-sm ring-1 ring-border">
+                                      <AvatarFallback className="text-[8px] font-black bg-muted text-muted-foreground">
                                         {getInitials(idea.author || 'U')}
                                       </AvatarFallback>
                                     </Avatar>
@@ -207,7 +207,7 @@ const RoadmapBoard = () => {
                 </Droppable>
 
                 {stageIdeas.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-10 opacity-30 grayscale italic text-[10px] text-slate-400 pointer-events-none">
+                  <div className="flex flex-col items-center justify-center py-10 opacity-30 grayscale italic text-[10px] text-muted-foreground pointer-events-none">
                     <GripVertical className="h-5 w-5 mb-2" />
                     No items in this stage
                   </div>

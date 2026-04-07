@@ -55,7 +55,7 @@ function SidebarButton({ icon: Icon, label, active, onClick }: SidebarButtonProp
       className={`relative flex items-center gap-3 px-4 py-3 text-sm w-full text-left group transition-all duration-300 rounded-r-2xl overflow-hidden ${
         active
           ? "text-primary font-semibold bg-gradient-to-r from-primary/10 to-transparent"
-          : "text-slate-500 font-medium hover:text-slate-800 hover:bg-slate-100/60"
+          : "text-muted-foreground font-medium hover:text-foreground hover:bg-accent/40"
       }`}
     >
       {/* Active Indicator Line */}
@@ -66,11 +66,11 @@ function SidebarButton({ icon: Icon, label, active, onClick }: SidebarButtonProp
       />
       
       <div className={`relative flex items-center justify-center p-1.5 rounded-lg transition-colors duration-300 ${
-        active ? 'bg-white shadow-sm ring-1 ring-slate-100' : 'bg-transparent'
+        active ? 'bg-background shadow-sm ring-1 ring-border' : 'bg-transparent'
       }`}>
         <Icon 
           className={`h-4 w-4 shrink-0 transition-all duration-300 ${
-            active ? 'text-primary scale-110' : 'text-slate-400 group-hover:text-slate-600 group-hover:scale-105'
+            active ? 'text-primary scale-110' : 'text-muted-foreground group-hover:text-foreground group-hover:scale-105'
           }`} 
           strokeWidth={active ? 2.5 : 2}
         />
@@ -122,12 +122,12 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
   };
 
   return (
-    <aside className="sticky top-0 h-screen w-[260px] shrink-0 border-r border-slate-200/60 hidden md:flex flex-col pt-6 pb-4 gap-2 bg-white/40 backdrop-blur-xl shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20">
+    <aside className="sticky top-0 h-screen w-[260px] shrink-0 border-r border-border hidden md:flex flex-col pt-6 pb-4 gap-2 bg-card/40 dark:bg-card/20 backdrop-blur-xl shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 transition-colors duration-300">
 
       {user?.role === 'admin' && (
         <div className="mb-4 space-y-1">
           <div className="px-5 mb-3">
-            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
               <ShieldCheck className="h-3 w-3" />
               Administration
             </div>

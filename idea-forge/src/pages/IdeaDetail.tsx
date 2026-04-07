@@ -368,10 +368,11 @@ const IdeaDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="h-screen w-screen bg-background flex flex-col overflow-hidden">
         <Header />
-        <div className="flex flex-1 items-center justify-center">
+        <div className="flex flex-col items-center justify-center flex-1 space-y-4 bg-background transition-colors duration-500">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+          <p className="text-muted-foreground font-medium animate-pulse">Loading idea details...</p>
         </div>
       </div>
     );
@@ -379,11 +380,11 @@ const IdeaDetail = () => {
 
   if (!idea) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="h-screen w-screen bg-background flex flex-col overflow-hidden">
         <Header />
         <div className="flex flex-1 items-center justify-center flex-col gap-4">
-          <h2 className="text-2xl font-black text-slate-900">Idea not found</h2>
-          <Button asChild variant="outline" className="rounded-2xl">
+          <h2 className="text-2xl font-black text-foreground">Idea not found</h2>
+          <Button asChild variant="outline" className="rounded-2xl border-border">
             <Link to={getTenantPath(ROUTES.DASHBOARD, tenantSlug)}>Back to Dashboard</Link>
           </Button>
         </div>
@@ -392,19 +393,19 @@ const IdeaDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f5f7] flex flex-col relative overflow-hidden">
+    <div className="h-screen w-screen bg-background flex flex-col relative overflow-hidden transition-colors duration-300">
       {/* Soft gradient blobs */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] rounded-full bg-violet-200/30 blur-[160px]" />
-        <div className="absolute bottom-0 right-[-5%] w-[40%] h-[40%] rounded-full bg-blue-200/20 blur-[120px]" />
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-40 dark:opacity-20">
+        <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[160px]" />
+        <div className="absolute bottom-0 right-[-5%] w-[40%] h-[40%] rounded-full bg-info/10 blur-[120px]" />
       </div>
 
       <Header />
 
-      <div className="flex flex-1 overflow-hidden relative z-10">
+      <div className="flex flex-1 h-[calc(100vh-64px)] overflow-hidden relative z-10">
         <SidebarNav />
 
-        <main className="flex-1 overflow-y-auto no-scrollbar px-6 py-8 md:px-10">
+        <main className="flex-1 overflow-y-auto no-scrollbar px-6 py-8 md:px-10 bg-background/50 dark:bg-background/20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -414,7 +415,7 @@ const IdeaDetail = () => {
             {/* Breadcrumb back link */}
             <Link
               to={`${getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)}?category=All`}
-              className="flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-slate-700 transition-colors w-fit group"
+              className="flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all w-fit group mb-2"
             >
               <ChevronLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
               Back to Board
@@ -422,7 +423,7 @@ const IdeaDetail = () => {
 
             {/* ── Main Idea Card ─────────────────────────────────────────────────── */}
             <div className="relative">
-              <Card className="border border-slate-200/80 shadow-[0_4px_32px_-8px_rgba(0,0,0,0.09)] rounded-2xl bg-white overflow-hidden relative pt-[3px]">
+              <Card className="border border-border shadow-premium rounded-2xl bg-card overflow-hidden relative pt-[3px] transition-colors duration-300">
                 {/* Rainbow gradient top border */}
                 <div
                   className="absolute top-0 left-0 right-0 h-[3px] z-10"
@@ -434,32 +435,32 @@ const IdeaDetail = () => {
                 <div className="p-6 sm:p-8 pt-7">
 
                   {/* ── Breadcrumb pills row */}
-                  <div className="flex flex-wrap items-center gap-1.5 mb-5 text-[12px] font-semibold text-slate-500">
+                  <div className="flex flex-wrap items-center gap-1.5 mb-5 text-[12px] font-semibold text-muted-foreground">
                     {/* Status pill */}
-                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-full px-2.5 py-0.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 inline-block" />
+                    <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded-full px-2.5 py-0.5 shadow-sm">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 inline-block animate-pulse" />
                       {PLATFORM_STATUS_LABELS[idea.status] || idea.status}
                     </span>
 
                     {idea.category && (
                       <>
-                        <span className="text-slate-300 text-xs">◆</span>
-                        <span className="text-slate-500">{idea.category}</span>
+                        <span className="text-border text-xs">◆</span>
+                        <span className="text-muted-foreground">{idea.category}</span>
                       </>
                     )}
 
                     {idea.space_name && (
                       <>
-                        <span className="text-slate-300 text-xs">◆</span>
-                        <span className="inline-flex items-center gap-1 bg-primary/5 text-primary border border-primary/20 rounded-full px-2.5 py-0.5">
+                        <span className="text-border text-xs">◆</span>
+                        <span className="inline-flex items-center gap-1 bg-primary/10 text-primary border border-primary/20 rounded-full px-2.5 py-0.5">
                           <Layers className="h-3 w-3" />
                           {idea.space_name}
                         </span>
                       </>
                     )}
 
-                    <span className="text-slate-300 text-xs">◆</span>
-                    <span className="inline-flex items-center gap-1 text-slate-400">
+                    <span className="text-border text-xs">◆</span>
+                    <span className="inline-flex items-center gap-1 text-muted-foreground">
                       <Calendar className="h-3 w-3" />
                       {format(new Date(idea.created_at), "MMM d, yyyy")}
                     </span>
@@ -471,13 +472,13 @@ const IdeaDetail = () => {
                       <Input
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
-                        className="text-xl font-black h-12 border-slate-200 focus:border-primary rounded-2xl"
+                        className="text-xl font-black h-12 border-border bg-background transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10 rounded-2xl"
                         placeholder="Idea title…"
                       />
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Space:</span>
+                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Space:</span>
                         <Select value={editIdeaSpace} onValueChange={setEditIdeaSpace}>
-                          <SelectTrigger className="w-[200px] h-9 text-sm rounded-xl border-slate-200">
+                          <SelectTrigger className="w-[200px] h-9 text-sm rounded-xl border-border">
                             <SelectValue placeholder="Select space" />
                           </SelectTrigger>
                           <SelectContent>
@@ -491,30 +492,30 @@ const IdeaDetail = () => {
                       </div>
                     </div>
                   ) : (
-                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 mb-4 leading-snug">
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground mb-4 leading-snug">
                       {idea.title}
                     </h1>
                   )}
 
                   {/* ── Author + date */}
                   <div className="flex items-center gap-2 mb-6">
-                    <Avatar className="h-7 w-7 ring-2 ring-white shadow-sm border border-slate-200">
+                    <Avatar className="h-7 w-7 ring-2 ring-background shadow-sm border border-border">
                       <AvatarFallback className="text-[9px] font-black bg-primary/10 text-primary uppercase">
                         {getInitials(idea.author || "Guest")}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm font-bold text-slate-700">{idea.author}</span>
-                    <span className="text-slate-300">·</span>
-                    <span className="flex items-center gap-1 text-xs text-slate-400 font-semibold">
+                    <span className="text-sm font-bold text-foreground">{idea.author}</span>
+                    <span className="text-muted-foreground">·</span>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground font-semibold">
                       <Calendar className="h-3 w-3" />
                       {format(new Date(idea.created_at), "MMM d, yyyy 'at' HH:mm")}
                     </span>
                   </div>
 
                   {/* ── Action toolbar */}
-                  <div className="flex flex-wrap items-center gap-2 py-3 border-t border-b border-slate-100 mb-0">
+                  <div className="flex flex-wrap items-center gap-2 py-4 border-t border-b border-border/50 mb-0">
                     {/* Voting */}
-                    <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="flex items-center bg-background border border-border rounded-xl overflow-hidden shadow-sm">
                       <VotingSystem
                         ideaId={idea.id}
                         initialVotes={idea.votes_count}
@@ -535,10 +536,10 @@ const IdeaDetail = () => {
                       variant="outline"
                       size="sm"
                       className={cn(
-                        "gap-1.5 rounded-xl border-slate-200 font-semibold text-slate-600 transition-all",
+                        "gap-1.5 rounded-xl border-border font-semibold text-muted-foreground transition-all hover:bg-accent/40",
                         idea.is_bookmarked
-                          ? "text-amber-500 border-amber-200 bg-amber-50 hover:bg-amber-100"
-                          : "hover:border-amber-200 hover:text-amber-500"
+                          ? "text-amber-500 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10"
+                          : "hover:border-amber-500/30 hover:text-amber-500"
                       )}
                       onClick={() => {
                         if (!token) return toast.error("Please login");
@@ -559,7 +560,7 @@ const IdeaDetail = () => {
                         variant="outline"
                         size="sm"
                         className={cn(
-                          "gap-1.5 rounded-xl border-slate-200 font-semibold text-slate-600 hover:border-primary/30 hover:text-primary hover:bg-primary/5 transition-all",
+                          "gap-1.5 rounded-xl border-border font-semibold text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all",
                           isEditLocked && "opacity-40"
                         )}
                         onClick={() => {
@@ -591,7 +592,7 @@ const IdeaDetail = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="rounded-xl font-semibold text-slate-500"
+                          className="rounded-xl font-semibold text-muted-foreground hover:bg-accent/50"
                           onClick={() => setIsEditing(false)}
                         >
                           <X className="h-3.5 w-3.5" />
@@ -604,7 +605,7 @@ const IdeaDetail = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="gap-1.5 rounded-xl font-semibold text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition-all"
+                        className="gap-1.5 rounded-xl font-semibold text-destructive hover:bg-destructive/10 transition-all"
                         disabled={deleteMutation.isPending}
                         onClick={() => setIsDeleteIdeaModalOpen(true)}
                       >
@@ -620,11 +621,10 @@ const IdeaDetail = () => {
                     {/* Status pills — pushed to right, admin/reviewer only */}
                     {canChangeStatus && (
                       <div className="ml-auto flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          STATUS:
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                          GOVERNANCE:
                         </span>
                         {STATUSES.map((s) => {
-                          const currentLabel = PLATFORM_STATUS_LABELS[idea.status] || idea.status;
                           const isActive =
                             s.value === "Pending"
                               ? ["Pending", "Under Review"].includes(idea.status)
@@ -637,10 +637,10 @@ const IdeaDetail = () => {
                               onClick={() => statusMutation.mutate(s.value)}
                               disabled={statusMutation.isPending}
                               className={cn(
-                                "text-[11px] font-semibold px-3 py-1 rounded-full border transition-all",
+                                "text-[11px] font-bold px-3 py-1 rounded-full border transition-all",
                                 isActive
-                                  ? "bg-amber-50 text-amber-600 border-amber-300"
-                                  : "text-slate-400 border-slate-200 hover:text-slate-600 hover:border-slate-300 bg-white"
+                                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                                  : "text-muted-foreground border-border hover:text-foreground hover:border-muted-foreground bg-background/50"
                               )}
                             >
                               {statusMutation.isPending && statusMutation.variables === s.value ? (
@@ -658,16 +658,18 @@ const IdeaDetail = () => {
 
                 {/* ── Admin Scoring (collapsible) */}
                 {user?.role === "admin" && (
-                  <ScoringPanel ideaId={id!} token={token} tenantSlug={tenantSlug!} />
+                  <div className="bg-muted/30">
+                    <ScoringPanel ideaId={id!} token={token} tenantSlug={tenantSlug!} />
+                  </div>
                 )}
 
                 {/* ── Idea Description section */}
-                <div className="border-t border-slate-100">
-                  <div className="px-6 sm:px-8 pt-4 pb-1">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Target className="h-3.5 w-3.5 text-slate-400" />
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        Idea Description
+                <div className="border-t border-border/50">
+                  <div className="px-6 sm:px-8 pt-6 pb-2">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Target className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                        Idea Context
                       </span>
                     </div>
 
@@ -676,11 +678,11 @@ const IdeaDetail = () => {
                         value={editDescription}
                         onChange={(e) => setEditDescription(e.target.value)}
                         rows={8}
-                        className="w-full text-base border-slate-200 focus:border-primary rounded-2xl"
+                        className="w-full text-base border-border bg-background focus:border-primary focus:ring-2 focus:ring-primary/10 rounded-2xl transition-all"
                         maxLength={2000}
                       />
                     ) : (
-                      <p className="text-[15px] text-slate-600 leading-relaxed whitespace-pre-wrap">
+                      <p className="text-[16px] text-foreground/80 leading-relaxed whitespace-pre-wrap font-medium">
                         {idea.description}
                       </p>
                     )}
@@ -688,13 +690,13 @@ const IdeaDetail = () => {
 
                   {/* Tags */}
                   {idea.tags && idea.tags.length > 0 && (
-                    <div className="px-6 sm:px-8 pt-3 pb-5 flex flex-wrap items-center gap-2">
-                      <Hash className="h-3.5 w-3.5 text-slate-400" />
+                    <div className="px-6 sm:px-8 pt-3 pb-8 flex flex-wrap items-center gap-2">
+                      <Hash className="h-3.5 w-3.5 text-muted-foreground" />
                       {idea.tags.map((tag: string) => (
                         <Badge
                           key={tag}
                           variant="secondary"
-                          className="text-[11px] font-semibold bg-slate-100 text-slate-600 border-0 rounded-lg px-3 py-1 hover:bg-slate-200 cursor-default transition-colors"
+                          className="text-[11px] font-bold bg-muted text-muted-foreground border-border rounded-lg px-3 py-1 hover:bg-accent transition-colors"
                         >
                           {tag}
                         </Badge>
@@ -715,12 +717,12 @@ const IdeaDetail = () => {
               transition={{ duration: 0.35, delay: 0.12 }}
             >
               {/* Discussion header */}
-              <div className="flex items-center gap-3 mb-5">
-                <MessageSquare className="h-5 w-5 text-slate-500" />
+              <div className="flex items-center gap-3 mb-6 mt-4">
+                <MessageSquare className="h-6 w-6 text-muted-foreground" />
                 <div>
-                  <h2 className="text-lg font-black tracking-tight text-slate-900">Discussion</h2>
-                  <p className="text-xs text-slate-400 font-medium">
-                    {comments.length} comment{comments.length !== 1 ? "s" : ""}
+                  <h2 className="text-xl font-black tracking-tight text-foreground">Discussion Library</h2>
+                  <p className="text-[11px] text-muted-foreground font-black uppercase tracking-[0.2em]">
+                    {comments.length} Thought{comments.length !== 1 ? "s" : ""} Shared
                   </p>
                 </div>
               </div>
@@ -744,7 +746,7 @@ const IdeaDetail = () => {
                       commentMutation.mutate(newComment);
                     }
                   }}
-                  className="flex-1 bg-white border border-slate-200 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all shadow-sm placeholder:text-slate-400"
+                  className="flex-1 bg-card/60 backdrop-blur-sm border border-border rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all shadow-sm placeholder:text-muted-foreground text-foreground"
                 />
                 <Button
                   onClick={() => {
@@ -753,14 +755,14 @@ const IdeaDetail = () => {
                     commentMutation.mutate(newComment);
                   }}
                   disabled={!newComment.trim() || commentMutation.isPending || !token}
-                  className="gap-2 rounded-2xl font-bold shadow-md shadow-primary/20 px-6 h-auto"
+                  className="gap-2 rounded-2xl font-bold shadow-premium-hover px-8 h-auto bg-primary text-white hover:bg-primary/90 transition-all border-none"
                 >
                   {commentMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
-                  Post
+                  Post Thought
                 </Button>
               </div>
 
@@ -774,10 +776,10 @@ const IdeaDetail = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -6, scale: 0.97 }}
                       transition={{ duration: 0.2, delay: i * 0.03 }}
-                      className="group bg-white border border-slate-200 rounded-2xl p-5 hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+                      className="group bg-card/50 border border-border rounded-2xl p-6 hover:border-primary/20 hover:shadow-premium-hover transition-all duration-300"
                     >
                       <div className="flex gap-4">
-                        <Avatar className="h-9 w-9 ring-2 ring-white shadow-sm border border-slate-200 shrink-0">
+                        <Avatar className="h-10 w-10 ring-2 ring-background shadow-md border border-border shrink-0">
                           <AvatarFallback className="text-xs font-black bg-primary/10 text-primary uppercase">
                             {getInitials(c.author || "?")}
                           </AvatarFallback>
@@ -785,15 +787,15 @@ const IdeaDetail = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1.5">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-black text-slate-800">{c.author}</span>
+                              <span className="text-sm font-black text-foreground">{c.author}</span>
                               {c.is_edited && (
-                                <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg italic font-medium">
+                                <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-lg italic font-medium">
                                   edited
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-slate-400 font-semibold">
+                            <div className="flex items-center gap-3">
+                              <span className="text-[11px] text-muted-foreground font-semibold">
                                 {format(new Date(c.created_at), "MMM d, HH:mm")}
                               </span>
                               {(c.user_id === user?.id || isAdmin) && (

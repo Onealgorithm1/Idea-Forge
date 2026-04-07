@@ -11,6 +11,8 @@ import {
   Tag,
   UserCircle2,
   Users,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -34,6 +36,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery } from "@tanstack/react-query";
 import { SupportDialog } from "./SupportDialog";
+import ThemeToggle from "./ThemeToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,10 +70,12 @@ const Header = () => {
   const tabs = [
     { name: "Idea Board", path: getTenantPath(ROUTES.IDEA_BOARD, currentSlug) },
     { name: "Roadmap", path: getTenantPath(ROUTES.ROADMAP, currentSlug) },
+    { name: "My Ideas", path: getTenantPath(ROUTES.MY_IDEAS, currentSlug) },
+    { name: "Saved Ideas", path: getTenantPath(ROUTES.SAVED_IDEAS, currentSlug) },
   ];
   
   if (user?.role === "admin" || user?.role === "reviewer" || user?.role === "super_admin") {
-    tabs.push({ name: "Analytics", path: getTenantPath(ROUTES.ANALYTICS, currentSlug) });
+    tabs.splice(2, 0, { name: "Analytics", path: getTenantPath(ROUTES.ANALYTICS, currentSlug) });
   }
 
   const fetchNotifications = async () => {
@@ -310,6 +315,8 @@ const Header = () => {
               </div>
             </PopoverContent>
           </Popover>
+
+          <ThemeToggle />
 
           <SupportDialog>
             <button className="p-1.5 rounded-full hover:bg-white/10 transition-colors" title="Contact Support">

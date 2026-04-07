@@ -56,13 +56,13 @@ const BoardIdeaCard = ({
   };
 
   const getIconBg = () => {
-    if (type === 'ideation') return "bg-slate-100 group-hover:bg-slate-200 border-slate-200/50";
+    if (type === 'ideation') return "bg-muted group-hover:bg-muted/80 border-border/50";
     if (type === 'development') return "bg-primary/10 group-hover:bg-primary/20 border-primary/10";
     return "bg-success/10 group-hover:bg-success/20 border-success/10";
   };
 
   const getBorderColor = () => {
-    if (type === 'ideation') return "border-slate-100";
+    if (type === 'ideation') return "border-border/30";
     if (type === 'development') return "border-primary/10";
     return "border-success/10";
   };
@@ -79,8 +79,8 @@ const BoardIdeaCard = ({
       }}
       onClick={() => handleSelectIdea(item.id)}
       className={cn(
-        "group bg-white rounded-xl border border-border/50 p-4 hover:shadow-premium-hover hover:-translate-y-0.5 transition-all duration-300 cursor-pointer relative overflow-hidden",
-        isCommentOpen && "ring-1 ring-primary/20 shadow-premium"
+        "group bg-card rounded-xl border border-border p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer relative overflow-hidden",
+        isCommentOpen && "ring-2 ring-primary/40 shadow-premium"
       )}
     >
       <div className="flex flex-col h-full">
@@ -90,15 +90,15 @@ const BoardIdeaCard = ({
               {getIcon()}
             </div>
             <div>
-              <p className="text-sm font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2">{item.title}</p>
-              <span className={cn("text-[10px] font-bold uppercase tracking-wider", type === 'ideation' ? "text-slate-500" : type === 'development' ? "text-primary/70" : "text-success/70")}>{item.category}</span>
+              <p className="text-sm font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2 text-foreground">{item.title}</p>
+              <span className={cn("text-[10px] font-bold uppercase tracking-wider", type === 'ideation' ? "text-muted-foreground" : type === 'development' ? "text-primary/70" : "text-success/70")}>{item.category}</span>
             </div>
           </div>
           <div className="flex flex-col gap-1.5 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
             <button 
               onClick={(e) => { e.stopPropagation(); handleBookmark(item.id); }} 
               className={cn(
-                "p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl transition-all hover:scale-110",
+                "p-2 bg-background/80 backdrop-blur-sm shadow-md border border-border/50 rounded-xl transition-all hover:scale-110",
                 item.is_bookmarked ? "text-amber-500" : "text-muted-foreground hover:text-amber-500"
               )}
               title={item.is_bookmarked ? "Remove Bookmark" : "Bookmark Idea"}
@@ -108,7 +108,7 @@ const BoardIdeaCard = ({
             {(user?.role === 'admin' || user?.id === item.author_id) && (
               <button 
                 onClick={(e) => { e.stopPropagation(); setIdeaToDelete(item.id); }} 
-                className="p-2 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-red-500 hover:scale-110 transition-all"
+                className="p-2 bg-background/80 backdrop-blur-sm shadow-md border border-border/50 rounded-xl text-muted-foreground hover:text-red-500 hover:scale-110 transition-all"
                 title="Delete Idea"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -129,7 +129,7 @@ const BoardIdeaCard = ({
         {item.tags && item.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4">
             {item.tags.map((tag: string) => (
-              <Badge key={tag} variant="secondary" className={cn("text-[9px] px-2 py-0.5 h-auto border-none", type === 'ideation' ? "bg-slate-100 text-slate-600 font-bold" : type === 'development' ? "bg-primary/5 text-primary" : "bg-success/5 text-success")}>#{tag}</Badge>
+              <Badge key={tag} variant="secondary" className={cn("text-[9px] px-2 py-0.5 h-auto border-none", type === 'ideation' ? "bg-muted text-muted-foreground font-bold" : type === 'development' ? "bg-primary/10 text-primary" : "bg-success/10 text-success")}>#{tag}</Badge>
             ))}
           </div>
         )}
@@ -149,15 +149,15 @@ const BoardIdeaCard = ({
               className="relative"
               onClick={(e) => { e.stopPropagation(); setIsCommentOpen(!isCommentOpen); }}
             >
-              <div className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors", type === 'ideation' ? "bg-slate-100 hover:bg-slate-200" : type === 'development' ? "bg-primary/5 hover:bg-primary/10" : "bg-success/5 hover:bg-success/10")}>
-                <MessageSquare className={cn("h-3.5 w-3.5", type === 'ideation' ? "text-slate-500" : type === 'development' ? "text-primary/60" : "text-success/60")} />
-                <span className={cn("text-xs font-black tracking-tighter", type === 'ideation' ? "text-slate-600" : type === 'development' ? "text-primary/80" : "text-success")}>{item.comments_count || 0}</span>
+              <div className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors", type === 'ideation' ? "bg-muted hover:bg-muted/80" : type === 'development' ? "bg-primary/5 hover:bg-primary/10" : "bg-success/5 hover:bg-success/10")}>
+                <MessageSquare className={cn("h-3.5 w-3.5", type === 'ideation' ? "text-muted-foreground" : type === 'development' ? "text-primary/60" : "text-success/60")} />
+                <span className={cn("text-xs font-black tracking-tighter", type === 'ideation' ? "text-muted-foreground font-bold" : type === 'development' ? "text-primary/80" : "text-success")}>{item.comments_count || 0}</span>
               </div>
             </div>
           </div>
 
-          <Avatar className={cn("h-7 w-7 ring-2 ring-white shadow-sm border", type === 'ideation' ? "border-slate-200" : type === 'development' ? "border-primary/20" : "border-success/20")}>
-            <AvatarFallback className={cn("text-[9px] font-black uppercase", type === 'ideation' ? "bg-slate-200 text-slate-500" : type === 'development' ? "bg-primary/20 text-primary" : "bg-success/20 text-success")}>
+          <Avatar className={cn("h-7 w-7 ring-2 ring-background shadow-sm border", type === 'ideation' ? "border-border" : type === 'development' ? "border-primary/20" : "border-success/20")}>
+            <AvatarFallback className={cn("text-[9px] font-black uppercase", type === 'ideation' ? "bg-muted text-muted-foreground" : type === 'development' ? "bg-primary/20 text-primary" : "bg-success/20 text-success")}>
               {getInitials(item.author || "Guest")}
             </AvatarFallback>
           </Avatar>
@@ -331,15 +331,15 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Idea Pool */}
-        <Card className="flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-slate-50/80 to-slate-200/50 backdrop-blur-sm border-t-4 border-slate-400/30">
-          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-slate-100/80 to-slate-50/50">
+        <Card className="flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-muted/50 to-muted/10 backdrop-blur-sm border-t-4 border-muted/50 transition-colors duration-300">
+          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-slate-200 rounded-lg">
-                <GripVertical className="h-4 w-4 text-slate-500" />
+              <div className="p-1.5 bg-muted rounded-lg">
+                <GripVertical className="h-4 w-4 text-muted-foreground" />
               </div>
-              <h3 className="font-bold text-sm tracking-tight text-slate-700">Ideation</h3>
+              <h3 className="font-bold text-sm tracking-tight text-foreground">Ideation</h3>
             </div>
-            <div className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{ideaPoolItems.length}</div>
+            <div className="bg-muted text-muted-foreground px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{ideaPoolItems.length}</div>
           </div>
           <div className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar">
             {ideaPoolItems.map((item, idx) => (
@@ -360,7 +360,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
         </Card>
 
         {/* Voting & Feedback */}
-        <Card className="flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30">
+        <Card className="flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30 transition-colors duration-300">
           <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-primary/10 bg-primary/10">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-primary/20 rounded-lg">
@@ -389,7 +389,7 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
         </Card>
 
         {/* In Development */}
-        <Card className="flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30">
+        <Card className="flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30 transition-colors duration-300">
           <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-success/10 bg-success/10">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-success/20 rounded-lg">

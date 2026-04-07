@@ -61,7 +61,7 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#fafbfc] flex flex-col relative overflow-hidden text-slate-900">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden text-foreground transition-colors duration-300">
       <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[120px]" />
         <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] rounded-full bg-info/10 blur-[100px]" />
@@ -83,15 +83,15 @@ const AdminDashboard = () => {
                 <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-none px-4 py-1 font-bold text-[10px] uppercase tracking-[0.2em]">
                   Admin Central
                 </Badge>
-                <h1 className="text-4xl md:text-5xl font-black tracking-tight">
+                <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground">
                   System <span className="text-primary">Intelligence.</span>
                 </h1>
-                <p className="text-slate-500 mt-3 text-lg font-medium">
+                <p className="text-muted-foreground mt-3 text-lg font-medium">
                   Monitoring platform health and community growth.
                 </p>
               </div>
               <div className="flex gap-3">
-                <Button asChild variant="outline" className="rounded-xl border-slate-200 shadow-sm font-bold bg-white/50 backdrop-blur-sm">
+                <Button asChild variant="outline" className="rounded-xl border-border shadow-sm font-bold bg-card/50 backdrop-blur-sm text-foreground hover:bg-accent hover:text-accent-foreground">
                   <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)}>
                     <Settings className="mr-2 h-4 w-4" />
                     Configure
@@ -108,22 +108,22 @@ const AdminDashboard = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}
-                  className="bg-white/60 backdrop-blur-md border border-white/80 p-6 rounded-3xl shadow-premium hover:shadow-premium-hover transition-all duration-300 group"
+                  className="bg-card/60 backdrop-blur-md border border-border p-6 rounded-3xl shadow-premium hover:shadow-premium-hover transition-all duration-300 group"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className={`p-2.5 rounded-2xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
                       <stat.icon className="h-6 w-6" />
                     </div>
-                    {statsLoading ? <Loader2 className="h-4 w-4 animate-spin text-slate-300" /> : null}
+                    {statsLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
                   </div>
                   <div className="space-y-1">
                     {statsLoading || stat.value === null ? (
                       <Skeleton className="h-9 w-24 rounded-xl" />
                     ) : (
-                      <h3 className="text-3xl font-black tracking-tight">{stat.value}</h3>
+                      <h3 className="text-3xl font-black tracking-tight text-foreground">{stat.value}</h3>
                     )}
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{stat.label}</p>
-                    {!statsLoading && <p className="text-[11px] text-slate-400 font-medium">{stat.sub}</p>}
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{stat.label}</p>
+                    {!statsLoading && <p className="text-[11px] text-muted-foreground/60 font-medium">{stat.sub}</p>}
                   </div>
                 </motion.div>
               ))}
@@ -137,11 +137,11 @@ const AdminDashboard = () => {
                 transition={{ delay: 0.4 }}
                 className="lg:col-span-2"
               >
-                <Card className="h-full p-8 border-none shadow-premium bg-white/80 backdrop-blur-md rounded-[2rem] space-y-8">
+                <Card className="h-full p-8 border-none shadow-premium bg-card/80 backdrop-blur-md rounded-[2rem] space-y-8">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-slate-100 rounded-xl"><ShieldCheck className="h-5 w-5 text-slate-600" /></div>
-                      <h2 className="text-xl font-black tracking-tight">Management Suite</h2>
+                      <div className="p-2 bg-muted rounded-xl"><ShieldCheck className="h-5 w-5 text-muted-foreground" /></div>
+                      <h2 className="text-xl font-black tracking-tight text-foreground">Management Suite</h2>
                     </div>
                     <Button asChild variant="ghost" size="sm" className="font-bold text-primary group">
                       <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)}>
@@ -149,26 +149,26 @@ const AdminDashboard = () => {
                       </Link>
                     </Button>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)} className="group p-5 bg-slate-50/50 hover:bg-primary/5 border border-slate-100 hover:border-primary/20 rounded-[1.5rem] transition-all duration-300">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug)} className="group p-5 bg-muted/50 hover:bg-primary/5 border border-border hover:border-primary/20 rounded-[1.5rem] transition-all duration-300">
                       <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="h-12 w-12 rounded-2xl bg-card shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform border border-border">
                           <Users className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-bold text-slate-800">User Control</h3>
-                          <p className="text-xs text-slate-500">{statsLoading ? "Loading…" : `${stats?.total_users ?? 0} total · ${stats?.admin_count ?? 0} admins`}</p>
+                          <h3 className="font-bold text-foreground">User Control</h3>
+                          <p className="text-xs text-muted-foreground">{statsLoading ? "Loading…" : `${stats?.total_users ?? 0} total · ${stats?.admin_count ?? 0} admins`}</p>
                         </div>
                       </div>
                     </Link>
-                    <div className="group p-5 bg-slate-50/50 hover:bg-info/5 border border-slate-100 hover:border-info/20 rounded-[1.5rem] transition-all duration-300">
+                    <div className="group p-5 bg-muted/50 hover:bg-info/5 border border-border hover:border-info/20 rounded-[1.5rem] transition-all duration-300">
                       <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="h-12 w-12 rounded-2xl bg-card shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform border border-border">
                           <TrendingUp className="h-6 w-6 text-info" />
                         </div>
                         <div>
-                          <h3 className="font-bold text-slate-800">Ideas Overview</h3>
-                          <p className="text-xs text-slate-500">{statsLoading ? "Loading…" : `${stats?.total_ideas ?? 0} total · ${stats?.new_ideas_30d ?? 0} new this month`}</p>
+                          <h3 className="font-bold text-foreground">Ideas Overview</h3>
+                          <p className="text-xs text-muted-foreground">{statsLoading ? "Loading…" : `${stats?.total_ideas ?? 0} total · ${stats?.new_ideas_30d ?? 0} new this month`}</p>
                         </div>
                       </div>
                     </div>
@@ -248,12 +248,12 @@ const AdminDashboard = () => {
               </Link>
               
               <Link to={getTenantPath(ROUTES.ADMIN_USERS, tenantSlug || "default")} className="group">
-                <Card className="p-8 border-none bg-white/80 backdrop-blur-md shadow-premium rounded-[2rem] space-y-4 hover:scale-[1.02] transition-all">
+                <Card className="p-8 border-none bg-card/80 backdrop-blur-md shadow-premium rounded-[2rem] space-y-4 hover:scale-[1.02] transition-all border border-border">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-primary/10 rounded-xl"><Users className="h-6 w-6 text-primary" /></div>
-                    <h2 className="text-xl font-black">User Management</h2>
+                    <h2 className="text-xl font-black text-foreground">User Management</h2>
                   </div>
-                  <p className="text-slate-500 text-sm leading-relaxed">
+                  <p className="text-muted-foreground text-sm leading-relaxed">
                     Invite new members, manage roles, and monitor engagement across your innovation community.
                   </p>
                   <div className="flex items-center gap-2 text-sm font-bold text-primary pt-2">

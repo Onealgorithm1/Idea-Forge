@@ -149,7 +149,7 @@ const AdminUsers = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafbfc] flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden transition-colors duration-300">
       {/* Mesh Gradient Background */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[120px]" />
@@ -168,8 +168,8 @@ const AdminUsers = () => {
               className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
             >
               <div>
-                <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">User <span className="text-primary">Management.</span></h1>
-                <p className="text-slate-500 mt-3 text-lg font-medium">Manage organization members, roles, and access control.</p>
+                <h1 className="text-4xl font-black tracking-tight text-foreground sm:text-5xl">User <span className="text-primary">Management.</span></h1>
+                <p className="text-muted-foreground mt-3 text-lg font-medium">Manage organization members, roles, and access control.</p>
               </div>
               <Button 
                 onClick={() => setIsCreateDialogOpen(true)} 
@@ -184,7 +184,7 @@ const AdminUsers = () => {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="border-none shadow-premium bg-white/70 backdrop-blur-md overflow-hidden rounded-[2rem]">
+              <Card className="border-none shadow-premium bg-card/70 backdrop-blur-md overflow-hidden rounded-[2rem]">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead className="bg-muted/50 border-b">
@@ -238,7 +238,7 @@ const AdminUsers = () => {
                              <div className="flex flex-wrap gap-1">
                                {u.assigned_spaces && u.assigned_spaces.length > 0 ? (
                                  (u.assigned_spaces as any[]).slice(0, 2).map((s: any) => (
-                                   <Badge key={s.id} variant="outline" className="text-[9px] h-4 px-1 bg-blue-50 text-blue-600 border-blue-100">{s.name}</Badge>
+                                   <Badge key={s.id} variant="outline" className="text-[9px] h-4 px-1 bg-primary/5 text-primary border-primary/20">{s.name}</Badge>
                                  ))
                                ) : (
                                  <span className="text-xs text-muted-foreground italic">None</span>
@@ -303,21 +303,21 @@ const AdminUsers = () => {
        </div>
 
        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-         <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl bg-white/95 backdrop-blur-xl">
+         <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl bg-card/95 backdrop-blur-xl">
            <DialogHeader>
-             <DialogTitle className="flex items-center gap-2 text-2xl font-black">
+             <DialogTitle className="flex items-center gap-2 text-2xl font-black text-foreground">
                <Lock className="h-6 w-6 text-primary" />
                Reset Password
              </DialogTitle>
-             <DialogDescription className="text-slate-500 font-medium">
+             <DialogDescription className="text-muted-foreground font-medium">
                Enter a new password for <strong>{selectedUser?.name}</strong>.
              </DialogDescription>
            </DialogHeader>
            <div className="space-y-4 py-4">
              <div className="space-y-2">
-               <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-slate-400">New Password</Label>
+               <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">New Password</Label>
                <div className="relative">
-                 <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                  <Input
                    id="password"
                    type="password"
@@ -330,7 +330,7 @@ const AdminUsers = () => {
              </div>
            </div>
            <DialogFooter className="gap-2 sm:gap-0">
-             <Button variant="ghost" onClick={() => setIsPasswordDialogOpen(false)} className="rounded-xl font-bold text-slate-500">
+             <Button variant="ghost" onClick={() => setIsPasswordDialogOpen(false)} className="rounded-xl font-bold text-muted-foreground">
                Cancel
              </Button>
              <Button 
@@ -349,21 +349,21 @@ const AdminUsers = () => {
 
       {/* Create User Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl bg-white/95 backdrop-blur-xl">
+        <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl bg-card/95 backdrop-blur-xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-2xl font-black">
+            <DialogTitle className="flex items-center gap-2 text-2xl font-black text-foreground">
               <UserPlus className="h-6 w-6 text-primary" />
               Add Member
             </DialogTitle>
-            <DialogDescription className="text-slate-500 font-medium">
+            <DialogDescription className="text-muted-foreground font-medium">
               Invite a new member to your organization. They will receive an email with their credentials.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="space-y-2">
-              <Label htmlFor="create-name" className="text-xs font-bold uppercase tracking-widest text-slate-400">Full Name</Label>
+              <Label htmlFor="create-name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Full Name</Label>
               <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="create-name"
                   placeholder="John Doe"
@@ -374,9 +374,9 @@ const AdminUsers = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-email" className="text-xs font-bold uppercase tracking-widest text-slate-400">Email Address</Label>
+              <Label htmlFor="create-email" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Email Address</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="create-email"
                   type="email"
@@ -388,10 +388,10 @@ const AdminUsers = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-password" className="text-xs font-bold uppercase tracking-widest text-slate-400">Temporary Password</Label>
+              <Label htmlFor="create-password" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Temporary Password</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="create-password"
                     type="text"
@@ -404,7 +404,7 @@ const AdminUsers = () => {
                 <Button 
                   variant="outline" 
                   size="icon" 
-                  className="h-10 w-10 rounded-xl border-slate-200"
+                  className="h-10 w-10 rounded-xl border-border"
                   onClick={() => setCreateForm(f => ({ ...f, password: Math.random().toString(36).slice(-10) }))}
                   title="Generate Password"
                 >
@@ -414,7 +414,7 @@ const AdminUsers = () => {
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)} className="rounded-xl font-bold text-slate-500">
+            <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)} className="rounded-xl font-bold text-muted-foreground">
               Cancel
             </Button>
             <Button 
@@ -432,19 +432,19 @@ const AdminUsers = () => {
       </Dialog>
       
       <Dialog open={isSpaceDialogOpen} onOpenChange={setIsSpaceDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl bg-white/95 backdrop-blur-xl">
+        <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl bg-card/95 backdrop-blur-xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-2xl font-black">
+            <DialogTitle className="flex items-center gap-2 text-2xl font-black text-foreground">
               <Layers className="h-6 w-6 text-primary" />
               Manage Spaces
             </DialogTitle>
-            <DialogDescription className="text-slate-500 font-medium">
+            <DialogDescription className="text-muted-foreground font-medium">
               Assign idea spaces to <strong>{selectedUser?.name}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4 max-h-[40vh] overflow-y-auto pr-2">
             {availableSpaces.map((space: any) => (
-              <div key={space.id} className="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+              <div key={space.id} className="flex items-center space-x-3 p-3 rounded-xl hover:bg-muted/50 transition-colors border border-transparent hover:border-border">
                 <Checkbox 
                   id={`space-${space.id}`} 
                   checked={selectedSpaces.includes(space.id)}

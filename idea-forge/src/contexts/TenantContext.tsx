@@ -77,10 +77,16 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm font-medium text-slate-500">Loading experience...</p>
+      <div className="flex h-screen w-screen items-center justify-center bg-[#020817] transition-colors duration-700">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <div className="absolute -inset-4 bg-primary/20 blur-2xl rounded-full animate-pulse" />
+            <Loader2 className="h-12 w-12 animate-spin text-primary relative z-10" />
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-sm font-black uppercase tracking-[0.3em] text-white/40 animate-pulse">IdeaForge</p>
+            <p className="text-xs font-bold text-white/20">Initializing workspace...</p>
+          </div>
         </div>
       </div>
     );
@@ -89,19 +95,32 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // If we have a slug but tenant wasn't found, we should probably show a 404 or redirect
   if (tenantSlug && !tenant && !isLoading && !location.pathname.startsWith('/super-admin')) {
     return (
-      <div className="flex h-screen w-screen flex-col items-center justify-center bg-slate-50 p-6 text-center">
-        <h1 className="text-4xl font-black text-slate-900 mb-2">404</h1>
-        <p className="text-xl font-bold text-slate-800 mb-4">Organization Not Found</p>
-        <p className="text-slate-500 mb-8 max-w-md">
-          We couldn't find an organization with the name <span className="font-mono font-bold text-primary">"/{tenantSlug}"</span>. 
-          Please check the URL or contact your administrator.
-        </p>
-        <button 
-          onClick={() => navigate('/')}
-          className="px-6 py-3 bg-primary text-white font-bold rounded-xl shadow-premium hover:opacity-90 transition-all"
-        >
-          Go Back Home
-        </button>
+      <div className="flex h-screen w-screen flex-col items-center justify-center bg-[#020817] p-6 text-center text-white transition-colors">
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 blur-[120px] rounded-full" />
+        </div>
+        
+        <div className="relative z-10 max-w-md space-y-6">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-white/5 border border-white/10 mb-4">
+            <span className="text-4xl font-black text-white/20">404</span>
+          </div>
+          
+          <div className="space-y-2">
+            <h1 className="text-3xl font-black tracking-tight">Workspace Not Found</h1>
+            <p className="text-white/40 font-medium">
+              We couldn't find an organization with the name <span className="text-primary font-bold">"/{tenantSlug}"</span>
+            </p>
+          </div>
+
+          <div className="pt-4">
+            <button 
+              onClick={() => navigate('/')}
+              className="px-8 py-4 bg-primary text-white font-black rounded-2xl shadow-premium hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300"
+            >
+              Back to Home
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

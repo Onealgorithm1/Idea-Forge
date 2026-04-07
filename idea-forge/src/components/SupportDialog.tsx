@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { 
-  Dialog, DialogContent, DialogHeader, DialogTitle, 
-  DialogFooter, DialogDescription, DialogTrigger 
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogFooter, DialogDescription, DialogTrigger
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,17 +28,17 @@ export const SupportDialog = ({ children }: SupportDialogProps) => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token") || localStorage.getItem("super_admin_token");
-      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5001/api"}/super-admin/support`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/super-admin/support`, {
         method: "POST",
-        headers: { 
+        headers: {
           "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json" 
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ subject, message }),
       });
-      
+
       if (!res.ok) throw new Error("Failed to submit support request");
-      
+
       toast.success("Support request sent successfully!");
       setOpen(false);
       setSubject("");
@@ -72,9 +72,9 @@ export const SupportDialog = ({ children }: SupportDialogProps) => {
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="subject">Subject</Label>
-            <Input 
-              id="subject" 
-              placeholder="How do I... / Issue with..." 
+            <Input
+              id="subject"
+              placeholder="How do I... / Issue with..."
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               required
@@ -82,9 +82,9 @@ export const SupportDialog = ({ children }: SupportDialogProps) => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="message">Message</Label>
-            <Textarea 
-              id="message" 
-              placeholder="Describe your question or issue in detail..." 
+            <Textarea
+              id="message"
+              placeholder="Describe your question or issue in detail..."
               className="min-h-[120px] resize-none"
               value={message}
               onChange={(e) => setMessage(e.target.value)}

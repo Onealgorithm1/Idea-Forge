@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
+import {
   Building2, Users, Lightbulb, ArrowLeft, Plus, Mail, UserPlus, Info,
   ShieldCheck, Loader2, Key, TrendingUp, MessageSquare, ThumbsUp, Settings,
   MoreHorizontal, Power, Globe
@@ -12,15 +12,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { 
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
-  DropdownMenuTrigger, DropdownMenuSeparator 
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuTrigger, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 
-const SUPER_ADMIN_API = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+const SUPER_ADMIN_API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const saApi = {
   get: async (endpoint: string) => {
@@ -233,7 +233,7 @@ const TenantDetail = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="bg-slate-900 border-white/10 text-white" align="end">
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => toggleUserStatus.mutate({ userId: user.id, status: user.status === 'active' ? 'suspended' : 'active' })}
                                 className={user.status === 'active' ? "text-amber-400" : "text-success"}
                               >
@@ -260,7 +260,7 @@ const TenantDetail = () => {
           {/* Right Column: Settings & License */}
           <div className="space-y-8">
             <h2 className="text-xl font-bold">Organization <span className="text-primary">License.</span></h2>
-            
+
             <Card className="bg-white/5 border-white/5 p-6 rounded-2xl relative overflow-hidden">
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -283,10 +283,10 @@ const TenantDetail = () => {
                   </span>
                 </div>
                 <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                  <motion.div 
+                  <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${usagePercent}%` }}
-                    className={`h-full ${isNearLimit ? 'bg-red-500' : 'bg-primary'}`} 
+                    className={`h-full ${isNearLimit ? 'bg-red-500' : 'bg-primary'}`}
                   />
                 </div>
                 {isNearLimit && (
@@ -337,31 +337,31 @@ const TenantDetail = () => {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Full Name</Label>
-              <Input 
-                value={adminForm.name} 
+              <Input
+                value={adminForm.name}
                 onChange={e => setAdminForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="John Doe" 
-                className="bg-white/5 border-white/10 text-white" 
+                placeholder="John Doe"
+                className="bg-white/5 border-white/10 text-white"
               />
             </div>
             <div className="space-y-2">
               <Label>Email Address</Label>
-              <Input 
+              <Input
                 type="email"
-                value={adminForm.email} 
+                value={adminForm.email}
                 onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))}
-                placeholder="john@organization.com" 
-                className="bg-white/5 border-white/10 text-white" 
+                placeholder="john@organization.com"
+                className="bg-white/5 border-white/10 text-white"
               />
             </div>
             <div className="space-y-2">
               <Label>Temporary Password</Label>
               <div className="flex gap-2">
-                <Input 
+                <Input
                   type="text"
-                  value={adminForm.password} 
+                  value={adminForm.password}
                   onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))}
-                  className="bg-white/5 border-white/10 text-white" 
+                  className="bg-white/5 border-white/10 text-white"
                 />
                 <Button variant="secondary" onClick={() => setAdminForm(f => ({ ...f, password: Math.random().toString(36).slice(-8) }))}>
                   Auto
@@ -371,8 +371,8 @@ const TenantDetail = () => {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setAdminDialogOpen(false)} className="text-white/40">Cancel</Button>
-            <Button 
-              onClick={() => createAdminMutation.mutate(adminForm)} 
+            <Button
+              onClick={() => createAdminMutation.mutate(adminForm)}
               disabled={createAdminMutation.isPending || !adminForm.name || !adminForm.email || !adminForm.password}
               className="bg-primary hover:bg-primary/90 font-bold"
             >
@@ -395,9 +395,9 @@ const TenantDetail = () => {
           <div className="py-6">
             <div className="space-y-3">
               <Label>Maximum User Count</Label>
-              <Input 
-                type="number" 
-                value={newMaxUsers} 
+              <Input
+                type="number"
+                value={newMaxUsers}
                 onChange={e => setNewMaxUsers(parseInt(e.target.value))}
                 className="bg-white/5 border-white/10 text-white text-lg h-12"
               />
@@ -406,8 +406,8 @@ const TenantDetail = () => {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setLicenseDialogOpen(false)} className="text-white/40">Cancel</Button>
-            <Button 
-              onClick={() => updateLicenseMutation.mutate(newMaxUsers)} 
+            <Button
+              onClick={() => updateLicenseMutation.mutate(newMaxUsers)}
               disabled={updateLicenseMutation.isPending || newMaxUsers < tenant.users.length}
               className="bg-primary hover:bg-primary/90 font-bold"
             >

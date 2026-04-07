@@ -7,7 +7,7 @@
 @layer base {
   :root {
     --background: 220 33% 98%;
-    --foreground: 224 71% 4%;
+    --foreground: 0 0% 0%;
 
     --card: 0 0% 100%;
     --card-foreground: 224 71% 4%;
@@ -58,6 +58,51 @@
     --glass-bg: 0 0% 100% / 0.75;
     --glass-border: 0 0% 100% / 0.2;
   }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 0 0% 100%;
+
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
+
+    --primary: 242 82% 65%;
+    --primary-foreground: 224 71% 4%;
+
+    --secondary: 222 47% 12%;
+    --secondary-foreground: 213 31% 91%;
+
+    --muted: 222 47% 12%;
+    --muted-foreground: 215.4 16.3% 56.9%;
+
+    --accent: 222 47% 12%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 242 82% 65%;
+
+    --header-bg: 224 71% 2%;
+    --header-foreground: 213 31% 91%;
+
+    --sidebar-background: 224 71% 3%;
+    --sidebar-foreground: 215.4 16.3% 56.9%;
+    --sidebar-primary: 242 82% 65%;
+    --sidebar-primary-foreground: 224 71% 4%;
+    --sidebar-accent: 222 47% 12%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 242 82% 65%;
+
+    --glass-bg: 224 71% 4% / 0.8;
+    --glass-border: 0 0% 100% / 0.1;
+  }
 }
 
 @layer utilities {
@@ -66,6 +111,9 @@
   }
   .glass-dark {
     @apply bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)];
+  }
+  .idea-card {
+    @apply border border-border/60 dark:border-border/30 shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_32px_-8px_rgba(99,102,241,0.22)] bg-card transition-all duration-300 rounded-2xl hover:-translate-y-1;
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
