@@ -13,13 +13,12 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import organizationRoutes from './routes/organizationRoutes.js';
 import registerRoutes from './routes/registerRoutes.js';
+import { env } from './config/env.js';
 import { getTenantBySlug } from './controllers/tenantController.js';
-
-dotenv.config();
 
 const app = express();
 const server = createServer(app);
-const PORT = process.env.PORT || 5000;
+const PORT = env.PORT;
 
 // Initialize Socket.io
 initSocket(server);
