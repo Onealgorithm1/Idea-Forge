@@ -150,6 +150,8 @@ async function migrate() {
         name VARCHAR(255) NOT NULL,
         description TEXT,
         color VARCHAR(20),
+        parent_id UUID REFERENCES idea_categories(id) ON DELETE SET NULL,
+        is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
@@ -157,6 +159,10 @@ async function migrate() {
 
     // Also support legacy 'categories' table if it exists
     await runStatement(client, `ALTER TABLE categories ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id)`, 'Column: categories.tenant_id');
+    await runStatement(client, `ALTER TABLE categories ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES categories(id) ON DELETE SET NULL`, 'Column: categories.parent_id');
+    await runStatement(client, `ALTER TABLE categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE`, 'Column: categories.is_active');
+    await runStatement(client, `CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id)`, 'Index: categories.parent_id');
+    await runStatement(client, `CREATE INDEX IF NOT EXISTS idx_categories_is_active ON categories(is_active)`, 'Index: categories.is_active');
     await runStatement(client, `UPDATE categories SET tenant_id = '00000000-0000-0000-0000-000000000001' WHERE tenant_id IS NULL`, 'Migrate: categories → default tenant');
 
     // === IDEAS — extend ===
@@ -169,35 +175,30 @@ async function migrate() {
     await runStatement(client, `UPDATE ideas SET tenant_id = '00000000-0000-0000-0000-000000000001' WHERE tenant_id IS NULL`, 'Migrate: ideas → default tenant');
     await runStatement(client, `UPDATE ideas SET idea_space_id = '00000000-0000-0000-0000-000000000002' WHERE idea_space_id IS NULL`, 'Migrate: ideas → default space');
 
-    // === IDEA TAGS ===
+    // === TAGS ===
     await runStatement(client, `
-      CREATE TABLE IF NOT EXISTS idea_tags (
+      CREATE TABLE IF NOT EXISTS tags (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         tenant_id UUID NOT NULL REFERENCES tenants(id),
         name VARCHAR(100) NOT NULL,
+        slug VARCHAR(100),
         color VARCHAR(20),
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         UNIQUE (tenant_id, name)
       )
-    `, 'Table: idea_tags');
+    `, 'Table: tags');
 
-    // Also support legacy 'tags' table if it exists
-    await runStatement(client, `ALTER TABLE tags ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id)`, 'Column: tags.tenant_id');
-    await runStatement(client, `UPDATE tags SET tenant_id = '00000000-0000-0000-0000-000000000001' WHERE tenant_id IS NULL`, 'Migrate: tags → default tenant');
-
-    await runStatement(client, `ALTER TABLE idea_tags ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id)`, 'Column: idea_tags.tenant_id');
-    await runStatement(client, `UPDATE idea_tags SET tenant_id = '00000000-0000-0000-0000-000000000001' WHERE tenant_id IS NULL`, 'Migrate: idea_tags → default tenant');
-
+    // === IDEA TAGS (Join Table) ===
     await runStatement(client, `
-      CREATE TABLE IF NOT EXISTS idea_tag_links (
+      CREATE TABLE IF NOT EXISTS idea_tags (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         tenant_id UUID NOT NULL REFERENCES tenants(id),
         idea_id UUID NOT NULL REFERENCES ideas(id),
-        tag_id UUID NOT NULL REFERENCES idea_tags(id),
+        tag_id UUID NOT NULL REFERENCES tags(id),
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         UNIQUE (idea_id, tag_id)
       )
-    `, 'Table: idea_tag_links');
+    `, 'Table: idea_tags');
 
     // === BOOKMARKS ===
     await runStatement(client, `

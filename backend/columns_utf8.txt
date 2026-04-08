@@ -1,0 +1,18 @@
+﻿Table: tenants
+Columns: id, settings_json, created_at, updated_at, max_users, name, slug, status, plan_type
+---
+Table: ideas
+Columns: owner_id, updated_at, tenant_id, idea_space_id, current_score, id, author_id, category_id, votes_count, comments_count, created_at, title, description, priority, source, status
+---
+Table: idea_tags
+Columns: idea_id, tag_id, tenant_id
+---
+Table: idea_categories
+Columns: id, tenant_id, idea_space_id, created_at, updated_at, color, name, description
+---
+Table: categories
+Columns: is_active, updated_at, parent_id, id, created_at, tenant_id, is_default, manager_id, name, description, slug
+---
+Table: tags
+Columns: id, created_at, tenant_id, name, slug
+---

@@ -62,7 +62,7 @@ export const createTenantAdmin = async (req: Request, res: Response) => {
 
     const newUser = await query(
       `INSERT INTO users (name, email, password_hash, role, tenant_id, status)
-       VALUES ($1, $2, $3, 'admin', $4, 'active') RETURNING id, name, email, role, tenant_id`,
+       VALUES ($1, $2, $3, 'tenant_admin', $4, 'active') RETURNING id, name, email, role, tenant_id`,
       [name, email, hashedPassword, tenantId]
     );
 
@@ -174,7 +174,7 @@ export const updateUserStatus = async (req: Request, res: Response) => {
   const { status } = req.body;
   try {
     const result = await query(
-      'UPDATE users SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING id, status',
+      'UPDATE users SET status = $1 WHERE id = $2 RETURNING id, status',
       [status, userId]
     );
     if (result.rows.length === 0) return res.status(404).json({ message: 'User not found' });
@@ -190,7 +190,7 @@ export const updateUserRole = async (req: Request, res: Response) => {
   const { role } = req.body;
   try {
     const result = await query(
-      'UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2 RETURNING id, role',
+      'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, role',
       [role, userId]
     );
     if (result.rows.length === 0) return res.status(404).json({ message: 'User not found' });

@@ -322,6 +322,7 @@ const AdminUsers = () => {
                                  size="icon" 
                                  className="h-8 w-8 text-muted-foreground hover:text-primary"
                                  onClick={() => handleOpenSpaceDialog(u)}
+                                 disabled={u.id === currentUser?.id || (ROLE_CONFIG[u.role]?.level || 0) >= (ROLE_CONFIG[currentUser?.role || 'user']?.level || 0)}
                                  title="Manage Spaces"
                                >
                                  <Layers className="h-4 w-4" />
@@ -331,6 +332,7 @@ const AdminUsers = () => {
                                  size="icon" 
                                  className="h-8 w-8 text-muted-foreground hover:text-primary"
                                  onClick={() => handleOpenPasswordDialog(u)}
+                                 disabled={u.id === currentUser?.id || (ROLE_CONFIG[u.role]?.level || 0) >= (ROLE_CONFIG[currentUser?.role || 'user']?.level || 0)}
                                  title="Change Password"
                                >
                                  <Key className="h-4 w-4" />
@@ -354,6 +356,10 @@ const AdminUsers = () => {
                                      .filter(([roleKey, cfg]) => {
                                        // Only allow assigning roles below your own
                                        const myLevel = ROLE_CONFIG[currentUser?.role || 'user']?.level || 0;
+                                       // Special case: Only super_admin can see/assign tenant_admin
+                                       if (roleKey === 'tenant_admin') {
+                                         return currentUser?.role === 'super_admin';
+                                       }
                                        return cfg.level < myLevel;
                                      })
                                      .map(([roleKey, cfg]) => (
@@ -375,7 +381,7 @@ const AdminUsers = () => {
                                  size="icon" 
                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
                                  onClick={() => handleDeleteUser(u.id)}
-                                 disabled={u.id === currentUser?.id}
+                                 disabled={u.id === currentUser?.id || (ROLE_CONFIG[u.role]?.level || 0) >= (ROLE_CONFIG[currentUser?.role || 'user']?.level || 0)}
                                  title="Delete User"
                                 >
                                  <Trash2 className="h-4 w-4" />

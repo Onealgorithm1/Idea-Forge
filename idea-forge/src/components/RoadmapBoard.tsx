@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { GripVertical, CheckCircle2, FlaskConical, PlayCircle, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, MessageSquare, Trash2 } from "lucide-react";
+import { GripVertical, CheckCircle2, FlaskConical, PlayCircle, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, MessageSquare, Trash2, ArrowBigUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +9,188 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getInitials } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import ConfirmationModal from "./ConfirmationModal";
+import VotingSystem from "./VotingSystem";
+import CommentSection from "./CommentSection";
+
+interface RoadmapIdeaCardProps {
+  idea: any;
+  index: number;
+  user: any;
+  tenantSlug: string;
+  navigate: any;
+  handleVote: (id: string, type: 'up' | 'down') => void;
+  voteMutation: any;
+  setIdeaToDelete: (id: string) => void;
+  handleStatusUpdate: (id: string, status: string) => void;
+}
+
+const RoadmapIdeaCard = ({ 
+  idea, 
+  index, 
+  user, 
+  tenantSlug, 
+  navigate, 
+  handleVote, 
+  voteMutation, 
+  setIdeaToDelete,
+  handleStatusUpdate
+}: RoadmapIdeaCardProps) => {
+  const [isCommentOpen, setIsCommentOpen] = useState(false);
+
+  return (
+    <Draggable draggableId={String(idea.id)} index={index}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          className={cn(
+            "group bg-card rounded-2xl border border-border p-4 shadow-sm hover:shadow-md transition-all cursor-pointer relative",
+            snapshot.isDragging && "shadow-2xl ring-2 ring-primary/20 scale-[1.02] z-50",
+            isCommentOpen && "ring-2 ring-primary/40 shadow-premium"
+          )}
+          onClick={(e) => {
+            if (!isCommentOpen) navigate(getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', idea.id), tenantSlug));
+          }}
+        >
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-start">
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-primary/70 uppercase tracking-widest flex items-center gap-1">
+                    {idea.parent_name ? (
+                      <>
+                        {idea.parent_name}
+                        <ChevronRight className="h-2 w-2 opacity-50" />
+                        {idea.category}
+                      </>
+                    ) : (
+                      idea.category
+                    )}
+                  </span>
+                  {idea.priority && (
+                    <Badge variant="outline" className={cn(
+                      "text-[8px] font-black px-1.5 py-0 leading-none h-4 border-none uppercase",
+                      idea.priority === 'High' ? "bg-destructive/10 text-destructive" :
+                      idea.priority === 'Medium' ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"
+                    )}>
+                      {idea.priority}
+                    </Badge>
+                  )}
+                </div>
+                <h4 className="font-black text-base text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors pr-6">
+                  {idea.title}
+                </h4>
+                {idea.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-1 mt-1 font-medium leading-relaxed italic">
+                    {idea.description}
+                  </p>
+                )}
+                {idea.tags && idea.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {idea.tags.map((tag: string) => (
+                      <Badge key={tag} variant="secondary" className="text-[8px] px-1.5 py-0 h-auto bg-muted/50 text-muted-foreground border-none font-bold">
+                        #{tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 absolute top-4 right-4 translate-x-2 group-hover:translate-x-0">
+                {(user?.role === 'admin' || user?.id === idea.author_id) && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setIdeaToDelete(idea.id); }}
+                    className="p-1.5 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive transition-all"
+                    title="Delete"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                {user?.role === 'admin' && (
+                  <>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleStatusUpdate(idea.id, getPrevStatus(idea.status)); }}
+                      className="p-1 hover:bg-slate-100 rounded-md text-slate-400 transition-all"
+                      title="Previous Stage"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleStatusUpdate(idea.id, getNextStatus(idea.status)); }}
+                      className="p-1 hover:bg-muted rounded-md text-muted-foreground/60 hover:text-foreground transition-all"
+                      title="Next Stage"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between pt-3 border-t border-border/50">
+              <div className="flex items-center gap-2">
+                <Avatar className="h-6 w-6 border border-background shadow-sm ring-1 ring-border">
+                  <AvatarFallback className="text-[10px] font-black bg-muted text-muted-foreground uppercase">
+                    {getInitials(idea.author_name || idea.author || 'Un')}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-foreground truncate max-w-[80px]">
+                    {idea.author_name?.split(' ')[0] || idea.author?.split(' ')[0] || "Anonymous"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <VotingSystem
+                  ideaId={idea.id}
+                  initialVotes={idea.votes_count}
+                  onVote={(type) => handleVote(idea.id, type)}
+                  userVote={idea.vote_type}
+                  isLoading={voteMutation.isPending && voteMutation.variables?.id === idea.id}
+                  className="scale-90"
+                />
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setIsCommentOpen(!isCommentOpen); }}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all",
+                    isCommentOpen ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  <span className="text-xs font-black">{idea.comments_count || 0}</span>
+                </button>
+                <div className="flex flex-col items-center pl-3 border-l-2 border-primary/20 bg-primary/5 px-2 py-1 rounded-lg">
+                  <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">Points</span>
+                  <span className="text-sm font-black text-primary">{(idea.votes_count || 0) * 10}</span>
+                </div>
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {isCommentOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="overflow-hidden bg-muted/30 rounded-xl p-2 border border-border/50 mt-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <CommentSection ideaId={idea.id} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
+    </Draggable>
+  );
+};
 
 const roadmapStages = [
   { id: 'backlog', name: 'Ideation', icon: Clock, color: 'slate', statuses: ['Pending', 'Under Review'], defaultStatus: 'Pending' },
@@ -47,6 +225,53 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
     queryFn: () => api.get("/ideas", token || undefined),
     staleTime: 1000 * 60,
   });
+
+  const voteMutation = useMutation({
+    mutationFn: ({ id, type }: { id: string; type: "up" | "down" }) =>
+      api.post(`/ideas/${id}/vote`, { type }, token!),
+    onMutate: async ({ id, type }) => {
+      await queryClient.cancelQueries({ queryKey: ["ideas", tenantSlug] });
+      const previousIdeas = queryClient.getQueryData(["ideas", tenantSlug]);
+      queryClient.setQueryData(["ideas", tenantSlug], (old: any[] | undefined) => {
+        if (!old) return old;
+        return old.map(idea => {
+          if (idea.id !== id) return idea;
+          let delta = 0;
+          let newVoteType: "up" | "down" | null = null;
+          if (idea.vote_type === type) {
+            delta = type === 'up' ? -1 : 1;
+            newVoteType = null;
+          } else {
+            if (idea.vote_type === 'up') delta -= 1;
+            if (idea.vote_type === 'down') delta += 1;
+            if (type === 'up') delta += 1;
+            if (type === 'down') delta -= 1;
+            newVoteType = type;
+          }
+          return {
+            ...idea,
+            votes_count: (parseInt(idea.votes_count || 0) + delta),
+            vote_type: newVoteType,
+          };
+        });
+      });
+      return { previousIdeas };
+    },
+    onError: (err: any, variables, context) => {
+      if (context?.previousIdeas) {
+        queryClient.setQueryData(["ideas", tenantSlug], context.previousIdeas);
+      }
+      toast.error(err.message || "Failed to vote");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
+    },
+  });
+
+  const handleVote = (id: string, type: 'up' | 'down') => {
+    if (!token) return toast.error("Please login to vote");
+    voteMutation.mutate({ id, type });
+  };
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
@@ -94,9 +319,9 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-pulse">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="h-96 bg-muted rounded-3xl border border-border" />
+      <div className="flex gap-6 overflow-x-auto pb-8 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex-shrink-0 w-[420px] h-[calc(100vh-14rem)] bg-muted/20 animate-pulse rounded-3xl border border-border/50" />
         ))}
       </div>
     );
@@ -105,7 +330,7 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
   return (
     <>
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="flex gap-6 overflow-x-auto pb-8 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
           {roadmapStages.map((stage) => {
             const stageIdeas = ideas.filter(i => {
               const statusMatch = stage.statuses.includes(i.status);
@@ -115,7 +340,7 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
             const Icon = stage.icon;
 
             return (
-              <Card key={stage.id} className={`flex flex-col h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]}`}>
+              <Card key={stage.id} className={`flex flex-col flex-shrink-0 w-[420px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]}`}>
                 <div 
                   className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-black/5 cursor-pointer lg:cursor-default"
                   onClick={() => { if (window.innerWidth < 1024) toggleStage(stage.id) }}
@@ -143,91 +368,31 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }}
-                      className="overflow-hidden"
+                      className="flex-1 flex flex-col min-h-0 overflow-hidden"
                     >
                       <Droppable droppableId={stage.id}>
                         {(provided, snapshot) => (
                           <div 
                             {...provided.droppableProps}
                             ref={provided.innerRef}
-                            className={`flex-1 overflow-y-auto no-scrollbar p-3 space-y-3 min-h-[50px] transition-colors duration-200 ${snapshot.isDraggingOver ? 'bg-black/5' : ''}`}
+                            className={cn(
+                              "flex-1 overflow-y-auto p-3 space-y-3 min-h-[150px] transition-colors duration-200",
+                              snapshot.isDraggingOver ? 'bg-black/5' : ''
+                            )}
                           >
                             {stageIdeas.map((idea, index) => (
-                              <Draggable key={idea.id} draggableId={String(idea.id)} index={index}>
-                                {(provided, snapshot) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    className={`group bg-card rounded-2xl border border-border p-4 shadow-sm hover:shadow-md transition-all cursor-pointer relative ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-primary/20 scale-[1.02] z-50' : ''}`}
-                                    onClick={() => navigate(getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', idea.id), tenantSlug))}
-                                  >
-                                    <div className="flex flex-col gap-3">
-                                      <div className="flex justify-between items-start">
-                                        <Badge variant="outline" className="text-[9px] uppercase tracking-widest font-bold bg-muted text-muted-foreground border-none px-1.5 py-0">
-                                          {idea.category}
-                                        </Badge>
-                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                          {(user?.role === 'admin' || user?.id === idea.author_id) && (
-                                            <button 
-                                              onClick={(e) => { 
-                                                e.stopPropagation(); 
-                                                setIdeaToDelete(idea.id);
-                                              }}
-                                              className="p-1 hover:bg-red-50 rounded-md text-slate-400 hover:text-red-500"
-                                              title="Delete"
-                                            >
-                                              <Trash2 className="h-3.5 w-3.5" />
-                                            </button>
-                                          )}
-                                          {user?.role === 'admin' && (
-                                            <>
-                                              <button 
-                                                onClick={(e) => { e.stopPropagation(); handleStatusUpdate(idea.id, getPrevStatus(idea.status)); }}
-                                                className="p-1 hover:bg-slate-100 rounded-md text-slate-400"
-                                                title="Previous Stage"
-                                              >
-                                                <ChevronLeft className="h-3.5 w-3.5" />
-                                              </button>
-                                              <button 
-                                                onClick={(e) => { e.stopPropagation(); handleStatusUpdate(idea.id, getNextStatus(idea.status)); }}
-                                                className="p-1 hover:bg-muted rounded-md text-muted-foreground/60 hover:text-foreground"
-                                                title="Next Stage"
-                                              >
-                                                <ChevronRight className="h-3.5 w-3.5" />
-                                              </button>
-                                            </>
-                                          )}
-                                        </div>
-                                      </div>
-                                      
-                                      <h4 className="font-bold text-sm text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-                                        {idea.title}
-                                      </h4>
-                                      
-                                      {stage.id !== 'done' && (
-                                        <div className="flex items-center justify-between mt-1 pt-3 border-t border-border/50">
-                                          <div className="flex items-center gap-3">
-                                            <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
-                                              <MessageSquare className="h-3 w-3" />
-                                              {idea.comments_count || 0}
-                                            </div>
-                                            <div className="h-1 w-1 rounded-full bg-border" />
-                                            <span className="text-[10px] font-bold text-emerald-500">
-                                              {idea.votes_count || 0} Votes
-                                            </span>
-                                          </div>
-                                          <Avatar className="h-6 w-6 border border-background shadow-sm ring-1 ring-border">
-                                            <AvatarFallback className="text-[8px] font-black bg-muted text-muted-foreground">
-                                              {getInitials(idea.author || 'U')}
-                                            </AvatarFallback>
-                                          </Avatar>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </Draggable>
+                              <RoadmapIdeaCard
+                                key={idea.id}
+                                idea={idea}
+                                index={index}
+                                user={user}
+                                tenantSlug={tenantSlug || "default"}
+                                navigate={navigate}
+                                handleVote={handleVote}
+                                voteMutation={voteMutation}
+                                setIdeaToDelete={setIdeaToDelete}
+                                handleStatusUpdate={handleStatusUpdate}
+                              />
                             ))}
                             {provided.placeholder}
                           </div>
@@ -235,7 +400,7 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
                       </Droppable>
 
                       {stageIdeas.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-10 opacity-30 grayscale italic text-[10px] text-muted-foreground pointer-events-none">
+                        <div className="flex-1 flex flex-col items-center justify-center py-10 opacity-30 grayscale italic text-[10px] text-muted-foreground pointer-events-none">
                           <GripVertical className="h-5 w-5 mb-2" />
                           No items in this stage
                         </div>

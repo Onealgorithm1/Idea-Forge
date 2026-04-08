@@ -240,6 +240,9 @@ const TenantDetail = () => {
                                 <Power className="mr-2 h-4 w-4" /> {user.status === 'active' ? 'Suspend' : 'Activate'} User
                               </DropdownMenuItem>
                               <DropdownMenuSeparator className="bg-white/5" />
+                              <DropdownMenuItem onClick={() => changeUserRole.mutate({ userId: user.id, role: 'tenant_admin' })}>
+                                <ShieldCheck className="mr-2 h-4 w-4 text-violet-400" /> Make Tenant Admin
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => changeUserRole.mutate({ userId: user.id, role: 'admin' })}>
                                 <ShieldCheck className="mr-2 h-4 w-4" /> Make Admin
                               </DropdownMenuItem>

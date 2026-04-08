@@ -1,6 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { Link, useSearchParams, useParams, useNavigate } from "react-router-dom";
-import { Plus, GripVertical, ArrowBigUp, MessageSquare, ChevronUp, ChevronDown, Bookmark, ExternalLink, Trash2 } from "lucide-react";
+import { 
+  MoreVertical, Edit2, Trash2, Filter, Search, Plus, 
+  MessageSquare, ChevronDown, ChevronRight, Bookmark, GripVertical, ArrowBigUp, ChevronUp, ExternalLink 
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ROUTES, getTenantPath, PLATFORM_STATUS_LABELS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
@@ -44,8 +47,11 @@ const BoardIdeaCard = ({
 
   const onVoteInternal = (voteType: 'up' | 'down') => {
     handleVote(item.id, voteType);
-    if (voteType === 'up') {
+    if (voteType === 'up' && item.vote_type !== 'up') {
       setIsCommentOpen(true);
+      toast.info("Thanks for liking! Would you like to leave a comment?", {
+        duration: 3000,
+      });
     }
   };
 
@@ -77,39 +83,75 @@ const BoardIdeaCard = ({
         opacity: { duration: 0.3 },
         delay: idx * 0.05 
       }}
-      onClick={() => handleSelectIdea(item.id)}
+      onClick={(e) => {
+        if (!isCommentOpen) handleSelectIdea(item.id);
+      }}
       className={cn(
-        "group bg-card rounded-xl border border-border p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer relative overflow-hidden",
+        "group bg-card rounded-xl border border-border p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer relative",
         isCommentOpen && "ring-2 ring-primary/40 shadow-premium"
       )}
     >
-      <div className="flex flex-col h-full">
-        <div className="flex items-start justify-between gap-3 mb-4">
+      <div className="flex flex-col h-full relative space-y-4">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center text-xl shrink-0 transition-all duration-300 group-hover:scale-110 shadow-sm border", getIconBg())}>
+            <div className={cn("h-11 w-11 rounded-2xl flex items-center justify-center text-xl shrink-0 transition-all duration-300 group-hover:scale-110 shadow-sm border", getIconBg())}>
               {getIcon()}
             </div>
-            <div>
-              <p className="text-sm font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2 text-foreground">{item.title}</p>
-              <span className={cn("text-[10px] font-bold uppercase tracking-wider", type === 'ideation' ? "text-muted-foreground" : type === 'development' ? "text-primary/70" : "text-success/70")}>{item.category}</span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className={cn("text-[10px] font-black uppercase tracking-wider flex items-center gap-1", type === 'ideation' ? "text-muted-foreground" : type === 'development' ? "text-primary/70" : "text-success/70")}>
+                  {item.parent_name ? (
+                    <>
+                      {item.parent_name}
+                      <ChevronRight className="h-2 w-2 opacity-50" />
+                      {item.category}
+                    </>
+                  ) : (
+                    item.category
+                  )}
+                </span>
+                {item.priority && (
+                  <Badge variant="outline" className={cn(
+                    "text-[8px] font-black px-1.5 py-0 leading-none h-4 border-none uppercase",
+                    item.priority === 'High' ? "bg-destructive/10 text-destructive" :
+                    item.priority === 'Medium' ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"
+                  )}>
+                    {item.priority}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-base font-black leading-snug group-hover:text-primary transition-colors line-clamp-2 text-foreground break-words">{item.title}</p>
+              {item.description && (
+                <p className="text-xs text-muted-foreground line-clamp-1 mt-2 font-medium leading-relaxed italic">
+                  {item.description}
+                </p>
+              )}
+              {item.tags && item.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {item.tags.map((tag: string) => (
+                    <Badge key={tag} variant="secondary" className="text-[9px] px-2 py-0.5 h-auto bg-muted/50 text-muted-foreground border-none font-bold">
+                      #{tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-          <div className="flex flex-col gap-1.5 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
+          <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
             <button 
               onClick={(e) => { e.stopPropagation(); handleBookmark(item.id); }} 
               className={cn(
-                "p-2 bg-background/80 backdrop-blur-sm shadow-md border border-border/50 rounded-xl transition-all hover:scale-110",
-                item.is_bookmarked ? "text-amber-500" : "text-muted-foreground hover:text-amber-500"
+                "p-1.5 rounded-lg transition-all duration-300",
+                item.is_bookmarked ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
               title={item.is_bookmarked ? "Remove Bookmark" : "Bookmark Idea"}
             >
               <Bookmark className={cn("h-3.5 w-3.5", item.is_bookmarked && "fill-current")} />
             </button>
-            {(user?.role === 'admin' || user?.id === item.author_id) && (
+            {user?.role === 'admin' && (
               <button 
                 onClick={(e) => { e.stopPropagation(); setIdeaToDelete(item.id); }} 
-                className="p-2 bg-background/80 backdrop-blur-sm shadow-md border border-border/50 rounded-xl text-muted-foreground hover:text-red-500 hover:scale-110 transition-all"
-                title="Delete Idea"
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-300"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -126,53 +168,49 @@ const BoardIdeaCard = ({
           </div>
         </div>
 
-        {item.tags && item.tags.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-1.5 mb-4">
-            <div className="flex flex-wrap gap-1.5">
-              {item.tags.map((tag: string) => (
-                <Badge key={tag} variant="secondary" className={cn("text-[9px] px-2 py-0.5 h-auto border-none", type === 'ideation' ? "bg-muted text-muted-foreground font-bold" : type === 'development' ? "bg-primary/10 text-primary" : "bg-success/10 text-success")}>#{tag}</Badge>
-              ))}
+        {/* Info Row */}
+        <div className="mt-auto space-y-4">
+          <div className="flex items-center justify-between pt-4 border-t border-border/50">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-6 w-6 border-2 border-background ring-1 ring-border shadow-sm">
+                <AvatarFallback className="text-[10px] font-bold bg-muted text-muted-foreground uppercase">
+                  {getInitials(item.author_name || "Un")}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-0.5">Author</span>
+                <span className="text-[11px] font-bold text-foreground truncate max-w-[80px]">
+                  {item.author_name?.split(' ')[0] || "Anonymous"}
+                </span>
+              </div>
             </div>
-            {/* Points Display */}
-            <div className={cn(
-              "flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-black tracking-tight transition-all shadow-sm",
-              (item.votes_count || 0) > 0 
-                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
-                : "bg-muted text-muted-foreground border-border/50"
-            )}>
-              <div className={cn("w-1.5 h-1.5 rounded-full", (item.votes_count || 0) > 0 ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/30")} />
-              {(item.votes_count || 0) * 10} points
-            </div>
-          </div>
-        )}
 
-        <div className={cn("flex items-center justify-between mt-auto pt-4 border-t", getBorderColor())}>
-          <div className="flex items-center gap-4">
-            <VotingSystem
-              ideaId={item.id}
-              initialVotes={item.votes_count}
-              onVote={onVoteInternal}
-              userVote={item.vote_type}
-              orientation="horizontal"
-              className="scale-95 origin-left"
-              isLoading={voteMutation.isPending && voteMutation.variables?.id === item.id}
-            />
-            <div 
-              className="relative"
-              onClick={(e) => { e.stopPropagation(); setIsCommentOpen(!isCommentOpen); }}
-            >
-              <div className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors", type === 'ideation' ? "bg-muted hover:bg-muted/80" : type === 'development' ? "bg-primary/5 hover:bg-primary/10" : "bg-success/5 hover:bg-success/10")}>
-                <MessageSquare className={cn("h-3.5 w-3.5", type === 'ideation' ? "text-muted-foreground" : type === 'development' ? "text-primary/60" : "text-success/60")} />
-                <span className={cn("text-xs font-black tracking-tighter", type === 'ideation' ? "text-muted-foreground font-bold" : type === 'development' ? "text-primary/80" : "text-success")}>{item.comments_count || 0}</span>
+            <div className="flex items-center gap-3">
+              <VotingSystem
+                ideaId={item.id}
+                initialVotes={item.votes_count}
+                onVote={onVoteInternal}
+                userVote={item.vote_type}
+                orientation="horizontal"
+                className="scale-95 origin-left"
+                isLoading={voteMutation.isPending && voteMutation.variables?.id === item.id}
+              />
+              <button 
+                onClick={(e) => { e.stopPropagation(); setIsCommentOpen(!isCommentOpen); }}
+                className={cn(
+                  "flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all",
+                  isCommentOpen ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                <span className="text-xs font-black">{item.comments_count || 0}</span>
+              </button>
+              <div className="flex flex-col items-center pl-3 border-l-2 border-primary/20 bg-primary/5 px-2 py-1 rounded-lg">
+                <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">Points</span>
+                <span className="text-sm font-black text-primary">{(item.votes_count || 0) * 10}</span>
               </div>
             </div>
           </div>
-
-          <Avatar className={cn("h-7 w-7 ring-2 ring-background shadow-sm border", type === 'ideation' ? "border-border" : type === 'development' ? "border-primary/20" : "border-success/20")}>
-            <AvatarFallback className={cn("text-[9px] font-black uppercase", type === 'ideation' ? "bg-muted text-muted-foreground" : type === 'development' ? "bg-primary/20 text-primary" : "bg-success/20 text-success")}>
-              {getInitials(item.author || "Guest")}
-            </AvatarFallback>
-          </Avatar>
         </div>
 
         <AnimatePresence>
@@ -182,7 +220,8 @@ const BoardIdeaCard = ({
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="overflow-hidden"
+              className="overflow-hidden bg-muted/30 rounded-lg p-2"
+              onClick={(e) => e.stopPropagation()}
             >
               <CommentSection ideaId={item.id} />
             </motion.div>
@@ -244,19 +283,24 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
           let delta = 0;
           let newVoteType: "up" | "down" | null = null;
           
-          if (idea.vote_type) {
-            // Toggle off: If they had a vote, any click (up or down) removes it
-            delta = -1;
+          if (idea.vote_type === type) {
+            // Unvote
+            delta = type === 'up' ? -1 : 1;
             newVoteType = null;
-          } else if (type === 'up') {
-            // First vote and it's an upvote
-            delta = 1;
-            newVoteType = 'up';
+          } else {
+            // Changing vote or first vote
+            if (idea.vote_type === 'up') delta -= 1;
+            if (idea.vote_type === 'down') delta += 1;
+            
+            if (type === 'up') delta += 1;
+            if (type === 'down') delta -= 1;
+            
+            newVoteType = type;
           }
           
           return {
             ...idea,
-            votes_count: Math.max(0, parseInt(idea.votes_count || 0) + delta),
+            votes_count: (parseInt(idea.votes_count || 0) + delta),
             vote_type: newVoteType,
           };
         });
@@ -337,22 +381,32 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
     });
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex gap-6 overflow-x-auto pb-6 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex-shrink-0 w-[450px] h-[calc(100vh-14rem)] bg-muted/20 animate-pulse rounded-3xl border border-border/50" />
+        ))}
+      </div>
+    );
+  }
+
   // Filter ideas based on category, state, and space
-  const filteredIdeas = ideas.filter(i => {
+  const filteredIdeas = ideas.filter((i: any) => {
     const categoryMatch = category === "All" || i.category === category;
     const spaceMatch = !spaceId || i.idea_space_id === spaceId;
     return categoryMatch && spaceMatch;
   });
 
-  const ideaPoolItems = filteredIdeas.filter(i => i.status === 'Pending');
-  const votingItems = filteredIdeas.filter(i => i.status === 'Under Review' || i.status === 'In Progress' || i.status === 'In Development' || i.status === 'QA');
-  const devItems = filteredIdeas.filter(i => i.status === 'Shipped');
+  const ideaPoolItems = filteredIdeas.filter((i: any) => i.status === 'Pending');
+  const votingItems = filteredIdeas.filter((i: any) => i.status === 'Under Review' || i.status === 'In Progress' || i.status === 'In Development' || i.status === 'QA');
+  const devItems = filteredIdeas.filter((i: any) => i.status === 'Shipped');
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="flex gap-6 overflow-x-auto pb-6 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
         {/* Idea Pool */}
-        <Card className="flex flex-col h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-muted/50 to-muted/10 backdrop-blur-sm border-t-4 border-muted/50 transition-colors duration-300">
+        <Card className="flex flex-col flex-shrink-0 w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-muted/50 to-muted/10 backdrop-blur-sm border-t-4 border-muted/50 transition-colors duration-300">
           <div 
             className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30 cursor-pointer lg:cursor-default"
             onClick={() => { if (window.innerWidth < 1024) toggleSection('ideation') }}
@@ -377,7 +431,7 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar lg:max-h-none"
+                className="flex-1 p-3 space-y-3 overflow-y-auto lg:max-h-none lg:flex lg:flex-col"
               >
                 {ideaPoolItems.map((item, idx) => (
                   <BoardIdeaCard
@@ -398,8 +452,8 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
           </AnimatePresence>
         </Card>
 
-        {/* Voting & Feedback */}
-        <Card className="flex flex-col h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30 transition-colors duration-300">
+        {/* In Development */}
+        <Card className="flex flex-col flex-shrink-0 w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30 transition-colors duration-300">
           <div 
             className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-primary/10 bg-primary/10 cursor-pointer lg:cursor-default"
             onClick={() => { if (window.innerWidth < 1024) toggleSection('development') }}
@@ -424,7 +478,7 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar lg:max-h-none"
+                className="flex-1 p-3 space-y-3 overflow-y-auto lg:max-h-none lg:flex lg:flex-col"
               >
                 {votingItems.map((item, idx) => (
                   <BoardIdeaCard
@@ -445,8 +499,8 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
           </AnimatePresence>
         </Card>
 
-        {/* In Development */}
-        <Card className="flex flex-col h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30 transition-colors duration-300">
+        {/* In Production */}
+        <Card className="flex flex-col flex-shrink-0 w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30 transition-colors duration-300">
           <div 
             className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-success/10 bg-success/10 cursor-pointer lg:cursor-default"
             onClick={() => { if (window.innerWidth < 1024) toggleSection('production') }}
@@ -471,7 +525,7 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar lg:max-h-none"
+                className="flex-1 p-3 space-y-3 overflow-y-auto lg:max-h-none lg:flex lg:flex-col"
               >
                 {devItems.map((item, idx) => (
                   <BoardIdeaCard

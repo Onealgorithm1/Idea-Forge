@@ -13,6 +13,14 @@ export const createUser = async (req: Request, res: Response) => {
   }
 
   try {
+    const actorRole = (req as any).user.role;
+    let targetRole = 'user'; // Default
+
+    // If an admin is creating, force role to 'user'
+    if (actorRole === 'admin') {
+      targetRole = 'user';
+    }
+
     // 1. Check license limit and organization details
     const tenant = await query('SELECT name, slug, max_users FROM tenants WHERE id = $1', [tenantId]);
     if (tenant.rows.length === 0) return res.status(404).json({ message: 'Organization not found' });
@@ -37,8 +45,8 @@ export const createUser = async (req: Request, res: Response) => {
 
     const newUser = await query(
       `INSERT INTO users (name, email, password_hash, role, tenant_id, status)
-       VALUES ($1, $2, $3, 'user', $4, 'active') RETURNING id, name, email, role, tenant_id`,
-      [name, email, hashedPassword, tenantId]
+       VALUES ($1, $2, $3, $4, $5, 'active') RETURNING id, name, email, role, tenant_id`,
+      [name, email, hashedPassword, targetRole, tenantId]
     );
 
     // 4. Send Response Immediately
@@ -96,14 +104,26 @@ export const updateUserRole = async (req: Request, res: Response) => {
   try {
     const actorRole = (req as any).user.role;
     
-    // Hierarchy check: Only tenant_admin can promote to tenant_admin
-    if (role === 'tenant_admin' && actorRole !== 'tenant_admin' && actorRole !== 'super_admin') {
-      return res.status(403).json({ message: 'Only tenant admins can promote members to tenant_admin role' });
+    // Hierarchy check: Only super_admin can promote to tenant_admin
+    if (role === 'tenant_admin' && actorRole !== 'super_admin') {
+      return res.status(403).json({ message: 'Only super admins can assign the tenant_admin role' });
     }
 
     // Only tenant_admin or super_admin can create admins
     if (role === 'admin' && !['tenant_admin', 'super_admin'].includes(actorRole)) {
       return res.status(403).json({ message: 'Insufficient permissions to assign admin role' });
+    }
+
+    // Hierarchy check: Actor must have a higher level than the TARGET user
+    const targetUser = await query('SELECT role FROM users WHERE id = $1 AND tenant_id = $2', [id, (req as any).tenantId]);
+    if (targetUser.rows.length === 0) return res.status(404).json({ message: 'User not found' });
+    
+    const roleLevels: Record<string, number> = { user: 0, reviewer: 1, admin: 2, tenant_admin: 3, super_admin: 100 };
+    const actorLevel = roleLevels[actorRole] || 0;
+    const targetLevel = roleLevels[targetUser.rows[0].role] || 0;
+
+    if (actorLevel <= targetLevel && actorRole !== 'super_admin') {
+      return res.status(403).json({ message: 'Insufficient permissions to modify users at your level or higher' });
     }
 
     const result = await query(
@@ -125,10 +145,19 @@ export const deleteUser = async (req: Request, res: Response) => {
   const tenantId = (req as any).tenantId;
 
   try {
+    const actorRole = (req as any).user.role;
+    const roleLevels: Record<string, number> = { user: 0, reviewer: 1, admin: 2, tenant_admin: 3, super_admin: 100 };
+
     // Check if user exists
-    const user = await query('SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND role != $3', [id, tenantId, 'super_admin']);
-    if (user.rows.length === 0) {
+    const userResult = await query('SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND role != $3', [id, tenantId, 'super_admin']);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
+    }
+    const targetLevel = roleLevels[userResult.rows[0].role] || 0;
+    const actorLevel = roleLevels[actorRole] || 0;
+
+    if (actorLevel <= targetLevel && actorRole !== 'super_admin') {
+      return res.status(403).json({ message: 'Insufficient permissions to delete users at your level or higher' });
     }
 
     // Prevent deleting your own account
@@ -198,6 +227,19 @@ export const updateUserPassword = async (req: Request, res: Response) => {
   }
 
   try {
+    const actorRole = (req as any).user.role;
+    const roleLevels: Record<string, number> = { user: 0, reviewer: 1, admin: 2, tenant_admin: 3, super_admin: 100 };
+
+    const userResult = await query('SELECT role FROM users WHERE id = $1 AND tenant_id = $2', [id, (req as any).tenantId]);
+    if (userResult.rows.length === 0) return res.status(404).json({ message: 'User not found' });
+
+    const targetLevel = roleLevels[userResult.rows[0].role] || 0;
+    const actorLevel = roleLevels[actorRole] || 0;
+
+    if (actorLevel <= targetLevel && actorRole !== 'super_admin') {
+      return res.status(403).json({ message: 'Insufficient permissions to reset passwords for users at your level or higher' });
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -280,10 +322,13 @@ export const getRecentActivity = async (req: any, res: Response) => {
 export const getAdminCategories = async (req: any, res: Response) => {
   try {
     const result = await query(
-      `SELECT c.id, c.name, c.description, c.slug, c.is_default, c.tenant_id, c.manager_id,
-              u.name as manager_name
+      `SELECT c.id, c.name, c.description, c.slug, c.is_default, c.tenant_id, c.manager_id, 
+              c.parent_id, c.is_active,
+              u.name as manager_name,
+              p.name as parent_name
        FROM categories c
        LEFT JOIN users u ON c.manager_id = u.id
+       LEFT JOIN categories p ON c.parent_id = p.id
        WHERE c.tenant_id = $1 OR c.tenant_id IS NULL
        ORDER BY c.name`,
       [req.tenantId]
@@ -296,16 +341,35 @@ export const getAdminCategories = async (req: any, res: Response) => {
 };
 
 export const createCategory = async (req: any, res: Response) => {
-  const { name, description, manager_id } = req.body;
+  const { name, description, manager_id, parent_id } = req.body;
+  const actor = (req as any).user;
+  const tenant_id = req.tenantId;
+
   if (!name || name.trim().length < 2) {
     return res.status(400).json({ message: 'Category name must be at least 2 characters' });
   }
-  const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
   try {
+    // Restriction for 'admin' role
+    if (actor.role === 'admin') {
+      if (!parent_id) {
+        return res.status(403).json({ message: 'Admins cannot create top-level categories' });
+      }
+      
+      // Verify admin manages the parent category
+      const parentCheck = await query('SELECT manager_id FROM categories WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)', [parent_id, tenant_id]);
+      if (parentCheck.rows.length === 0) return res.status(404).json({ message: 'Parent category not found' });
+      
+      if (parentCheck.rows[0].manager_id !== actor.id) {
+        return res.status(403).json({ message: 'You can only create sub-categories for categories you manage' });
+      }
+    }
+
+    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     const result = await query(
-      `INSERT INTO categories (name, description, slug, tenant_id, manager_id)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [name.trim(), description || '', slug, req.tenantId, manager_id || null]
+      `INSERT INTO categories (name, description, slug, tenant_id, manager_id, parent_id)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [name.trim(), description || '', slug, tenant_id, manager_id || null, parent_id || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (error: any) {
@@ -317,9 +381,39 @@ export const createCategory = async (req: any, res: Response) => {
 
 export const updateCategory = async (req: any, res: Response) => {
   const { id } = req.params;
-  const { name, description, manager_id } = req.body;
+  const { name, description, manager_id, parent_id, is_active } = req.body;
+  const actor = (req as any).user;
+  const tenant_id = req.tenantId;
 
   try {
+    // Restriction check for 'admin'
+    if (actor.role === 'admin') {
+      const existing = await query('SELECT manager_id, parent_id FROM categories WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)', [id, tenant_id]);
+      if (existing.rows.length === 0) return res.status(404).json({ message: 'Category not found' });
+      
+      const category = existing.rows[0];
+      
+      // Admin can only edit if they are the manager of THIS category, OR manager of the PARENT
+      const isManagerOfCurrent = category.manager_id === actor.id;
+      
+      let isManagerOfParent = false;
+      if (category.parent_id) {
+        const parent = await query('SELECT manager_id FROM categories WHERE id = $1', [category.parent_id]);
+        isManagerOfParent = parent.rows[0]?.manager_id === actor.id;
+      }
+
+      if (!isManagerOfCurrent && !isManagerOfParent) {
+        return res.status(403).json({ message: 'Insufficient permissions to edit this category' });
+      }
+
+      // If changing parent, must manage the new parent
+      if (parent_id && parent_id !== category.parent_id) {
+        const newParent = await query('SELECT manager_id FROM categories WHERE id = $1', [parent_id]);
+        if (newParent.rows[0]?.manager_id !== actor.id) {
+          return res.status(403).json({ message: 'You can only move categories to parents that you manage' });
+        }
+      }
+    }
     const setParts: string[] = ['updated_at = NOW()'];
     const values: any[] = [];
     let paramCount = 1;
@@ -337,6 +431,16 @@ export const updateCategory = async (req: any, res: Response) => {
     if (manager_id !== undefined) {
       setParts.push(`manager_id = $${paramCount}`);
       values.push(manager_id || null);
+      paramCount++;
+    }
+    if (parent_id !== undefined) {
+      setParts.push(`parent_id = $${paramCount}`);
+      values.push(parent_id || null);
+      paramCount++;
+    }
+    if (is_active !== undefined) {
+      setParts.push(`is_active = $${paramCount}`);
+      values.push(is_active);
       paramCount++;
     }
 
@@ -364,16 +468,18 @@ export const deleteCategory = async (req: any, res: Response) => {
     );
     if (check.rows.length === 0) return res.status(404).json({ message: 'Category not found' });
     if (check.rows[0].is_default) {
-      return res.status(403).json({ message: 'Cannot delete default categories' });
+      return res.status(403).json({ message: 'Cannot deactivate default categories' });
     }
 
-    // Nullify references from ideas before deleting
-    await query('UPDATE ideas SET category_id = NULL WHERE category_id = $1', [id]);
-
-    await query('DELETE FROM categories WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)', [id, req.tenantId]);
-    res.json({ message: 'Category deleted successfully' });
+    // Soft delete: set is_active to false
+    await query(
+      'UPDATE categories SET is_active = false WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)',
+      [id, req.tenantId]
+    );
+    
+    res.json({ message: 'Category deactivated successfully' });
   } catch (error) {
-    console.error('Delete category error:', error);
+    console.error('Delete (deactivate) category error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -413,6 +519,11 @@ export const createIdeaSpace = async (req: any, res: Response) => {
   }
   const key = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   try {
+    const actorRole = (req as any).user.role;
+    if (actorRole !== 'tenant_admin' && actorRole !== 'super_admin') {
+      return res.status(403).json({ message: 'Only tenant admins can create idea spaces' });
+    }
+
     const result = await query(
       'INSERT INTO idea_spaces (tenant_id, name, key, description) VALUES ($1, $2, $3, $4) RETURNING *',
       [req.tenantId, name, key, description || '']
@@ -428,6 +539,11 @@ export const createIdeaSpace = async (req: any, res: Response) => {
 export const deleteIdeaSpace = async (req: any, res: Response) => {
   const { id } = req.params;
   try {
+    const actorRole = (req as any).user.role;
+    if (actorRole !== 'tenant_admin' && actorRole !== 'super_admin') {
+      return res.status(403).json({ message: 'Only tenant admins can delete idea spaces' });
+    }
+
     await query('DELETE FROM idea_spaces WHERE id = $1 AND tenant_id = $2', [id, req.tenantId]);
     res.json({ message: 'Idea space deleted' });
   } catch (error) {
@@ -463,6 +579,19 @@ export const assignUserSpaces = async (req: any, res: Response) => {
   }
 
   try {
+    const actorRole = (req as any).user.role;
+    const roleLevels: Record<string, number> = { user: 0, reviewer: 1, admin: 2, tenant_admin: 3, super_admin: 100 };
+
+    const userResult = await query('SELECT role FROM users WHERE id = $1 AND tenant_id = $2', [userId, req.tenantId]);
+    if (userResult.rows.length === 0) return res.status(404).json({ message: 'User not found' });
+
+    const targetLevel = roleLevels[userResult.rows[0].role] || 0;
+    const actorLevel = roleLevels[actorRole] || 0;
+
+    if (actorLevel <= targetLevel && actorRole !== 'super_admin') {
+      return res.status(403).json({ message: 'Insufficient permissions to manage spaces for users at your level or higher' });
+    }
+
     // Start transaction
     await query('BEGIN');
 

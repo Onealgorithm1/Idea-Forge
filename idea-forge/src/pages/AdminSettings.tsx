@@ -25,8 +25,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTenant } from "@/contexts/TenantContext";
 
 const AdminSettings = () => {
-  const { token } = useAuth();
+  const { token, user: currentUser } = useAuth();
   const { tenant } = useTenant();
+  const isTenantAdmin = currentUser?.role === 'tenant_admin' || currentUser?.role === 'super_admin';
   const queryClient = useQueryClient();
 
   // Categories
@@ -101,6 +102,11 @@ const AdminSettings = () => {
                   <Building className="h-5 w-5" />
                 </div>
                 <h1 className="text-3xl font-black tracking-tight text-foreground">{tenant?.name || "Organization"} Settings</h1>
+                {!isTenantAdmin && (
+                  <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-3 py-1">
+                    Read-Only Access
+                  </Badge>
+                )}
               </div>
               <p className="text-muted-foreground text-lg font-medium">
                 Configure your organization's idea spaces, categories, and governance.
@@ -129,22 +135,31 @@ const AdminSettings = () => {
                     Define separate areas for different types of innovation (e.g., Public, Internal, R&D).
                   </p>
 
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="e.g. R&D Lab"
-                      value={newSpace}
-                      onChange={(e) => setNewSpace(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && newSpace.trim()) createSpaceMutation.mutate(newSpace.trim()); }}
-                      className="rounded-xl h-11"
-                    />
-                    <Button
-                      onClick={() => { if (newSpace.trim()) createSpaceMutation.mutate(newSpace.trim()); }}
-                      disabled={createSpaceMutation.isPending}
-                      className="rounded-xl h-11 px-5"
-                    >
-                      {createSpaceMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Space"}
-                    </Button>
-                  </div>
+                  {isTenantAdmin ? (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="e.g. R&D Lab"
+                        value={newSpace}
+                        onChange={(e) => setNewSpace(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && newSpace.trim()) createSpaceMutation.mutate(newSpace.trim()); }}
+                        className="rounded-xl h-11"
+                      />
+                      <Button
+                        onClick={() => { if (newSpace.trim()) createSpaceMutation.mutate(newSpace.trim()); }}
+                        disabled={createSpaceMutation.isPending}
+                        className="rounded-xl h-11 px-5"
+                      >
+                        {createSpaceMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Space"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Notice</p>
+                      <p className="text-sm text-primary/70 font-medium leading-tight">
+                        Only Tenant Admins can create or manage idea spaces.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="space-y-2 pt-2">
                     <AnimatePresence mode="popLayout">
@@ -167,14 +182,16 @@ const AdminSettings = () => {
                               <div className="w-2 h-2 rounded-full bg-primary" />
                               <span className="font-bold text-foreground">{sp.name}</span>
                             </div>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all"
-                              onClick={() => { if (confirm("Delete this space?")) deleteSpaceMutation.mutate(sp.id); }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isTenantAdmin && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all"
+                                onClick={() => { if (confirm("Delete this space?")) deleteSpaceMutation.mutate(sp.id); }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </motion.div>
                         ))
                       )}
@@ -202,22 +219,31 @@ const AdminSettings = () => {
                     Group ideas into themes for easier discovery and filtering.
                   </p>
 
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="e.g. Product"
-                      value={newCategory}
-                      onChange={(e) => setNewCategory(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && newCategory.trim()) createCatMutation.mutate(newCategory.trim()); }}
-                      className="rounded-xl h-11"
-                    />
-                    <Button
-                      onClick={() => { if (newCategory.trim()) createCatMutation.mutate(newCategory.trim()); }}
-                      disabled={createCatMutation.isPending}
-                      className="rounded-xl h-11 px-5 bg-warning hover:bg-warning/90 text-warning-foreground"
-                    >
-                      {createCatMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Category"}
-                    </Button>
-                  </div>
+                  {isTenantAdmin ? (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="e.g. Product"
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && newCategory.trim()) createCatMutation.mutate(newCategory.trim()); }}
+                        className="rounded-xl h-11"
+                      />
+                      <Button
+                        onClick={() => { if (newCategory.trim()) createCatMutation.mutate(newCategory.trim()); }}
+                        disabled={createCatMutation.isPending}
+                        className="rounded-xl h-11 px-5 bg-warning hover:bg-warning/90 text-warning-foreground"
+                      >
+                        {createCatMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Category"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-warning/5 rounded-2xl border border-warning/10">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-warning mb-1">Notice</p>
+                      <p className="text-sm text-warning/70 font-medium leading-tight">
+                        Global category management is restricted to Tenant Admins. Use the <a href="/admin/categories" className="underline font-bold">Categories page</a> to manage your assigned branches.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="flex flex-wrap gap-2 pt-2">
                     <AnimatePresence mode="popLayout">
@@ -238,7 +264,7 @@ const AdminSettings = () => {
                             {cat.is_default && (
                               <Badge variant="outline" className="h-4 px-1 text-[8px] bg-warning text-warning border-warning/20 uppercase">Default</Badge>
                             )}
-                            {!cat.is_default && (
+                            {isTenantAdmin && !cat.is_default && (
                               <button 
                                 onClick={() => { if (confirm("Delete this category?")) deleteCatMutation.mutate(cat.id); }}
                                 className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all font-bold"

@@ -7,11 +7,12 @@ import SidebarNav from "@/components/SidebarNav";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2, Edit2, Plus, Loader2, Tag, User, Search, Hash } from "lucide-react";
+import { Trash2, Edit2, Plus, Loader2, Tag, User, Search, Hash, Archive, RotateCcw, ChevronRight, FolderTree } from "lucide-react";
 import { getInitials, cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import ConfirmationModal from "@/components/ConfirmationModal";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 const AdminCategories = () => {
-  const { token } = useAuth();
+  const { token, user: currentUser } = useAuth();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -43,7 +44,8 @@ const AdminCategories = () => {
   const [formData, setFormData] = useState({ 
     name: "", 
     description: "", 
-    manager_id: "none" 
+    manager_id: "none",
+    parent_id: "none"
   });
 
   const { data: categories = [], isLoading } = useQuery({
@@ -61,7 +63,8 @@ const AdminCategories = () => {
   const createCategoryMutation = useMutation({
     mutationFn: (data: any) => api.post("/admin/categories", {
       ...data,
-      manager_id: data.manager_id === "none" ? null : data.manager_id
+      manager_id: data.manager_id === "none" ? null : data.manager_id,
+      parent_id: data.parent_id === "none" ? null : data.parent_id
     }, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
@@ -78,7 +81,8 @@ const AdminCategories = () => {
     mutationFn: ({ id, data }: { id: string; data: any }) => 
       api.put(`/admin/categories/${id}`, {
         ...data,
-        manager_id: data.manager_id === "none" ? null : data.manager_id
+        manager_id: data.manager_id === "none" ? null : data.manager_id,
+        parent_id: data.parent_id === "none" ? null : data.parent_id
       }, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
@@ -96,32 +100,166 @@ const AdminCategories = () => {
     mutationFn: (id: string) => api.delete(`/admin/categories/${id}`, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
-      toast.success("Category deleted");
+      toast.success("Category deactivated successfully");
       setCategoryToDelete(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to delete category");
+      toast.error(error.message || "Failed to deactivate category");
+    }
+  });
+
+  const restoreCategoryMutation = useMutation({
+    mutationFn: (id: string) => api.put(`/admin/categories/${id}`, { is_active: true }, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      toast.success("Category restored successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to restore category");
     }
   });
 
   const resetForm = () => {
-    setFormData({ name: "", description: "", manager_id: "none" });
+    setFormData({ name: "", description: "", manager_id: "none", parent_id: "none" });
   };
 
-  const handleEdit = (category: any) => {
-    setSelectedCategory(category);
+  const handleEdit = (cat: any) => {
+    setSelectedCategory(cat);
     setFormData({
-      name: category.name,
-      description: category.description || "",
-      manager_id: category.manager_id || "none"
+      name: cat.name,
+      description: cat.description || "",
+      manager_id: cat.manager_id || "none",
+      parent_id: cat.parent_id || "none"
     });
     setIsEditDialogOpen(true);
   };
 
   const filteredCategories = categories.filter((cat: any) => 
     cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (cat.description && cat.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    cat.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const activeCategories = filteredCategories.filter((cat: any) => cat.is_active);
+  const inactiveCategories = filteredCategories.filter((cat: any) => !cat.is_active);
+
+  const CategoryCard = ({ category, idx, isInactive = false }: { category: any, idx: number, isInactive?: boolean }) => {
+    const isTenantAdmin = currentUser?.role === 'tenant_admin' || currentUser?.role === 'super_admin';
+    const managesThis = category.manager_id === currentUser?.id;
+    // Check if user manages the parent of this category
+    const parentCategory = categories.find((c: any) => c.id === category.parent_id);
+    const managesParent = parentCategory?.manager_id === currentUser?.id;
+    
+    const canEdit = isTenantAdmin || managesThis || managesParent;
+
+    return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ delay: idx * 0.05 }}
+      key={category.id}
+    >
+      <Card className={cn(
+        "group relative overflow-hidden border-none shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-[2rem] bg-card p-6 flex flex-col h-full ring-1 ring-border/50 hover:ring-primary/20",
+        isInactive && "opacity-80 grayscale-[0.5]"
+      )}>
+        {/* Background subtle pattern */}
+        <div className="absolute -right-4 -top-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity rotate-12">
+          {isInactive ? <Archive size={120} /> : <Tag size={120} />}
+        </div>
+
+        <div className="relative flex-1 space-y-4">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  {category.name}
+                  {category.is_default && (
+                    <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary border-none">
+                      Default
+                    </Badge>
+                  )}
+                </div>
+                {category.parent_name && (
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60 font-bold uppercase tracking-wider">
+                    <FolderTree className="h-3 w-3" />
+                    {category.parent_name} <ChevronRight className="h-2 w-2" /> Sub-category
+                  </div>
+                )}
+              </h3>
+              {category.slug && (
+                <code className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tighter bg-muted/50 px-1.5 py-0.5 rounded-md">
+                  #{category.slug}
+                </code>
+              )}
+            </div>
+          </div>
+
+          <p className="text-muted-foreground text-sm font-medium line-clamp-3 leading-relaxed">
+            {category.description || "No description provided."}
+          </p>
+
+          <div className="pt-4 mt-auto border-t border-border/50 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-accent/50 rounded-lg">
+                <User className="h-3.5 w-3.5 text-accent-foreground" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">
+                  Manager
+                </span>
+                <span className="text-sm font-bold text-foreground">
+                  {category.manager_name || "Unassigned"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions Overlay */}
+        <div className="flex items-center gap-2 mt-6">
+          {!isInactive ? (
+            <>
+              <Button 
+                variant="secondary"
+                size="sm"
+                className="flex-1 rounded-xl font-bold bg-accent/50 hover:bg-accent text-accent-foreground border-none disabled:opacity-50"
+                onClick={() => handleEdit(category)}
+                disabled={!canEdit}
+              >
+                <Edit2 className="h-3.5 w-3.5 mr-2" />
+                Edit
+              </Button>
+              {!category.is_default && (
+                <Button 
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-xl h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-30"
+                  onClick={() => setCategoryToDelete(category.id)}
+                  disabled={!canEdit}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </>
+          ) : (
+            <Button 
+              variant="secondary"
+              size="sm"
+              className="flex-1 rounded-xl font-bold bg-primary/10 hover:bg-primary/20 text-primary border-none shadow-sm"
+              onClick={() => restoreCategoryMutation.mutate(category.id)}
+              disabled={restoreCategoryMutation.isPending}
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-2" />
+              Restore Category
+            </Button>
+          )}
+        </div>
+      </Card>
+    </motion.div>
+    );
+  };
 
   return (
     <div className="h-screen bg-background flex flex-col relative overflow-hidden transition-colors duration-300">
@@ -140,7 +278,8 @@ const AdminCategories = () => {
               </div>
               <Button 
                 onClick={() => setIsCreateDialogOpen(true)}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2 h-11 px-6"
+                disabled={currentUser?.role === 'admin' && !categories.some((c: any) => c.manager_id === currentUser?.id)}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2 h-11 px-6 disabled:opacity-50"
               >
                 <Plus className="h-5 w-5" />
                 Add Category
@@ -162,113 +301,77 @@ const AdminCategories = () => {
             </div>
 
             {/* Categories Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <AnimatePresence mode="popLayout">
-                {isLoading ? (
-                  <div className="col-span-full py-20 flex flex-col items-center justify-center space-y-4">
-                    <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                    <p className="text-muted-foreground font-bold animate-pulse">Loading categories...</p>
-                  </div>
-                ) : filteredCategories.length === 0 ? (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="col-span-full py-20 flex flex-col items-center justify-center space-y-4 bg-card/30 rounded-[2rem] border-2 border-dashed border-border"
-                  >
-                    <div className="p-4 bg-muted rounded-full">
-                      <Tag className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xl font-bold text-foreground">No categories found</p>
-                      <p className="text-muted-foreground italic mt-1">
-                        {searchQuery ? "Try a different search term" : "Get started by creating your first category"}
-                      </p>
-                    </div>
-                  </motion.div>
-                ) : (
-                  filteredCategories.map((category: any, idx: number) => (
-                    <motion.div
-                      layout
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ delay: idx * 0.05 }}
-                      key={category.id}
-                    >
-                      <Card className="group relative overflow-hidden border-none shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-[2rem] bg-card p-6 flex flex-col h-full ring-1 ring-border/50 hover:ring-primary/20">
-                        {/* Background subtle pattern */}
-                        <div className="absolute -right-4 -top-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity rotate-12">
-                          <Tag size={120} />
+            <Tabs defaultValue="active" className="space-y-6">
+              <TabsList className="bg-card w-full justify-start h-12 p-1 rounded-2xl shadow-sm border-none">
+                <TabsTrigger value="active" className="rounded-xl px-6 font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                   Active Categories ({activeCategories.length})
+                </TabsTrigger>
+                <TabsTrigger value="inactive" className="rounded-xl px-6 font-bold data-[state=active]:bg-muted-foreground data-[state=active]:text-white">
+                   Inactive ({inactiveCategories.length})
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="active">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <AnimatePresence mode="popLayout">
+                    {isLoading ? (
+                      <div className="col-span-full py-20 flex flex-col items-center justify-center space-y-4">
+                        <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                        <p className="text-muted-foreground font-bold animate-pulse">Loading categories...</p>
+                      </div>
+                    ) : activeCategories.length === 0 ? (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="col-span-full py-20 flex flex-col items-center justify-center space-y-4 bg-card/30 rounded-[2rem] border-2 border-dashed border-border"
+                      >
+                        <div className="p-4 bg-muted rounded-full">
+                          <Tag className="h-8 w-8 text-muted-foreground" />
                         </div>
-
-                        <div className="relative flex-1 space-y-4">
-                          <div className="flex items-start justify-between">
-                            <div className="space-y-1">
-                              <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
-                                {category.name}
-                                {category.is_default && (
-                                  <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary border-none">
-                                    Default
-                                  </Badge>
-                                )}
-                              </h3>
-                              {category.slug && (
-                                <code className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tighter bg-muted/50 px-1.5 py-0.5 rounded-md">
-                                  #{category.slug}
-                                </code>
-                              )}
-                            </div>
-                          </div>
-
-                          <p className="text-muted-foreground text-sm font-medium line-clamp-3 leading-relaxed">
-                            {category.description || "No description provided."}
+                        <div className="text-center">
+                          <p className="text-xl font-bold text-foreground">No active categories</p>
+                          <p className="text-muted-foreground italic mt-1">
+                            {searchQuery ? "Try a different search term" : "Get started by creating your first category"}
                           </p>
-
-                          <div className="pt-4 mt-auto border-t border-border/50 flex flex-col gap-3">
-                            <div className="flex items-center gap-2">
-                              <div className="p-1.5 bg-accent/50 rounded-lg">
-                                <User className="h-3.5 w-3.5 text-accent-foreground" />
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">
-                                  Manager
-                                </span>
-                                <span className="text-sm font-bold text-foreground">
-                                  {category.manager_name || "Unassigned"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
                         </div>
+                      </motion.div>
+                    ) : (
+                      activeCategories.map((category: any, idx: number) => (
+                        <CategoryCard key={category.id} category={category} idx={idx} />
+                      ))
+                    )}
+                  </AnimatePresence>
+                </div>
+              </TabsContent>
 
-                        {/* Actions Overlay */}
-                        <div className="flex items-center gap-2 mt-6">
-                          <Button 
-                            variant="secondary"
-                            size="sm"
-                            className="flex-1 rounded-xl font-bold bg-accent/50 hover:bg-accent text-accent-foreground border-none"
-                            onClick={() => handleEdit(category)}
-                          >
-                            <Edit2 className="h-3.5 w-3.5 mr-2" />
-                            Edit
-                          </Button>
-                          {!category.is_default && (
-                            <Button 
-                              variant="ghost"
-                              size="icon"
-                              className="rounded-xl h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => setCategoryToDelete(category.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+              <TabsContent value="inactive">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <AnimatePresence mode="popLayout">
+                    {inactiveCategories.length === 0 ? (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="col-span-full py-20 flex flex-col items-center justify-center space-y-4 bg-card/30 rounded-[2rem] border-2 border-dashed border-border"
+                      >
+                        <div className="p-4 bg-muted rounded-full">
+                          <Archive className="h-8 w-8 text-muted-foreground" />
                         </div>
-                      </Card>
-                    </motion.div>
-                  ))
-                )}
-              </AnimatePresence>
-            </div>
+                        <div className="text-center">
+                          <p className="text-xl font-bold text-foreground">Archive is empty</p>
+                          <p className="text-muted-foreground italic mt-1">
+                            Deactivated categories will appear here.
+                          </p>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      inactiveCategories.map((category: any, idx: number) => (
+                        <CategoryCard key={category.id} category={category} idx={idx} isInactive />
+                      ))
+                    )}
+                  </AnimatePresence>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </main>
       </div>
@@ -322,6 +425,29 @@ const AdminCategories = () => {
                       {u.name} ({u.role})
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Parent Category (Optional)</Label>
+              <Select 
+                value={formData.parent_id} 
+                onValueChange={(val) => setFormData(f => ({ ...f, parent_id: val }))}
+              >
+                <SelectTrigger className="h-11 rounded-xl bg-muted/30 border-none focus-visible:ring-primary/20">
+                  <SelectValue placeholder="Select a parent" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-none shadow-xl">
+                  {currentUser?.role !== 'admin' && (
+                    <SelectItem value="none" className="font-medium text-muted-foreground">None (Top-level)</SelectItem>
+                  )}
+                  {activeCategories
+                    .filter((c: any) => currentUser?.role !== 'admin' || c.manager_id === currentUser?.id)
+                    .map((c: any) => (
+                      <SelectItem key={c.id} value={c.id} className="font-bold">
+                        {c.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -393,6 +519,30 @@ const AdminCategories = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Parent Category (Optional)</Label>
+              <Select 
+                value={formData.parent_id} 
+                onValueChange={(val) => setFormData(f => ({ ...f, parent_id: val }))}
+              >
+                <SelectTrigger className="h-11 rounded-xl bg-muted/30 border-none focus-visible:ring-primary/20">
+                  <SelectValue placeholder="Select a parent" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-none shadow-xl">
+                  {currentUser?.role !== 'admin' && (
+                    <SelectItem value="none" className="font-medium text-muted-foreground">None (Top-level)</SelectItem>
+                  )}
+                  {activeCategories
+                    .filter((c: any) => c.id !== selectedCategory?.id)
+                    .filter((c: any) => currentUser?.role !== 'admin' || c.manager_id === currentUser?.id)
+                    .map((c: any) => (
+                      <SelectItem key={c.id} value={c.id} className="font-bold">
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)} className="rounded-xl font-bold text-muted-foreground">
@@ -416,10 +566,10 @@ const AdminCategories = () => {
         isOpen={!!categoryToDelete}
         onClose={() => setCategoryToDelete(null)}
         onConfirm={() => categoryToDelete && deleteCategoryMutation.mutate(categoryToDelete)}
-        title="Delete Category?"
-        message="This action cannot be undone. Ideas attached to this category will remain, but the category label will be removed."
-        type="danger"
-        confirmText="Yes, delete category"
+        title="Deactivate Category?"
+        message="This category will be moved to the Inactive list. Ideas attached to it will remain active in the system, but this category will no longer be available for new ideas."
+        type="warning"
+        confirmText="Yes, deactivate"
       />
     </div>
   );

@@ -37,7 +37,7 @@ export const getIdeas = async (req: any, res: Response) => {
     const isAdmin = ['admin', 'tenant_admin', 'super_admin'].includes(role);
 
     let baseQuery = `
-      SELECT i.*, u.name as author, c.name as category, s.name as space_name,
+      SELECT i.*, u.name as author_name, c.name as category, p.name as parent_name, s.name as space_name,
              (SELECT json_agg(t.name) FROM tags t 
               JOIN idea_tags it ON t.id = it.tag_id 
               WHERE it.idea_id = i.id) as tags,
@@ -46,6 +46,7 @@ export const getIdeas = async (req: any, res: Response) => {
       FROM ideas i 
       LEFT JOIN users u ON i.author_id = u.id 
       LEFT JOIN categories c ON i.category_id = c.id
+      LEFT JOIN categories p ON c.parent_id = p.id
       LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
       WHERE i.tenant_id = $1
     `;
@@ -98,15 +99,14 @@ export const createIdea = async (req: any, res: Response) => {
     if (tags && Array.isArray(tags)) {
       for (const tagName of tags) {
         try {
-          // Find or create tag WITHIN tenant
-          let tagResult = await query('SELECT id FROM tags WHERE name = $1 AND tenant_id = $2', [tagName, tenant_id]);
-          let tagId;
-          if (tagResult.rows.length === 0) {
-            const newTag = await query('INSERT INTO tags (name, slug, tenant_id) VALUES ($1, $2, $3) RETURNING id', [tagName, tagName.toLowerCase().replace(/\s+/g, '-'), tenant_id]);
-            tagId = newTag.rows[0].id;
-          } else {
-            tagId = tagResult.rows[0].id;
-          }
+          // Atomic find-or-create tag
+          const tagResult = await query(`
+            INSERT INTO tags (name, slug, tenant_id) 
+            VALUES ($1, $2, $3) 
+            ON CONFLICT (tenant_id, name) DO UPDATE SET name = EXCLUDED.name 
+            RETURNING id
+          `, [tagName, tagName.toLowerCase().replace(/\s+/g, '-'), tenant_id]);
+          const tagId = tagResult.rows[0].id;
           // Link to idea
           await query('INSERT INTO idea_tags (idea_id, tag_id, tenant_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING', [idea.id, tagId, tenant_id]);
         } catch (tagError) {
@@ -188,14 +188,14 @@ export const editIdea = async (req: any, res: Response) => {
     if (tags && Array.isArray(tags)) {
       await query('DELETE FROM idea_tags WHERE idea_id = $1 AND tenant_id = $2', [id, tenant_id]);
       for (const tagName of tags) {
-        let tagResult = await query('SELECT id FROM tags WHERE name = $1 AND tenant_id = $2', [tagName, tenant_id]);
-        let tagId;
-        if (tagResult.rows.length === 0) {
-          const newTag = await query('INSERT INTO tags (name, slug, tenant_id) VALUES ($1, $2, $3) RETURNING id', [tagName, tagName.toLowerCase().replace(/\s+/g, '-'), tenant_id]);
-          tagId = newTag.rows[0].id;
-        } else {
-          tagId = tagResult.rows[0].id;
-        }
+        // Atomic find-or-create tag
+        const tagResult = await query(`
+          INSERT INTO tags (name, slug, tenant_id) 
+          VALUES ($1, $2, $3) 
+          ON CONFLICT (tenant_id, name) DO UPDATE SET name = EXCLUDED.name 
+          RETURNING id
+        `, [tagName, tagName.toLowerCase().replace(/\s+/g, '-'), tenant_id]);
+        const tagId = tagResult.rows[0].id;
         await query('INSERT INTO idea_tags (idea_id, tag_id, tenant_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING', [id, tagId, tenant_id]);
       }
     }
@@ -211,7 +211,10 @@ export const editIdea = async (req: any, res: Response) => {
 export const getCategories = async (req: any, res: Response) => {
   const tenantId = req.tenantId;
   try {
-    const result = await query('SELECT * FROM categories WHERE tenant_id = $1 OR tenant_id IS NULL', [tenantId]);
+    const result = await query(
+      'SELECT id, name, description, slug, is_default, tenant_id, manager_id, parent_id FROM categories WHERE (tenant_id = $1 OR tenant_id IS NULL) AND is_active = true ORDER BY name', 
+      [tenantId]
+    );
     res.json(result.rows);
   } catch (error) {
     console.error('Get categories error:', error);
@@ -317,26 +320,26 @@ export const voteIdea = async (req: any, res: Response) => {
       [id, user_id, tenant_id]
     );
     
-    let currentVoteValue = 0;
-    
     if (existingVote.rows.length > 0) {
-      // Toggle logic: If user already voted, any click (up or down) deletes the existing vote
-      await client.query(
-        'DELETE FROM votes WHERE id = $1',
-        [existingVote.rows[0].id]
-      );
-      // Vote removed, so delta is effectively -1 if it was an upvote
-    } else if (type === 'up') {
-      // First vote and it's an upvote: insert
+      if (existingVote.rows[0].type === type) {
+        // Toggle off: If user clicks the same type again, delete it
+        await client.query(
+          'DELETE FROM votes WHERE id = $1',
+          [existingVote.rows[0].id]
+        );
+      } else {
+        // Update vote: User switched from up to down or vice-versa
+        await client.query(
+          'UPDATE votes SET type = $1, vote_value = $2 WHERE id = $3',
+          [type, type === 'up' ? 1 : -1, existingVote.rows[0].id]
+        );
+      }
+    } else {
+      // New vote
       await client.query(
         'INSERT INTO votes (idea_id, user_id, type, vote_value, tenant_id) VALUES ($1, $2, $3, $4, $5)',
-        [id, user_id, 'up', 1, tenant_id]
+        [id, user_id, type, type === 'up' ? 1 : -1, tenant_id]
       );
-    } else {
-      // Downvote when no vote exists: NO-OP in binary system
-      await client.query('COMMIT');
-      client.release();
-      return res.json({ message: 'No vote to remove', id, votes_count: 0 }); // Better UX than 400
     }
 
     // ── Recalculate votes_count from source of truth ──────────────────────
@@ -347,7 +350,7 @@ export const voteIdea = async (req: any, res: Response) => {
     const totalVotes = parseInt(voteSum.rows[0].total);
 
     await client.query(
-      'UPDATE ideas SET votes_count = $1 WHERE id = $2 AND tenant_id = $3',
+      'UPDATE ideas SET votes_count = $1, current_score = $1 * 10 WHERE id = $2 AND tenant_id = $3',
       [totalVotes, id, tenant_id]
     );
 

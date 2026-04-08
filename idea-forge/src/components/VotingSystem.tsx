@@ -100,6 +100,45 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
           </motion.span>
         </AnimatePresence>
       </div>
+
+      {/* ── Downvote ── */}
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className={cn(
+          'h-8 w-8 rounded-full transition-all',
+          userVote === 'down'
+            ? 'bg-slate-500/10 text-slate-600'
+            : isLoading
+                ? 'text-slate-300 opacity-50 cursor-not-allowed'
+                : 'text-slate-300 hover:bg-slate-100 hover:text-slate-500 group'
+        )}
+        disabled={isFullyDisabled}
+        title={
+          userVote === 'down' ? 'Remove downvote' :
+          isLoading ? 'Saving...' : 'Downvote'
+        }
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!isFullyDisabled) onVote('down');
+        }}
+      >
+        <motion.div
+          whileHover={isFullyDisabled ? {} : { scale: 1.1 }}
+          whileTap={isFullyDisabled ? {} : { scale: 0.9 }}
+        >
+          <ThumbsDown
+            strokeWidth={2.5}
+            className={cn(
+              'h-[18px] w-[18px] transition-all',
+              userVote === 'down' && 'fill-slate-400 text-slate-600 opacity-100',
+              userVote !== 'down' && !isFullyDisabled && 'opacity-80 group-hover:opacity-100',
+            )}
+          />
+        </motion.div>
+      </Button>
     </div>
   );
 };

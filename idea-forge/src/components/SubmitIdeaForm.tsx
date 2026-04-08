@@ -4,7 +4,7 @@ import { ROUTES, getTenantPath } from "@/lib/constants";
 import {
   Bold, Strikethrough, List, ListOrdered,
   AlignLeft, AlignCenter, Link2, ImageIcon, Type, Loader2,
-  Sparkles, CheckCircle2
+  Sparkles, CheckCircle2, ChevronRight
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -256,9 +256,25 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
                       <SelectValue placeholder={isCategoriesLoading ? "Loading..." : "Select category"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat: any) => (
-                        <SelectItem key={cat.id} value={cat.id} className="text-[14px]">{cat.name}</SelectItem>
-                      ))}
+                      {categories
+                        .sort((a: any, b: any) => {
+                          const aName = a.parent_name ? `${a.parent_name} > ${a.name}` : a.name;
+                          const bName = b.parent_name ? `${b.parent_name} > ${b.name}` : b.name;
+                          return aName.localeCompare(bName);
+                        })
+                        .map((cat: any) => (
+                          <SelectItem key={cat.id} value={cat.id} className="text-[14px]">
+                            {cat.parent_name ? (
+                              <div className="flex items-center gap-1.5 opacity-85">
+                                <span className="text-muted-foreground whitespace-nowrap">{cat.parent_name}</span>
+                                <ChevronRight className="h-3 w-3 text-muted-foreground/50" />
+                                <span className="font-bold">{cat.name}</span>
+                              </div>
+                            ) : (
+                              <span className="font-bold">{cat.name}</span>
+                            )}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   {errors.category && <p className="text-[11px] text-rose-500 font-medium">{errors.category}</p>}

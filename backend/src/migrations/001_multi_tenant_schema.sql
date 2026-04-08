@@ -127,20 +127,21 @@ ALTER TABLE ideas ADD COLUMN IF NOT EXISTS owner_id UUID REFERENCES users(id);
 UPDATE ideas SET tenant_id = '00000000-0000-0000-0000-000000000001' WHERE tenant_id IS NULL;
 UPDATE ideas SET idea_space_id = '00000000-0000-0000-0000-000000000002' WHERE idea_space_id IS NULL;
 
-CREATE TABLE IF NOT EXISTS idea_tags (
+CREATE TABLE IF NOT EXISTS tags (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id),
   name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100),
   color VARCHAR(20),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (tenant_id, name)
 );
 
-CREATE TABLE IF NOT EXISTS idea_tag_links (
+CREATE TABLE IF NOT EXISTS idea_tags (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id),
   idea_id UUID NOT NULL REFERENCES ideas(id),
-  tag_id UUID NOT NULL REFERENCES idea_tags(id),
+  tag_id UUID NOT NULL REFERENCES tags(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (idea_id, tag_id)
 );
