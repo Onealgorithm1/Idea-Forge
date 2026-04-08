@@ -15,6 +15,7 @@ const Index = () => {
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedCategory = searchParams.get("category") || "All";
+  const selectedSpace = searchParams.get("space") || null;
 
   // Pre-calculate tenant paths for comparison
   const tenantIdeaBoard = getTenantPath(ROUTES.IDEA_BOARD, tenantSlug);
@@ -80,7 +81,7 @@ const Index = () => {
                       </div>
                     </div>
                   </div>
-                  <KanbanBoard category={selectedCategory} />
+                  <KanbanBoard category={selectedCategory} spaceId={selectedSpace} />
                 </div>
               )}
 
@@ -95,7 +96,7 @@ const Index = () => {
                       <p className="text-muted-foreground font-medium">Tracking ideas from conception to delivery.</p>
                     </div>
                   </div>
-                  <RoadmapBoard />
+                  <RoadmapBoard spaceId={selectedSpace} />
                 </div>
               )}
 

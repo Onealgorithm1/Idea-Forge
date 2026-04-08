@@ -20,6 +20,7 @@ export const ROUTES = {
   ADMIN_DASHBOARD: "/admin/dashboard",
   ADMIN_USERS: "/admin/users",
   ADMIN_SETTINGS: "/admin/settings",
+  ADMIN_CATEGORIES: "/admin/categories",
 } as const;
 
 export const getTenantPath = (path: string, slug?: string) => {

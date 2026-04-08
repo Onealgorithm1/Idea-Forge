@@ -177,7 +177,7 @@ const Header = () => {
                       </div>
                     )}
 
-                    {user?.role === "admin" && (
+                    {['admin', 'tenant_admin', 'super_admin'].includes(user?.role || '') && (
                       <div className="space-y-4">
                         <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2 flex items-center gap-2">
                           <ShieldCheck className="h-3 w-3" /> Administration
@@ -348,7 +348,7 @@ const Header = () => {
                   align="end"
                   className="w-72 rounded-2xl border border-white/10 bg-header/95 p-1.5 text-white backdrop-blur-2xl shadow-[0_24px_60px_-24px_rgba(15,23,42,0.7)]"
                 >
-                  {user.role === "admin" ? (
+                  {['admin', 'tenant_admin', 'super_admin'].includes(user.role) ? (
                     <>
                       <DropdownMenuLabel className="px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/45">
                         Admin Controls

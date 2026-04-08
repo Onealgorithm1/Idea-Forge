@@ -88,12 +88,24 @@ export const getAllUsers = async (req: any, res: Response) => {
 export const updateUserRole = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { role } = req.body;
-
-  if (!['user', 'admin', 'reviewer', 'contributor'].includes(role)) {
-    return res.status(400).json({ message: 'Invalid role. Must be one of: user, admin, reviewer, contributor' });
+  
+  if (!['admin', 'user', 'tenant_admin', 'reviewer'].includes(role)) {
+    return res.status(400).json({ message: 'Invalid role' });
   }
 
   try {
+    const actorRole = (req as any).user.role;
+    
+    // Hierarchy check: Only tenant_admin can promote to tenant_admin
+    if (role === 'tenant_admin' && actorRole !== 'tenant_admin' && actorRole !== 'super_admin') {
+      return res.status(403).json({ message: 'Only tenant admins can promote members to tenant_admin role' });
+    }
+
+    // Only tenant_admin or super_admin can create admins
+    if (role === 'admin' && !['tenant_admin', 'super_admin'].includes(actorRole)) {
+      return res.status(403).json({ message: 'Insufficient permissions to assign admin role' });
+    }
+
     const result = await query(
       'UPDATE users SET role = $1 WHERE id = $2 AND tenant_id = $3 AND role != $4 RETURNING id',
       [role, id, (req as any).tenantId, 'super_admin']
@@ -154,13 +166,13 @@ export const deleteUser = async (req: Request, res: Response) => {
       // 9. User Idea Spaces: Delete assignments
       await query('DELETE FROM user_idea_spaces WHERE user_id = $1', [id]);
 
-      // 10. Tenant Users & Roles: Clean up association for this tenant
-      const tuResult = await query('SELECT id FROM tenant_users WHERE user_id = $1 AND tenant_id = $2', [id, tenantId]);
-      if (tuResult.rows.length > 0) {
-        const tuId = tuResult.rows[0].id;
-        await query('DELETE FROM user_roles WHERE tenant_user_id = $1', [tuId]);
-        await query('DELETE FROM tenant_users WHERE id = $1', [tuId]);
-      }
+      // 10. Tenant Users & Roles: Delete ALL associations for this user (across all tenants)
+      //     Must delete user_roles first (FK references tenant_users.id)
+      await query(
+        'DELETE FROM user_roles WHERE tenant_user_id IN (SELECT id FROM tenant_users WHERE user_id = $1)',
+        [id]
+      );
+      await query('DELETE FROM tenant_users WHERE user_id = $1', [id]);
 
       // 11. Finally delete the user account
       await query('DELETE FROM users WHERE id = $1 AND tenant_id = $2 AND role != $3', [id, tenantId, 'super_admin']);
@@ -268,7 +280,12 @@ export const getRecentActivity = async (req: any, res: Response) => {
 export const getAdminCategories = async (req: any, res: Response) => {
   try {
     const result = await query(
-      'SELECT * FROM categories WHERE tenant_id = $1 OR tenant_id IS NULL ORDER BY name',
+      `SELECT c.id, c.name, c.description, c.slug, c.is_default, c.tenant_id, c.manager_id,
+              u.name as manager_name
+       FROM categories c
+       LEFT JOIN users u ON c.manager_id = u.id
+       WHERE c.tenant_id = $1 OR c.tenant_id IS NULL
+       ORDER BY c.name`,
       [req.tenantId]
     );
     res.json(result.rows);
@@ -279,20 +296,60 @@ export const getAdminCategories = async (req: any, res: Response) => {
 };
 
 export const createCategory = async (req: any, res: Response) => {
-  const { name, description } = req.body;
+  const { name, description, manager_id } = req.body;
   if (!name || name.trim().length < 2) {
     return res.status(400).json({ message: 'Category name must be at least 2 characters' });
   }
   const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   try {
     const result = await query(
-      'INSERT INTO categories (name, description, slug, tenant_id) VALUES ($1, $2, $3, $4) RETURNING *',
-      [name, description || '', slug, req.tenantId]
+      `INSERT INTO categories (name, description, slug, tenant_id, manager_id)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [name.trim(), description || '', slug, req.tenantId, manager_id || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (error: any) {
-    if (error.code === '23505') return res.status(409).json({ message: 'Category already exists' });
+    if (error.code === '23505') return res.status(409).json({ message: 'A category with this name already exists' });
     console.error('Create category error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateCategory = async (req: any, res: Response) => {
+  const { id } = req.params;
+  const { name, description, manager_id } = req.body;
+
+  try {
+    const setParts: string[] = ['updated_at = NOW()'];
+    const values: any[] = [];
+    let paramCount = 1;
+
+    if (name !== undefined) {
+      setParts.push(`name = $${paramCount}, slug = $${paramCount + 1}`);
+      values.push(name.trim(), name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
+      paramCount += 2;
+    }
+    if (description !== undefined) {
+      setParts.push(`description = $${paramCount}`);
+      values.push(description);
+      paramCount++;
+    }
+    if (manager_id !== undefined) {
+      setParts.push(`manager_id = $${paramCount}`);
+      values.push(manager_id || null);
+      paramCount++;
+    }
+
+    values.push(id, req.tenantId);
+    const updateQuery = `UPDATE categories SET ${setParts.join(', ')} WHERE id = $${paramCount} AND (tenant_id = $${paramCount + 1} OR tenant_id IS NULL) RETURNING *`;
+
+    const result = await query(updateQuery, values);
+    if (result.rows.length === 0) return res.status(404).json({ message: 'Category not found or no permission' });
+
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    if (error.code === '23505') return res.status(409).json({ message: 'A category with this name already exists' });
+    console.error('Update category error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -300,15 +357,21 @@ export const createCategory = async (req: any, res: Response) => {
 export const deleteCategory = async (req: any, res: Response) => {
   const { id } = req.params;
   try {
-    // Check if it's a default category
-    const check = await query('SELECT is_default FROM categories WHERE id = $1 AND tenant_id = $2', [id, req.tenantId]);
+    // Check if the category exists and is not a default one
+    const check = await query(
+      'SELECT is_default FROM categories WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)',
+      [id, req.tenantId]
+    );
     if (check.rows.length === 0) return res.status(404).json({ message: 'Category not found' });
     if (check.rows[0].is_default) {
       return res.status(403).json({ message: 'Cannot delete default categories' });
     }
 
-    await query('DELETE FROM categories WHERE id = $1 AND tenant_id = $2', [id, req.tenantId]);
-    res.json({ message: 'Category deleted' });
+    // Nullify references from ideas before deleting
+    await query('UPDATE ideas SET category_id = NULL WHERE category_id = $1', [id]);
+
+    await query('DELETE FROM categories WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)', [id, req.tenantId]);
+    res.json({ message: 'Category deleted successfully' });
   } catch (error) {
     console.error('Delete category error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -319,10 +382,23 @@ export const deleteCategory = async (req: any, res: Response) => {
 
 export const getIdeaSpaces = async (req: any, res: Response) => {
   try {
-    const result = await query(
-      'SELECT * FROM idea_spaces WHERE tenant_id = $1 ORDER BY name',
-      [req.tenantId]
-    );
+    const { role, id: userId } = (req as any).user;
+    
+    let result;
+    if (['admin', 'tenant_admin', 'super_admin'].includes(role)) {
+      result = await query(
+        'SELECT * FROM idea_spaces WHERE tenant_id = $1 ORDER BY name',
+        [req.tenantId]
+      );
+    } else {
+      result = await query(
+        `SELECT s.* FROM idea_spaces s
+         JOIN user_idea_spaces uis ON s.id = uis.idea_space_id
+         WHERE s.tenant_id = $1 AND uis.user_id = $2
+         ORDER BY s.name`,
+        [req.tenantId, userId]
+      );
+    }
     res.json(result.rows);
   } catch (error) {
     console.error('Get idea spaces error:', error);

@@ -188,23 +188,22 @@ export const forgotPassword = async (req: Request, res: Response) => {
     // 2. Find user within this tenant
     const userResult = await query('SELECT id, name FROM users WHERE email = $1 AND tenant_id = $2', [email, tenantId]);
     if (userResult.rows.length === 0) {
-      // For security, don't reveal if the user exists. 
-      // But user requested "Email has been sent with your..." so we should probably succeed.
+      // Security: Don't reveal if user exists
       return res.status(200).json({ message: 'If an account exists, an email has been sent.' });
     }
     const user = userResult.rows[0];
 
-    // 3. Generate a random password
+    // 3. Generate a random temporary password
     const newPassword = crypto.randomBytes(5).toString('hex'); // 10 chars
 
-    // 4. Hash and update
+    // 4. Hash and update in the database FIRST
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
     await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedPassword, user.id]);
 
-    // 5. Send email
+    // 5. Try to send the email — if it fails, we still respond 200 (password IS reset)
     const subject = 'Your IdeaForge Password Reset';
-    const text = `Hi ${user.name},\n\nYour password has been reset as requested.\n\nYour new password is: ${newPassword}\n\nPlease login and change your password immediately.\n\nBest regards,\nIdeaForge Team`;
+    const text = `Hi ${user.name},\n\nYour password has been reset.\n\nNew password: ${newPassword}\n\nPlease login and change your password immediately.`;
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
         <h2 style="color: #1e3a8a;">Password Reset</h2>
@@ -220,9 +219,16 @@ export const forgotPassword = async (req: Request, res: Response) => {
       </div>
     `;
 
-    await sendEmail(email, subject, text, html);
+    try {
+      await sendEmail(email, subject, text, html);
+      console.log(`[forgotPassword] Email sent to ${email}`);
+    } catch (emailError: any) {
+      console.error('[forgotPassword] Email send failed (password was still reset):', emailError.message);
+      // Password was reset successfully, email just failed to send.
+      // We don't want to expose this to the client for security.
+    }
 
-    res.json({ message: 'Email has been sent with your new password' });
+    res.json({ message: 'If an account exists, an email has been sent.' });
   } catch (error) {
     console.error('Forgot password error:', error);
     res.status(500).json({ message: 'Server error' });

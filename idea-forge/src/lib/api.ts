@@ -1,22 +1,29 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Auto-inject tenant context from auth state or TenantProvider
-function getTenantHeaders(): Record<string, string> {
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem('token');
   const tenantId = localStorage.getItem('tenantId');
-  if (tenantId) return { 'X-Tenant-ID': tenantId };
+  const headers: Record<string, string> = {};
 
-  try {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user?.tenantId) return { 'X-Tenant-ID': user.tenantId };
-  } catch { /* ignore */ }
-  return {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (tenantId) headers['X-Tenant-ID'] = tenantId;
+
+  if (!tenantId) {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (user?.tenantId) headers['X-Tenant-ID'] = user.tenantId;
+    } catch { /* ignore */ }
+  }
+
+  return headers;
 }
 
 export const api = {
   async get(endpoint: string, token?: string) {
     const headers: any = {
       'Content-Type': 'application/json',
-      ...getTenantHeaders(),
+      ...getAuthHeaders(),
     };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -34,7 +41,7 @@ export const api = {
   async post(endpoint: string, data: any, token?: string) {
     const headers: any = {
       'Content-Type': 'application/json',
-      ...getTenantHeaders(),
+      ...getAuthHeaders(),
     };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -51,10 +58,30 @@ export const api = {
     return response.json();
   },
 
+  async put(endpoint: string, data: any, token?: string) {
+    const headers: any = {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Something went wrong');
+    }
+    return response.json();
+  },
+
   async patch(endpoint: string, data: any, token?: string) {
     const headers: any = {
       'Content-Type': 'application/json',
-      ...getTenantHeaders(),
+      ...getAuthHeaders(),
     };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -74,7 +101,7 @@ export const api = {
   async delete(endpoint: string, token?: string) {
     const headers: any = {
       'Content-Type': 'application/json',
-      ...getTenantHeaders(),
+      ...getAuthHeaders(),
     };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -92,7 +119,7 @@ export const api = {
 
   async upload(endpoint: string, formData: FormData, token?: string) {
     const headers: any = {
-      ...getTenantHeaders(),
+      ...getAuthHeaders(),
     };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;

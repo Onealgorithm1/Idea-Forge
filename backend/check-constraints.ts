@@ -1,37 +1,22 @@
-import { Pool } from 'pg';
+import { query } from './src/config/db.js';
 
-const pool = new Pool({
-  connectionString: 'postgresql://neondb_owner:npg_y0KepXrE4sMF@ep-icy-night-adzbcu6r-pooler.c-2.us-east-1.aws.neon.tech/Ideaforge?sslmode=require',
-  ssl: { rejectUnauthorized: false }
-});
-
-async function check() {
+async function checkConstraints() {
   try {
-    const res = await pool.query(`
-      SELECT 
-        conname, 
-        pg_get_constraintdef(oid) as def 
+    const result = await query(`
+      SELECT conname, pg_get_constraintdef(oid) 
       FROM pg_constraint 
-      WHERE conrelid = 'votes'::regclass 
-      AND contype = 'u'
+      WHERE conrelid = 'users'::regclass 
     `);
-    console.log('Unique Constraints:', JSON.stringify(res.rows, null, 2));
-    
-    const pkRes = await pool.query(`
-      SELECT 
-        conname, 
-        pg_get_constraintdef(oid) as def 
-      FROM pg_constraint 
-      WHERE conrelid = 'votes'::regclass 
-      AND contype = 'p'
-    `);
-    console.log('Primary Key:', JSON.stringify(pkRes.rows, null, 2));
-
-  } catch (err) {
-    console.error(err);
-  } finally {
-    await pool.end();
+    console.log('--- Constraints on "users" table ---');
+    result.rows.forEach(row => {
+      console.log(`${row.conname}: ${row.pg_get_constraintdef}`);
+    });
+    console.log('------------------------------------');
+    process.exit(0);
+  } catch (error) {
+    console.error(error);
+    process.exit(1);
   }
 }
 
-check();
+checkConstraints();

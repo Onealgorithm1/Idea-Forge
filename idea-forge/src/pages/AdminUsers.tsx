@@ -8,9 +8,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getInitials } from "@/lib/utils";
+import { getInitials, cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Trash2, Shield, User, Loader2, Key, Lock, UserPlus, Plus, Mail, Layers } from "lucide-react";
+import { Trash2, Shield, User, Loader2, Key, Lock, UserPlus, Plus, Mail, Layers, ChevronDown, MoreVertical } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -26,6 +26,66 @@ import {
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+interface RoleConfig {
+  label: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  icon: any;
+  level: number;
+}
+
+const ROLE_CONFIG: Record<string, RoleConfig> = {
+  super_admin: {
+    label: "Super Admin",
+    color: "text-white",
+    bgColor: "bg-slate-900",
+    borderColor: "border-slate-800",
+    icon: Shield,
+    level: 100
+  },
+  tenant_admin: {
+    label: "Tenant Admin",
+    color: "text-violet-700 dark:text-violet-400",
+    bgColor: "bg-violet-100 dark:bg-violet-900/40",
+    borderColor: "border-violet-200 dark:border-violet-800",
+    icon: Shield,
+    level: 3
+  },
+  admin: {
+    label: "Admin",
+    color: "text-blue-700 dark:text-blue-400",
+    bgColor: "bg-blue-100 dark:bg-blue-900/30",
+    borderColor: "border-blue-200 dark:border-blue-800",
+    icon: Shield,
+    level: 2
+  },
+  reviewer: {
+    label: "Reviewer",
+    color: "text-amber-700 dark:text-amber-400",
+    bgColor: "bg-amber-100 dark:bg-amber-900/30",
+    borderColor: "border-amber-200 dark:border-amber-800",
+    icon: Shield,
+    level: 1
+  },
+  user: {
+    label: "User",
+    color: "text-slate-700 dark:text-slate-400",
+    bgColor: "bg-slate-100 dark:bg-slate-800",
+    borderColor: "border-slate-200 dark:border-slate-700",
+    icon: User,
+    level: 0
+  }
+};
 
 const AdminUsers = () => {
   const { token, user: currentUser } = useAuth();
@@ -133,9 +193,8 @@ const AdminUsers = () => {
     updatePasswordMutation.mutate({ id: selectedUser.id, password: newPassword });
   };
 
-  const handleToggleRole = (user: any) => {
-    const newRole = user.role === 'admin' ? 'user' : 'admin';
-    updateRoleMutation.mutate({ id: user.id, role: newRole });
+  const handleUpdateRole = (userId: string, newRole: string) => {
+    updateRoleMutation.mutate({ id: userId, role: newRole });
   };
 
   const handleDeleteUser = (id: string) => {
@@ -150,7 +209,7 @@ const AdminUsers = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden transition-colors duration-300">
+    <div className="h-screen bg-background flex flex-col relative overflow-hidden transition-colors duration-300">
       {/* Mesh Gradient Background */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[120px]" />
@@ -228,27 +287,34 @@ const AdminUsers = () => {
                              </div>
                            </td>
                            <td className="px-6 py-4">
-                             <Badge 
-                               variant={u.role === 'admin' ? 'default' : 'secondary'}
-                               className="text-[10px] font-bold uppercase tracking-wider"
-                             >
-                               {u.role}
-                             </Badge>
+                             {(() => {
+                               const config = ROLE_CONFIG[u.role] || ROLE_CONFIG.user;
+                               return (
+                                 <Badge 
+                                   className={cn(
+                                     "text-[10px] font-bold uppercase tracking-wider border transition-all shadow-sm flex items-center gap-1.5 w-fit",
+                                     config.bgColor,
+                                     config.color,
+                                     config.borderColor
+                                   )}
+                                 >
+                                   <config.icon className="h-2.5 w-2.5" />
+                                   {config.label}
+                                 </Badge>
+                               );
+                             })()}
                            </td>
                            <td className="px-6 py-4">
-                             <div className="flex flex-wrap gap-1">
-                               {u.assigned_spaces && u.assigned_spaces.length > 0 ? (
-                                 (u.assigned_spaces as any[]).slice(0, 2).map((s: any) => (
-                                   <Badge key={s.id} variant="outline" className="text-[9px] h-4 px-1 bg-primary/5 text-primary border-primary/20">{s.name}</Badge>
-                                 ))
-                               ) : (
-                                 <span className="text-xs text-muted-foreground italic">None</span>
-                               )}
-                               {u.assigned_spaces && u.assigned_spaces.length > 2 && (
-                                 <Badge variant="outline" className="text-[9px] h-4 px-1">+{u.assigned_spaces.length - 2}</Badge>
-                               )}
-                             </div>
-                           </td>
+                              <div className="flex flex-wrap gap-1">
+                                {u.assigned_spaces && u.assigned_spaces.length > 0 ? (
+                                  (u.assigned_spaces as any[]).map((s: any) => (
+                                    <Badge key={s.id} variant="outline" className="text-[9px] h-4 px-1 bg-primary/5 text-primary border-primary/20 whitespace-nowrap">{s.name}</Badge>
+                                  ))
+                                ) : (
+                                  <span className="text-xs text-muted-foreground italic">None</span>
+                                )}
+                              </div>
+                            </td>
                            <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
                                <Button 
@@ -269,16 +335,41 @@ const AdminUsers = () => {
                                >
                                  <Key className="h-4 w-4" />
                                </Button>
-                               <Button 
-                                 variant="ghost" 
-                                 size="icon" 
-                                 className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                 onClick={() => handleToggleRole(u)}
-                                 disabled={u.id === currentUser?.id}
-                                 title={u.role === 'admin' ? 'Demote to User' : 'Promote to Admin'}
-                               >
-                                 <Shield className={`h-4 w-4 ${u.role === 'admin' ? 'fill-current' : ''}`} />
-                               </Button>
+                               <DropdownMenu>
+                                 <DropdownMenuTrigger asChild>
+                                   <Button 
+                                     variant="ghost" 
+                                     size="icon" 
+                                     className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                     disabled={u.id === currentUser?.id || (ROLE_CONFIG[u.role]?.level || 0) >= (ROLE_CONFIG[currentUser?.role || 'user']?.level || 0)}
+                                     title="Change User Role"
+                                   >
+                                     <Shield className={`h-4 w-4 ${['admin', 'tenant_admin'].includes(u.role) ? 'fill-current' : ''}`} />
+                                   </Button>
+                                 </DropdownMenuTrigger>
+                                 <DropdownMenuContent align="end" className="w-48 rounded-xl border-border shadow-2xl">
+                                   <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-50 px-3 py-1.5">Assign Role</DropdownMenuLabel>
+                                   <DropdownMenuSeparator />
+                                   {Object.entries(ROLE_CONFIG)
+                                     .filter(([roleKey, cfg]) => {
+                                       // Only allow assigning roles below your own
+                                       const myLevel = ROLE_CONFIG[currentUser?.role || 'user']?.level || 0;
+                                       return cfg.level < myLevel;
+                                     })
+                                     .map(([roleKey, cfg]) => (
+                                       <DropdownMenuItem 
+                                         key={roleKey}
+                                         className="flex items-center gap-2 cursor-pointer rounded-lg mx-1"
+                                         onClick={() => handleUpdateRole(u.id, roleKey)}
+                                       >
+                                         <cfg.icon className="h-3.5 w-3.5" />
+                                         <span className="font-bold text-xs">{cfg.label}</span>
+                                         {u.role === roleKey && <div className="ml-auto w-1 h-1 rounded-full bg-primary" />}
+                                       </DropdownMenuItem>
+                                     ))
+                                   }
+                                 </DropdownMenuContent>
+                               </DropdownMenu>
                                <Button 
                                  variant="ghost" 
                                  size="icon" 

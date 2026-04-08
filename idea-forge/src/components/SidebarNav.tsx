@@ -1,4 +1,5 @@
-import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, ShieldCheck, Activity, Building, type LucideIcon } from "lucide-react";
+import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, ShieldCheck, Activity, Building, ChevronDown, ChevronRight, type LucideIcon } from "lucide-react";
+import { useState } from "react";
 import { Link, useNavigate, useLocation, useSearchParams, useParams } from "react-router-dom";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
@@ -85,6 +86,7 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
+  const [isSpacesExpanded, setIsSpacesExpanded] = useState(true);
 
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { tenant } = useTenant();
@@ -95,10 +97,15 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
 
   // Fetch tenant-specific categories
   const { data: dbCategories, isLoading: isCategoriesLoading } = useQuery({
-    queryKey: ["categories", currentSlug],
+    queryKey: ["categories", currentSlug, user?.id],
     queryFn: () => api.get("/ideas/categories"),
     staleTime: 1000 * 60 * 5, // 5 minutes cache
-    retry: 1,
+  });
+
+  const { data: ideaSpaces } = useQuery({
+    queryKey: ["idea-spaces", currentSlug, user?.id],
+    queryFn: () => api.get("/ideas/spaces"),
+    staleTime: 1000 * 60 * 5,
   });
 
   // Combine dynamic categories with mandatory 'All' category
@@ -124,7 +131,7 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
   return (
     <aside className="sticky top-0 h-screen w-[260px] shrink-0 border-r border-border hidden md:flex flex-col pt-6 pb-4 gap-2 bg-card/40 dark:bg-card/20 backdrop-blur-xl shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 transition-colors duration-300">
 
-      {user?.role === 'admin' && (
+      {['admin', 'tenant_admin', 'super_admin'].includes(user?.role || '') && (
         <div className="mb-4 space-y-1">
           <div className="px-5 mb-3">
             <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
@@ -154,11 +161,53 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
                 active={pathname === getTenantPath(ROUTES.ADMIN_SETTINGS, currentSlug)}
               />
             </Link>
+            <Link to={getTenantPath(ROUTES.ADMIN_CATEGORIES, currentSlug)} className="block w-full">
+              <SidebarButton
+                icon={Tag}
+                label="Manage Categories"
+                active={pathname === getTenantPath(ROUTES.ADMIN_CATEGORIES, currentSlug)}
+              />
+            </Link>
           </div>
         </div>
       )}
 
-      <div className="flex-1 flex flex-col min-h-0 space-y-2 mt-2 overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 space-y-4 mt-2 overflow-hidden">
+        {/* Idea Spaces Section */}
+        <div className="space-y-1">
+          <button 
+            onClick={() => setIsSpacesExpanded(!isSpacesExpanded)}
+            className="w-full px-5 flex items-center justify-between group transition-colors"
+          >
+            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] group-hover:text-foreground">
+              <LayoutGrid className="h-3 w-3" />
+              Idea Spaces
+            </div>
+            {isSpacesExpanded ? (
+              <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-foreground" />
+            ) : (
+              <ChevronRight className="h-3 w-3 text-slate-400 group-hover:text-foreground" />
+            )}
+          </button>
+
+          {isSpacesExpanded && (
+            <div className="space-y-0.5 px-2 max-h-[200px] overflow-y-auto no-scrollbar">
+              {Array.isArray(ideaSpaces) && ideaSpaces.map((space: any) => (
+                <SidebarButton
+                  key={space.id}
+                  icon={Briefcase}
+                  label={space.name}
+                  active={searchParams.get("space") === space.id}
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams);
+                    params.set("space", space.id);
+                    navigate(`${getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}?${params.toString()}`);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
         <div className="px-5 mb-2">
           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
             <Tag className="h-3 w-3" />

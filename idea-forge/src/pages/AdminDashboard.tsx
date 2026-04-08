@@ -61,7 +61,7 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden text-foreground transition-colors duration-300">
+    <div className="h-screen bg-background flex flex-col relative overflow-hidden text-foreground transition-colors duration-300">
       <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[120px]" />
         <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] rounded-full bg-info/10 blur-[100px]" />

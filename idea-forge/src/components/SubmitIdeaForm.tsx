@@ -86,12 +86,12 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
   const currentSlug = tenant?.slug || tenantSlug || "default";
 
   const { data: categories = [], isLoading: isCategoriesLoading } = useQuery({
-    queryKey: ["categories", tenantSlug],
+    queryKey: ["categories", tenantSlug, user?.id],
     queryFn: () => api.get("/ideas/categories"),
   });
 
   const { data: ideaSpaces = [], isLoading: isSpacesLoading } = useQuery({
-    queryKey: ["idea-spaces", tenantSlug],
+    queryKey: ["idea-spaces", tenantSlug, user?.id],
     queryFn: () => api.get("/ideas/spaces"),
   });
 

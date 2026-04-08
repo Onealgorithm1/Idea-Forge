@@ -1,0 +1,428 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import Header from "@/components/Header";
+import SidebarNav from "@/components/SidebarNav";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Trash2, Edit2, Plus, Loader2, Tag, User, Search, Hash } from "lucide-react";
+import { getInitials, cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import ConfirmationModal from "@/components/ConfirmationModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+
+const AdminCategories = () => {
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [formData, setFormData] = useState({ 
+    name: "", 
+    description: "", 
+    manager_id: "none" 
+  });
+
+  const { data: categories = [], isLoading } = useQuery({
+    queryKey: ["admin-categories"],
+    queryFn: () => api.get("/admin/categories", token!),
+    enabled: !!token,
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ["admin-users-list"],
+    queryFn: () => api.get("/admin/users", token!),
+    enabled: !!token && (isCreateDialogOpen || isEditDialogOpen),
+  });
+
+  const createCategoryMutation = useMutation({
+    mutationFn: (data: any) => api.post("/admin/categories", {
+      ...data,
+      manager_id: data.manager_id === "none" ? null : data.manager_id
+    }, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      toast.success("Category created successfully");
+      setIsCreateDialogOpen(false);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to create category");
+    }
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
+      api.put(`/admin/categories/${id}`, {
+        ...data,
+        manager_id: data.manager_id === "none" ? null : data.manager_id
+      }, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      toast.success("Category updated successfully");
+      setIsEditDialogOpen(false);
+      setSelectedCategory(null);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to update category");
+    }
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/admin/categories/${id}`, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      toast.success("Category deleted");
+      setCategoryToDelete(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to delete category");
+    }
+  });
+
+  const resetForm = () => {
+    setFormData({ name: "", description: "", manager_id: "none" });
+  };
+
+  const handleEdit = (category: any) => {
+    setSelectedCategory(category);
+    setFormData({
+      name: category.name,
+      description: category.description || "",
+      manager_id: category.manager_id || "none"
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const filteredCategories = categories.filter((cat: any) => 
+    cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (cat.description && cat.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  return (
+    <div className="h-screen bg-background flex flex-col relative overflow-hidden transition-colors duration-300">
+      <Header />
+      <div className="flex flex-1 overflow-hidden relative z-10 w-full max-w-[1600px] mx-auto">
+        <SidebarNav />
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="max-w-7xl mx-auto space-y-8">
+            {/* Header section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h2 className="text-3xl font-black tracking-tight text-foreground">Categories</h2>
+                <p className="text-muted-foreground font-medium">
+                  Manage idea categories and assign owners/managers.
+                </p>
+              </div>
+              <Button 
+                onClick={() => setIsCreateDialogOpen(true)}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2 h-11 px-6"
+              >
+                <Plus className="h-5 w-5" />
+                Add Category
+              </Button>
+            </div>
+
+            {/* Filter section */}
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+              </div>
+              <Input
+                type="text"
+                placeholder="Search categories by name or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-11 h-12 bg-card border-none shadow-sm rounded-2xl focus-visible:ring-primary/20 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50 transition-all font-medium"
+              />
+            </div>
+
+            {/* Categories Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AnimatePresence mode="popLayout">
+                {isLoading ? (
+                  <div className="col-span-full py-20 flex flex-col items-center justify-center space-y-4">
+                    <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                    <p className="text-muted-foreground font-bold animate-pulse">Loading categories...</p>
+                  </div>
+                ) : filteredCategories.length === 0 ? (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="col-span-full py-20 flex flex-col items-center justify-center space-y-4 bg-card/30 rounded-[2rem] border-2 border-dashed border-border"
+                  >
+                    <div className="p-4 bg-muted rounded-full">
+                      <Tag className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xl font-bold text-foreground">No categories found</p>
+                      <p className="text-muted-foreground italic mt-1">
+                        {searchQuery ? "Try a different search term" : "Get started by creating your first category"}
+                      </p>
+                    </div>
+                  </motion.div>
+                ) : (
+                  filteredCategories.map((category: any, idx: number) => (
+                    <motion.div
+                      layout
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ delay: idx * 0.05 }}
+                      key={category.id}
+                    >
+                      <Card className="group relative overflow-hidden border-none shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-[2rem] bg-card p-6 flex flex-col h-full ring-1 ring-border/50 hover:ring-primary/20">
+                        {/* Background subtle pattern */}
+                        <div className="absolute -right-4 -top-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity rotate-12">
+                          <Tag size={120} />
+                        </div>
+
+                        <div className="relative flex-1 space-y-4">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
+                                {category.name}
+                                {category.is_default && (
+                                  <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary border-none">
+                                    Default
+                                  </Badge>
+                                )}
+                              </h3>
+                              {category.slug && (
+                                <code className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tighter bg-muted/50 px-1.5 py-0.5 rounded-md">
+                                  #{category.slug}
+                                </code>
+                              )}
+                            </div>
+                          </div>
+
+                          <p className="text-muted-foreground text-sm font-medium line-clamp-3 leading-relaxed">
+                            {category.description || "No description provided."}
+                          </p>
+
+                          <div className="pt-4 mt-auto border-t border-border/50 flex flex-col gap-3">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 bg-accent/50 rounded-lg">
+                                <User className="h-3.5 w-3.5 text-accent-foreground" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">
+                                  Manager
+                                </span>
+                                <span className="text-sm font-bold text-foreground">
+                                  {category.manager_name || "Unassigned"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions Overlay */}
+                        <div className="flex items-center gap-2 mt-6">
+                          <Button 
+                            variant="secondary"
+                            size="sm"
+                            className="flex-1 rounded-xl font-bold bg-accent/50 hover:bg-accent text-accent-foreground border-none"
+                            onClick={() => handleEdit(category)}
+                          >
+                            <Edit2 className="h-3.5 w-3.5 mr-2" />
+                            Edit
+                          </Button>
+                          {!category.is_default && (
+                            <Button 
+                              variant="ghost"
+                              size="icon"
+                              className="rounded-xl h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => setCategoryToDelete(category.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </Card>
+                    </motion.div>
+                  ))
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {/* Create Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl bg-card/95 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl font-black text-foreground">
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <Tag className="h-6 w-6 text-primary" />
+              </div>
+              Add Category
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground font-medium">
+              Create a new category for ideas in your organization.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Category Name</Label>
+              <Input
+                placeholder="e.g. User Experience"
+                value={formData.name}
+                onChange={(e) => setFormData(f => ({ ...f, name: e.target.value }))}
+                className="h-11 rounded-xl bg-muted/30 border-none focus-visible:ring-primary/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Description</Label>
+              <Textarea
+                placeholder="What kind of ideas belong here?"
+                value={formData.description}
+                onChange={(e) => setFormData(f => ({ ...f, description: e.target.value }))}
+                className="resize-none h-24 rounded-xl bg-muted/30 border-none focus-visible:ring-primary/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Owner / Manager</Label>
+              <Select 
+                value={formData.manager_id} 
+                onValueChange={(val) => setFormData(f => ({ ...f, manager_id: val }))}
+              >
+                <SelectTrigger className="h-11 rounded-xl bg-muted/30 border-none focus-visible:ring-primary/20">
+                  <SelectValue placeholder="Select a manager" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-none shadow-xl">
+                  <SelectItem value="none" className="font-medium text-muted-foreground">None (Unassigned)</SelectItem>
+                  {users.map((u: any) => (
+                    <SelectItem key={u.id} value={u.id} className="font-bold">
+                      {u.name} ({u.role})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)} className="rounded-xl font-bold text-muted-foreground">
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => createCategoryMutation.mutate(formData)} 
+              disabled={createCategoryMutation.isPending}
+              className="bg-primary hover:bg-primary/90 font-bold rounded-xl shadow-lg shadow-primary/20 px-6"
+            >
+              {createCategoryMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Create Category
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl bg-card/95 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl font-black text-foreground">
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <Edit2 className="h-6 w-6 text-primary" />
+              </div>
+              Edit Category
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Category Name</Label>
+              <Input
+                placeholder="e.g. User Experience"
+                value={formData.name}
+                onChange={(e) => setFormData(f => ({ ...f, name: e.target.value }))}
+                className="h-11 rounded-xl bg-muted/30 border-none focus-visible:ring-primary/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Description</Label>
+              <Textarea
+                placeholder="What kind of ideas belong here?"
+                value={formData.description}
+                onChange={(e) => setFormData(f => ({ ...f, description: e.target.value }))}
+                className="resize-none h-24 rounded-xl bg-muted/30 border-none focus-visible:ring-primary/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Owner / Manager</Label>
+              <Select 
+                value={formData.manager_id} 
+                onValueChange={(val) => setFormData(f => ({ ...f, manager_id: val }))}
+              >
+                <SelectTrigger className="h-11 rounded-xl bg-muted/30 border-none focus-visible:ring-primary/20">
+                  <SelectValue placeholder="Select a manager" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-none shadow-xl">
+                  <SelectItem value="none" className="font-medium text-muted-foreground">None (Unassigned)</SelectItem>
+                  {users.map((u: any) => (
+                    <SelectItem key={u.id} value={u.id} className="font-bold">
+                      {u.name} ({u.role})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)} className="rounded-xl font-bold text-muted-foreground">
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => updateCategoryMutation.mutate({ id: selectedCategory.id, data: formData })} 
+              disabled={updateCategoryMutation.isPending}
+              className="bg-primary hover:bg-primary/90 font-bold rounded-xl shadow-lg shadow-primary/20 px-6"
+            >
+              {updateCategoryMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmationModal
+        isOpen={!!categoryToDelete}
+        onClose={() => setCategoryToDelete(null)}
+        onConfirm={() => categoryToDelete && deleteCategoryMutation.mutate(categoryToDelete)}
+        title="Delete Category?"
+        message="This action cannot be undone. Ideas attached to this category will remain, but the category label will be removed."
+        type="danger"
+        confirmText="Yes, delete category"
+      />
+    </div>
+  );
+};
+
+export default AdminCategories;

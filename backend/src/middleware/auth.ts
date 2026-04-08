@@ -51,7 +51,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
 };
 
 export const isAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (req.user && req.user.role === 'admin') {
+  if (req.user && ['admin', 'tenant_admin'].includes(req.user.role)) {
     next();
   } else {
     res.status(403).json({ message: 'Access denied: Admin role required' });
@@ -59,7 +59,7 @@ export const isAdmin = (req: AuthRequest, res: Response, next: NextFunction) => 
 };
 
 export const isAdminOrReviewer = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (req.user && ['admin', 'reviewer'].includes(req.user.role)) {
+  if (req.user && ['admin', 'tenant_admin', 'reviewer'].includes(req.user.role)) {
     next();
   } else {
     res.status(403).json({ message: 'Access denied: Admin or Reviewer role required' });

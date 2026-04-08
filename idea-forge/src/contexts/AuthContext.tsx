@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
 interface User {
@@ -21,6 +22,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
 
@@ -48,6 +50,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem("tenantId", data.user.tenantId);
       }
       toast.success(`Welcome back, ${data.user.name}!`);
+      // Clear cache on login to ensure clean state
+      queryClient.clear();
     } catch (error: any) {
       toast.error(error.message);
       throw error;
@@ -65,6 +69,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem("tenantId", data.user.tenantId);
       }
       toast.success(`Account created successfully!`);
+      // Clear cache on register to ensure clean state
+      queryClient.clear();
     } catch (error: any) {
       toast.error(error.message);
       throw error;
@@ -77,6 +83,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("tenantId");
+    // Clear all cached queries on logout
+    queryClient.clear();
     toast.info("You have been logged out");
   };
 

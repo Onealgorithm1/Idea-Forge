@@ -16,6 +16,7 @@ import Profile from "./pages/Profile";
 import AdminUsers from "./pages/AdminUsers";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminSettings from "./pages/AdminSettings";
+import AdminCategories from "./pages/AdminCategories";
 import SuperAdminLogin from "./pages/SuperAdmin/Login";
 import SuperAdminDashboard from "./pages/SuperAdmin/Dashboard";
 import TenantDetail from "./pages/SuperAdmin/TenantDetail";
@@ -67,6 +68,7 @@ const AppContent = () => (
           <Route path="admin/dashboard" element={<AdminDashboard />} />
           <Route path="admin/users" element={<AdminUsers />} />
           <Route path="admin/settings" element={<AdminSettings />} />
+          <Route path="admin/categories" element={<AdminCategories />} />
         </Route>
         <Route path="login" element={<AuthPage />} />
         <Route path="forgot-password" element={<ForgotPassword />} />

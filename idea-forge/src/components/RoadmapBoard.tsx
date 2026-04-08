@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { GripVertical, CheckCircle2, FlaskConical, PlayCircle, Clock, ChevronRight, ChevronLeft, MessageSquare, Trash2 } from "lucide-react";
+import { GripVertical, CheckCircle2, FlaskConical, PlayCircle, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, MessageSquare, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
@@ -28,12 +28,19 @@ const stageColors: Record<string, string> = {
   success: "border-t-success/40 bg-success/5",
 };
 
-const RoadmapBoard = () => {
+const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
   const navigate = useNavigate();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
   const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
+  const [collapsedStages, setCollapsedStages] = useState<string[]>([]);
+
+  const toggleStage = (stageId: string) => {
+    setCollapsedStages(prev => 
+      prev.includes(stageId) ? prev.filter(s => s !== stageId) : [...prev, stageId]
+    );
+  };
 
   const { data: ideas = [], isLoading } = useQuery({
     queryKey: ["ideas", tenantSlug],
@@ -100,118 +107,142 @@ const RoadmapBoard = () => {
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {roadmapStages.map((stage) => {
-            const stageIdeas = ideas.filter(i => stage.statuses.includes(i.status));
+            const stageIdeas = ideas.filter(i => {
+              const statusMatch = stage.statuses.includes(i.status);
+              const spaceMatch = !spaceId || i.idea_space_id === spaceId;
+              return statusMatch && spaceMatch;
+            });
             const Icon = stage.icon;
 
             return (
-              <Card key={stage.id} className={`flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]}`}>
-                <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-black/5">
+              <Card key={stage.id} className={`flex flex-col h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]}`}>
+                <div 
+                  className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-black/5 cursor-pointer lg:cursor-default"
+                  onClick={() => { if (window.innerWidth < 1024) toggleStage(stage.id) }}
+                >
                   <div className="flex items-center gap-2.5">
                     <div className={`p-1.5 rounded-lg bg-${stage.color === 'slate' ? 'muted' : stage.color + '/20'}`}>
                       <Icon className={`h-4 w-4 text-${stage.color === 'slate' ? 'muted-foreground' : stage.color}`} />
                     </div>
                     <h3 className="font-bold text-sm tracking-tight text-foreground">{stage.name}</h3>
                   </div>
-                  <Badge variant="secondary" className="bg-card/50 text-muted-foreground border-none font-bold text-[10px]">
-                    {stageIdeas.length}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-card/50 text-muted-foreground border-none font-bold text-[10px]">
+                      {stageIdeas.length}
+                    </Badge>
+                    <div className="lg:hidden p-1 rounded-full hover:bg-black/5">
+                      {collapsedStages.includes(stage.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                    </div>
+                  </div>
                 </div>
                 
-                <Droppable droppableId={stage.id}>
-                  {(provided, snapshot) => (
-                    <div 
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                      className={`flex-1 overflow-y-auto no-scrollbar p-3 space-y-3 min-h-0 transition-colors duration-200 ${snapshot.isDraggingOver ? 'bg-black/5' : ''}`}
+                <AnimatePresence initial={false}>
+                  {(!collapsedStages.includes(stage.id) || window.innerWidth >= 1024) && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden"
                     >
-                      {stageIdeas.map((idea, index) => (
-                        <Draggable key={idea.id} draggableId={String(idea.id)} index={index}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className={`group bg-card rounded-2xl border border-border p-4 shadow-sm hover:shadow-md transition-all cursor-pointer relative ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-primary/20 scale-[1.02] z-50' : ''}`}
-                              onClick={() => navigate(getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', idea.id), tenantSlug))}
-                            >
-                              <div className="flex flex-col gap-3">
-                                <div className="flex justify-between items-start">
-                                  <Badge variant="outline" className="text-[9px] uppercase tracking-widest font-bold bg-muted text-muted-foreground border-none px-1.5 py-0">
-                                    {idea.category}
-                                  </Badge>
-                                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {(user?.role === 'admin' || user?.id === idea.author_id) && (
-                                      <button 
-                                        onClick={(e) => { 
-                                          e.stopPropagation(); 
-                                          setIdeaToDelete(idea.id);
-                                        }}
-                                        className="p-1 hover:bg-red-50 rounded-md text-slate-400 hover:text-red-500"
-                                        title="Delete"
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                      </button>
-                                    )}
-                                    {user?.role === 'admin' && (
-                                      <>
-                                        <button 
-                                          onClick={(e) => { e.stopPropagation(); handleStatusUpdate(idea.id, getPrevStatus(idea.status)); }}
-                                          className="p-1 hover:bg-slate-100 rounded-md text-slate-400"
-                                          title="Previous Stage"
-                                        >
-                                          <ChevronLeft className="h-3.5 w-3.5" />
-                                        </button>
-                                        <button 
-                                          onClick={(e) => { e.stopPropagation(); handleStatusUpdate(idea.id, getNextStatus(idea.status)); }}
-                                          className="p-1 hover:bg-muted rounded-md text-muted-foreground/60 hover:text-foreground"
-                                          title="Next Stage"
-                                        >
-                                          <ChevronRight className="h-3.5 w-3.5" />
-                                        </button>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                                
-                                <h4 className="font-bold text-sm text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-                                  {idea.title}
-                                </h4>
-                                
-                                {stage.id !== 'done' && (
-                                  <div className="flex items-center justify-between mt-1 pt-3 border-t border-border/50">
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
-                                        <MessageSquare className="h-3 w-3" />
-                                        {idea.comments_count || 0}
+                      <Droppable droppableId={stage.id}>
+                        {(provided, snapshot) => (
+                          <div 
+                            {...provided.droppableProps}
+                            ref={provided.innerRef}
+                            className={`flex-1 overflow-y-auto no-scrollbar p-3 space-y-3 min-h-[50px] transition-colors duration-200 ${snapshot.isDraggingOver ? 'bg-black/5' : ''}`}
+                          >
+                            {stageIdeas.map((idea, index) => (
+                              <Draggable key={idea.id} draggableId={String(idea.id)} index={index}>
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    className={`group bg-card rounded-2xl border border-border p-4 shadow-sm hover:shadow-md transition-all cursor-pointer relative ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-primary/20 scale-[1.02] z-50' : ''}`}
+                                    onClick={() => navigate(getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', idea.id), tenantSlug))}
+                                  >
+                                    <div className="flex flex-col gap-3">
+                                      <div className="flex justify-between items-start">
+                                        <Badge variant="outline" className="text-[9px] uppercase tracking-widest font-bold bg-muted text-muted-foreground border-none px-1.5 py-0">
+                                          {idea.category}
+                                        </Badge>
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                          {(user?.role === 'admin' || user?.id === idea.author_id) && (
+                                            <button 
+                                              onClick={(e) => { 
+                                                e.stopPropagation(); 
+                                                setIdeaToDelete(idea.id);
+                                              }}
+                                              className="p-1 hover:bg-red-50 rounded-md text-slate-400 hover:text-red-500"
+                                              title="Delete"
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5" />
+                                            </button>
+                                          )}
+                                          {user?.role === 'admin' && (
+                                            <>
+                                              <button 
+                                                onClick={(e) => { e.stopPropagation(); handleStatusUpdate(idea.id, getPrevStatus(idea.status)); }}
+                                                className="p-1 hover:bg-slate-100 rounded-md text-slate-400"
+                                                title="Previous Stage"
+                                              >
+                                                <ChevronLeft className="h-3.5 w-3.5" />
+                                              </button>
+                                              <button 
+                                                onClick={(e) => { e.stopPropagation(); handleStatusUpdate(idea.id, getNextStatus(idea.status)); }}
+                                                className="p-1 hover:bg-muted rounded-md text-muted-foreground/60 hover:text-foreground"
+                                                title="Next Stage"
+                                              >
+                                                <ChevronRight className="h-3.5 w-3.5" />
+                                              </button>
+                                            </>
+                                          )}
+                                        </div>
                                       </div>
-                                      <div className="h-1 w-1 rounded-full bg-border" />
-                                      <span className="text-[10px] font-bold text-emerald-500">
-                                        {idea.votes_count || 0} Votes
-                                      </span>
+                                      
+                                      <h4 className="font-bold text-sm text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                                        {idea.title}
+                                      </h4>
+                                      
+                                      {stage.id !== 'done' && (
+                                        <div className="flex items-center justify-between mt-1 pt-3 border-t border-border/50">
+                                          <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
+                                              <MessageSquare className="h-3 w-3" />
+                                              {idea.comments_count || 0}
+                                            </div>
+                                            <div className="h-1 w-1 rounded-full bg-border" />
+                                            <span className="text-[10px] font-bold text-emerald-500">
+                                              {idea.votes_count || 0} Votes
+                                            </span>
+                                          </div>
+                                          <Avatar className="h-6 w-6 border border-background shadow-sm ring-1 ring-border">
+                                            <AvatarFallback className="text-[8px] font-black bg-muted text-muted-foreground">
+                                              {getInitials(idea.author || 'U')}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                        </div>
+                                      )}
                                     </div>
-                                    <Avatar className="h-6 w-6 border border-background shadow-sm ring-1 ring-border">
-                                      <AvatarFallback className="text-[8px] font-black bg-muted text-muted-foreground">
-                                        {getInitials(idea.author || 'U')}
-                                      </AvatarFallback>
-                                    </Avatar>
                                   </div>
                                 )}
-                              </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
 
-                {stageIdeas.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-10 opacity-30 grayscale italic text-[10px] text-muted-foreground pointer-events-none">
-                    <GripVertical className="h-5 w-5 mb-2" />
-                    No items in this stage
-                  </div>
-                )}
+                      {stageIdeas.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-10 opacity-30 grayscale italic text-[10px] text-muted-foreground pointer-events-none">
+                          <GripVertical className="h-5 w-5 mb-2" />
+                          No items in this stage
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </Card>
             );
           })}

@@ -202,7 +202,7 @@ const statusColor: Record<string, string> = {
   "Shipped": "bg-success/15 text-success border-success/20",
 };
 
-const KanbanBoard = ({ category = "All" }: { category?: string }) => {
+const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, spaceId?: string | null }) => {
   const navigate = useNavigate();
   const [selectedIdea, setSelectedIdea] = useState<any>(null);
   const [newComment, setNewComment] = useState("");
@@ -211,6 +211,13 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
   const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<string[]>([]);
+
+  const toggleSection = (section: string) => {
+    setCollapsedSections(prev => 
+      prev.includes(section) ? prev.filter(s => s !== section) : [...prev, section]
+    );
+  };
 
   const { data: ideas = [], isLoading } = useQuery({
     queryKey: ["ideas", tenantSlug],
@@ -330,10 +337,12 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
     });
   };
 
-  // Filter ideas based on category and status
-  const filteredIdeas = category === "All"
-    ? ideas
-    : ideas.filter(i => i.category === category);
+  // Filter ideas based on category, state, and space
+  const filteredIdeas = ideas.filter(i => {
+    const categoryMatch = category === "All" || i.category === category;
+    const spaceMatch = !spaceId || i.idea_space_id === spaceId;
+    return categoryMatch && spaceMatch;
+  });
 
   const ideaPoolItems = filteredIdeas.filter(i => i.status === 'Pending');
   const votingItems = filteredIdeas.filter(i => i.status === 'Under Review' || i.status === 'In Progress' || i.status === 'In Development' || i.status === 'QA');
@@ -343,91 +352,145 @@ const KanbanBoard = ({ category = "All" }: { category?: string }) => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Idea Pool */}
-        <Card className="flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-muted/50 to-muted/10 backdrop-blur-sm border-t-4 border-muted/50 transition-colors duration-300">
-          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30">
+        <Card className="flex flex-col h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-muted/50 to-muted/10 backdrop-blur-sm border-t-4 border-muted/50 transition-colors duration-300">
+          <div 
+            className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30 cursor-pointer lg:cursor-default"
+            onClick={() => { if (window.innerWidth < 1024) toggleSection('ideation') }}
+          >
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-muted rounded-lg">
                 <GripVertical className="h-4 w-4 text-muted-foreground" />
               </div>
               <h3 className="font-bold text-sm tracking-tight text-foreground">Ideation</h3>
             </div>
-            <div className="bg-muted text-muted-foreground px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{ideaPoolItems.length}</div>
+            <div className="flex items-center gap-2">
+              <div className="bg-muted text-muted-foreground px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{ideaPoolItems.length}</div>
+              <div className="lg:hidden p-1 rounded-full hover:bg-black/5">
+                {collapsedSections.includes('ideation') ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </div>
+            </div>
           </div>
-          <div className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar">
-            {ideaPoolItems.map((item, idx) => (
-              <BoardIdeaCard
-                key={item.id}
-                item={item}
-                idx={idx}
-                user={user}
-                voteMutation={voteMutation}
-                handleVote={handleVote}
-                handleSelectIdea={handleSelectIdea}
-                handleBookmark={handleBookmark}
-                setIdeaToDelete={setIdeaToDelete}
-                type="ideation"
-              />
-            ))}
-          </div>
+          <AnimatePresence initial={false}>
+            {(!collapsedSections.includes('ideation') || window.innerWidth >= 1024) && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar lg:max-h-none"
+              >
+                {ideaPoolItems.map((item, idx) => (
+                  <BoardIdeaCard
+                    key={item.id}
+                    item={item}
+                    idx={idx}
+                    user={user}
+                    voteMutation={voteMutation}
+                    handleVote={handleVote}
+                    handleSelectIdea={handleSelectIdea}
+                    handleBookmark={handleBookmark}
+                    setIdeaToDelete={setIdeaToDelete}
+                    type="ideation"
+                  />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Card>
 
         {/* Voting & Feedback */}
-        <Card className="flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30 transition-colors duration-300">
-          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-primary/10 bg-primary/10">
+        <Card className="flex flex-col h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30 transition-colors duration-300">
+          <div 
+            className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-primary/10 bg-primary/10 cursor-pointer lg:cursor-default"
+            onClick={() => { if (window.innerWidth < 1024) toggleSection('development') }}
+          >
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-primary/20 rounded-lg">
                 <ArrowBigUp className="h-4 w-4 text-primary fill-primary/20" />
               </div>
               <h3 className="font-bold text-sm tracking-tight text-primary">In Development</h3>
             </div>
-            <div className="bg-primary/20 text-primary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{votingItems.length}</div>
+            <div className="flex items-center gap-2">
+              <div className="bg-primary/20 text-primary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{votingItems.length}</div>
+              <div className="lg:hidden p-1 rounded-full hover:bg-black/5">
+                {collapsedSections.includes('development') ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </div>
+            </div>
           </div>
-          <div className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar">
-            {votingItems.map((item, idx) => (
-              <BoardIdeaCard
-                key={item.id}
-                item={item}
-                idx={idx}
-                user={user}
-                voteMutation={voteMutation}
-                handleVote={handleVote}
-                handleSelectIdea={handleSelectIdea}
-                handleBookmark={handleBookmark}
-                setIdeaToDelete={setIdeaToDelete}
-                type="development"
-              />
-            ))}
-          </div>
+          <AnimatePresence initial={false}>
+            {(!collapsedSections.includes('development') || window.innerWidth >= 1024) && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar lg:max-h-none"
+              >
+                {votingItems.map((item, idx) => (
+                  <BoardIdeaCard
+                    key={item.id}
+                    item={item}
+                    idx={idx}
+                    user={user}
+                    voteMutation={voteMutation}
+                    handleVote={handleVote}
+                    handleSelectIdea={handleSelectIdea}
+                    handleBookmark={handleBookmark}
+                    setIdeaToDelete={setIdeaToDelete}
+                    type="development"
+                  />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Card>
 
         {/* In Development */}
-        <Card className="flex flex-col h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30 transition-colors duration-300">
-          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-success/10 bg-success/10">
+        <Card className="flex flex-col h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30 transition-colors duration-300">
+          <div 
+            className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-success/10 bg-success/10 cursor-pointer lg:cursor-default"
+            onClick={() => { if (window.innerWidth < 1024) toggleSection('production') }}
+          >
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-success/20 rounded-lg">
                 <Plus className="h-4 w-4 text-success" />
               </div>
               <h3 className="font-bold text-sm tracking-tight text-success">In Production</h3>
             </div>
-            <div className="bg-success/20 text-success px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{devItems.length}</div>
+            <div className="flex items-center gap-2">
+              <div className="bg-success/20 text-success px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{devItems.length}</div>
+              <div className="lg:hidden p-1 rounded-full hover:bg-black/5">
+                {collapsedSections.includes('production') ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </div>
+            </div>
           </div>
-          <div className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar">
-            {devItems.map((item, idx) => (
-              <BoardIdeaCard
-                key={item.id}
-                item={item}
-                idx={idx}
-                user={user}
-                voteMutation={voteMutation}
-                handleVote={handleVote}
-                handleSelectIdea={handleSelectIdea}
-                handleBookmark={handleBookmark}
-                setIdeaToDelete={setIdeaToDelete}
-                handleStatusChange={handleStatusChange}
-                type="production"
-              />
-            ))}
-          </div>
+          <AnimatePresence initial={false}>
+            {(!collapsedSections.includes('production') || window.innerWidth >= 1024) && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="flex-1 p-3 space-y-3 overflow-y-auto no-scrollbar lg:max-h-none"
+              >
+                {devItems.map((item, idx) => (
+                  <BoardIdeaCard
+                    key={item.id}
+                    item={item}
+                    idx={idx}
+                    user={user}
+                    voteMutation={voteMutation}
+                    handleVote={handleVote}
+                    handleSelectIdea={handleSelectIdea}
+                    handleBookmark={handleBookmark}
+                    setIdeaToDelete={setIdeaToDelete}
+                    handleStatusChange={handleStatusChange}
+                    type="production"
+                  />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Card>
       </div>
 

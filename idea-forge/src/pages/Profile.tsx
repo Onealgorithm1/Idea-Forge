@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   MessageSquare,
   Heart,
   Bookmark,
@@ -251,7 +253,14 @@ const Profile = () => {
   const [editName, setEditName] = useState("");
   const [editBio, setEditBio] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const toggleSection = (section: string) => {
+    setCollapsedSections(prev => 
+      prev.includes(section) ? prev.filter(s => s !== section) : [...prev, section]
+    );
+  };
   const queryClient = useQueryClient();
 
   const { data: orgData, isLoading: loadingOrg } = useQuery({
@@ -617,13 +626,21 @@ const Profile = () => {
                 >
                   {/* Section header */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-9 h-9 rounded-2xl bg-primary/10 shadow-sm transition-colors">
-                        <Sparkles className="h-4 w-4 text-primary" />
+                    <div 
+                      className="flex items-center justify-between w-full sm:w-auto cursor-pointer sm:cursor-default"
+                      onClick={() => { if (window.innerWidth < 640) toggleSection('my-ideas') }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-9 h-9 rounded-2xl bg-primary/10 shadow-sm transition-colors">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <h2 className="text-xl font-black tracking-tight text-foreground transition-colors">My Ideas</h2>
+                          <p className="text-xs text-muted-foreground font-medium transition-colors">{ideas.length} submissions total</p>
+                        </div>
                       </div>
-                      <div>
-                        <h2 className="text-xl font-black tracking-tight text-foreground transition-colors">My Ideas</h2>
-                        <p className="text-xs text-muted-foreground font-medium transition-colors">{ideas.length} submissions total</p>
+                      <div className="sm:hidden p-2 rounded-xl bg-muted/50">
+                        {collapsedSections.includes('my-ideas') ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                       </div>
                     </div>
 
@@ -640,92 +657,124 @@ const Profile = () => {
                     </div>
                   </div>
 
-                  {/* Ideas grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    <AnimatePresence mode="popLayout">
-                      {filteredIdeas.map((idea: any) => (
-                        <motion.div
-                          layout
-                          key={idea.id}
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          transition={{ duration: 0.18 }}
-                        >
-                          <ProfileIdeaCard idea={idea} tenantSlug={tenantSlug} onBookmark={handleBookmark} />
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
+                  <AnimatePresence initial={false}>
+                    {(!collapsedSections.includes('my-ideas') || window.innerWidth >= 640) && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="overflow-hidden space-y-5"
+                      >
+                        {/* Ideas grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                          <AnimatePresence mode="popLayout">
+                            {filteredIdeas.map((idea: any) => (
+                              <motion.div
+                                layout
+                                key={idea.id}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                transition={{ duration: 0.18 }}
+                              >
+                                <ProfileIdeaCard idea={idea} tenantSlug={tenantSlug} onBookmark={handleBookmark} />
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
+                        </div>
 
-                  {/* Empty state */}
-                  {filteredIdeas.length === 0 && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-center py-24 bg-white border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-4"
-                    >
-                      {searchQuery ? (
-                        <>
-                          <div className="h-16 w-16 bg-slate-100 rounded-full flex items-center justify-center text-2xl">🔍</div>
-                          <p className="text-slate-500 font-bold">No ideas match "{searchQuery}"</p>
-                        </>
-                      ) : (
-                        <>
-                          <div className="h-20 w-20 bg-primary/8 rounded-full flex items-center justify-center text-3xl">✨</div>
-                          <div className="space-y-1">
-                            <p className="text-xl font-black text-slate-800 tracking-tight">No ideas yet</p>
-                            <p className="text-slate-400 font-medium text-sm">Be the first to spark something new!</p>
-                          </div>
-                          <Button
-                            asChild
-                            className="rounded-2xl font-black shadow-lg shadow-primary/20 gap-2"
+                        {/* Empty state */}
+                        {filteredIdeas.length === 0 && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="text-center py-24 bg-white border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-4"
                           >
-                            <Link to={getTenantPath(ROUTES.SUBMIT_IDEA, tenantSlug)}>
-                              <Plus className="h-4 w-4" />
-                              Share an Idea
-                            </Link>
-                          </Button>
-                        </>
-                      )}
-                    </motion.div>
-                  )}
+                            {searchQuery ? (
+                              <>
+                                <div className="h-16 w-16 bg-slate-100 rounded-full flex items-center justify-center text-2xl">🔍</div>
+                                <p className="text-slate-500 font-bold">No ideas match "{searchQuery}"</p>
+                              </>
+                            ) : (
+                              <>
+                                <div className="h-20 w-20 bg-primary/8 rounded-full flex items-center justify-center text-3xl">✨</div>
+                                <div className="space-y-1">
+                                  <p className="text-xl font-black text-slate-800 tracking-tight">No ideas yet</p>
+                                  <p className="text-slate-400 font-medium text-sm">Be the first to spark something new!</p>
+                                </div>
+                                <Button
+                                  asChild
+                                  className="rounded-2xl font-black shadow-lg shadow-primary/20 gap-2"
+                                >
+                                  <Link to={getTenantPath(ROUTES.SUBMIT_IDEA, tenantSlug)}>
+                                    <Plus className="h-4 w-4" />
+                                    Share an Idea
+                                  </Link>
+                                </Button>
+                              </>
+                            )}
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   {/* ── Saved Ideas section ────────────────── */}
                   <div className="pt-8 border-t border-border mt-8 transition-colors">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="flex items-center justify-center w-9 h-9 rounded-2xl bg-amber-500/10 shadow-sm text-amber-500">
-                        <Bookmark className="h-4 w-4 fill-current" />
+                    <div 
+                      className="flex items-center justify-between w-full sm:w-auto cursor-pointer sm:cursor-default mb-6"
+                      onClick={() => { if (window.innerWidth < 640) toggleSection('saved-ideas') }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-9 h-9 rounded-2xl bg-amber-500/10 shadow-sm text-amber-500">
+                          <Bookmark className="h-4 w-4 fill-current" />
+                        </div>
+                        <div>
+                          <h2 className="text-xl font-black tracking-tight text-foreground transition-colors">Saved Ideas</h2>
+                          <p className="text-xs text-muted-foreground font-medium transition-colors">{bookmarkedIdeas.length} ideas bookmarked</p>
+                        </div>
                       </div>
-                      <div>
-                        <h2 className="text-xl font-black tracking-tight text-foreground transition-colors">Saved Ideas</h2>
-                        <p className="text-xs text-muted-foreground font-medium transition-colors">{bookmarkedIdeas.length} ideas bookmarked</p>
+                      <div className="sm:hidden p-2 rounded-xl bg-muted/50">
+                        {collapsedSections.includes('saved-ideas') ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                       </div>
                     </div>
 
-                    {bookmarkedIdeas.length === 0 ? (
-                      <div className="text-center py-16 bg-card/50 border-2 border-dashed border-border rounded-3xl flex flex-col items-center justify-center gap-3 grayscale opacity-60">
-                        <Bookmark className="h-10 w-10 text-muted-foreground/30" />
-                        <p className="text-sm font-bold text-muted-foreground font-mono tracking-tighter">You haven't saved any ideas yet.</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        <AnimatePresence mode="popLayout">
-                          {bookmarkedIdeas.map((idea: any) => (
-                            <motion.div
-                              layout
-                              key={`bookmark-${idea.id}`}
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.9 }}
-                              transition={{ duration: 0.18 }}
-                            >
-                              <ProfileIdeaCard idea={idea} tenantSlug={tenantSlug} onBookmark={handleBookmark} />
-                            </motion.div>
-                          ))}
-                        </AnimatePresence>
-                      </div>
-                    )}
+                    <AnimatePresence initial={false}>
+                      {(!collapsedSections.includes('saved-ideas') || window.innerWidth >= 640) && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                          className="overflow-hidden"
+                        >
+                          {bookmarkedIdeas.length === 0 ? (
+                            <div className="text-center py-16 bg-card/50 border-2 border-dashed border-border rounded-3xl flex flex-col items-center justify-center gap-3 grayscale opacity-60">
+                              <Bookmark className="h-10 w-10 text-muted-foreground/30" />
+                              <p className="text-sm font-bold text-muted-foreground font-mono tracking-tighter">You haven't saved any ideas yet.</p>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                              <AnimatePresence mode="popLayout">
+                                {bookmarkedIdeas.map((idea: any) => (
+                                  <motion.div
+                                    layout
+                                    key={`bookmark-${idea.id}`}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    transition={{ duration: 0.18 }}
+                                  >
+                                    <ProfileIdeaCard idea={idea} tenantSlug={tenantSlug} onBookmark={handleBookmark} />
+                                  </motion.div>
+                                ))}
+                              </AnimatePresence>
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </motion.div>
               </TabsContent>

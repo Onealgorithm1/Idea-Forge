@@ -33,7 +33,10 @@ export const getIdeas = async (req: any, res: Response) => {
   }
 
   try {
-    const result = await query(`
+    const { role } = (req as any).user || { role: 'user' };
+    const isAdmin = ['admin', 'tenant_admin', 'super_admin'].includes(role);
+
+    let baseQuery = `
       SELECT i.*, u.name as author, c.name as category, s.name as space_name,
              (SELECT json_agg(t.name) FROM tags t 
               JOIN idea_tags it ON t.id = it.tag_id 
@@ -45,8 +48,19 @@ export const getIdeas = async (req: any, res: Response) => {
       LEFT JOIN categories c ON i.category_id = c.id
       LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
       WHERE i.tenant_id = $1
-      ORDER BY i.created_at DESC
-    `, [tenantId, userId || '00000000-0000-0000-0000-000000000000']);
+    `;
+
+    const queryParams: any[] = [tenantId, userId || '00000000-0000-0000-0000-000000000000'];
+
+    // If not admin, restrict to assigned Idea Spaces
+    if (!isAdmin && userId) {
+      baseQuery += ` AND (i.idea_space_id IS NULL OR i.idea_space_id IN (SELECT idea_space_id FROM user_idea_spaces WHERE user_id = $${queryParams.length + 1}))`;
+      queryParams.push(userId);
+    }
+
+    baseQuery += ` ORDER BY i.created_at DESC`;
+
+    const result = await query(baseQuery, queryParams);
     res.json(result.rows);
   } catch (error) {
     console.error('Get ideas error:', error);
@@ -127,7 +141,13 @@ export const editIdea = async (req: any, res: Response) => {
 
   try {
     // Verify idea belongs to this user and tenant
-    const existing = await query('SELECT * FROM ideas WHERE id = $1 AND tenant_id = $2', [id, tenant_id]);
+    const existing = await query(
+      `SELECT i.*, c.manager_id as category_manager_id 
+       FROM ideas i 
+       LEFT JOIN categories c ON i.category_id = c.id 
+       WHERE i.id = $1 AND i.tenant_id = $2`, 
+      [id, tenant_id]
+    );
     if (existing.rows.length === 0) return res.status(404).json({ message: 'Idea not found' });
     const idea = existing.rows[0];
 
@@ -138,8 +158,12 @@ export const editIdea = async (req: any, res: Response) => {
         return res.status(400).json({ message: 'Invalid category' });
       }
     }
-    const isAdmin = req.user.role === 'admin';
-    if (idea.author_id !== user_id && !isAdmin) return res.status(403).json({ message: 'Not authorized to edit this idea' });
+    const isAdmin = ['admin', 'tenant_admin', 'super_admin'].includes(req.user.role);
+    const isCategoryManager = idea.category_manager_id === user_id;
+
+    if (idea.author_id !== user_id && !isAdmin && !isCategoryManager) {
+      return res.status(403).json({ message: 'Not authorized to edit this idea' });
+    }
 
     // --- LOCKING LOGIC ---
     // 1. Lock if status is 'In Development'
@@ -197,8 +221,54 @@ export const getCategories = async (req: any, res: Response) => {
 
 export const getIdeaSpaces = async (req: any, res: Response) => {
   const tenantId = req.tenantId;
+  let userId = req.user?.id;
+  let role = req.user?.role || 'user';
+
+  const authHeader = req.headers['authorization'];
+  console.log(`[getIdeaSpaces] X-Tenant-ID: ${req.headers['x-tenant-id']}, AuthHeader: ${authHeader ? 'Present' : 'Missing'}`);
+  
+  // If userId is not already set, try to get it from header
+  if (!userId) {
+    if (authHeader) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded: any = jwt.verify(token, env.JWT_SECRET as string);
+        userId = decoded.id;
+        role = decoded.role || 'user';
+        if (!tenantId) (req as any).tenantId = decoded.tenantId;
+        console.log(`[getIdeaSpaces] Decoded Token: ID=${userId}, Role=${role}, Tenant=${decoded.tenantId}`);
+      } catch (e: any) { 
+        console.error(`[getIdeaSpaces] JWT Verify Failed: ${e.message}`);
+      }
+    }
+  }
+
+  // Refresh tenantId after token decoding if it was missing
+  const finalTenantId = tenantId || (req as any).tenantId;
+  const isAdmin = ['admin', 'tenant_admin', 'super_admin'].includes(role);
+
+  console.log(`[getIdeaSpaces] Final Context -> Tenant: ${finalTenantId}, User: ${userId}, Role: ${role}, isAdmin: ${isAdmin}`);
+
   try {
-    const result = await query('SELECT * FROM idea_spaces WHERE tenant_id = $1 ORDER BY name', [tenantId]);
+    let result;
+    if (isAdmin) {
+      // Admins see all spaces in the tenant
+      result = await query('SELECT * FROM idea_spaces WHERE tenant_id = $1 ORDER BY name', [finalTenantId]);
+    } else if (userId) {
+      // Non-admins see only assigned spaces
+      console.log(`[getIdeaSpaces] Querying assignments for User: ${userId} in Tenant: ${finalTenantId}`);
+      result = await query(`
+        SELECT s.* FROM idea_spaces s
+        JOIN user_idea_spaces uis ON s.id = uis.idea_space_id
+        WHERE s.tenant_id = $1 AND uis.user_id = $2::uuid
+        ORDER BY s.name
+      `, [finalTenantId, userId]);
+    } else {
+      // Non-logged in users see no spaces
+      console.log(`[getIdeaSpaces] No User ID provided, returning empty.`);
+      return res.json([]);
+    }
+    console.log(`[getIdeaSpaces] Found ${result.rows.length} spaces`);
     res.json(result.rows);
   } catch (error) {
     console.error('Get idea spaces error:', error);
@@ -649,13 +719,22 @@ export const deleteIdea = async (req: any, res: Response) => {
 
   try {
     // 1. Check if idea exists and user has permission
-    const ideaResult = await query('SELECT author_id, title FROM ideas WHERE id = $1 AND tenant_id = $2', [id, tenant_id]);
+    const ideaResult = await query(
+      `SELECT i.author_id, i.title, c.manager_id as category_manager_id 
+       FROM ideas i 
+       LEFT JOIN categories c ON i.category_id = c.id 
+       WHERE i.id = $1 AND i.tenant_id = $2`, 
+      [id, tenant_id]
+    );
     if (ideaResult.rows.length === 0) {
       return res.status(404).json({ message: 'Idea not found' });
     }
 
     const idea = ideaResult.rows[0];
-    if (idea.author_id !== user_id && user_role !== 'admin') {
+    const isAdmin = ['admin', 'tenant_admin', 'super_admin'].includes(user_role);
+    const isCategoryManager = idea.category_manager_id === user_id;
+
+    if (idea.author_id !== user_id && !isAdmin && !isCategoryManager) {
       return res.status(403).json({ message: 'Not authorized to delete this idea' });
     }
 
