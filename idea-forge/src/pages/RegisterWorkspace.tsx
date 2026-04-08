@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Building2, Mail, Lock, User, ArrowRight, Loader2, Globe, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 import { motion, AnimatePresence } from "framer-motion";
@@ -221,8 +222,7 @@ export default function RegisterWorkspacePage() {
                   <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Admin Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-                    <Input
-                      type="password"
+                    <PasswordInput
                       placeholder="••••••••"
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}

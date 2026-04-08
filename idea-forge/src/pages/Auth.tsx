@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 import { motion, AnimatePresence } from "framer-motion";
@@ -227,9 +228,8 @@ export default function AuthPage() {
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-                  <Input
+                  <PasswordInput
                     id="password"
-                    type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"

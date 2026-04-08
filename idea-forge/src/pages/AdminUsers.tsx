@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 
 const AdminUsers = () => {
@@ -318,9 +319,8 @@ const AdminUsers = () => {
                <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">New Password</Label>
                <div className="relative">
                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                 <Input
+                 <PasswordInput
                    id="password"
-                   type="password"
                    placeholder="Enter new password"
                    value={newPassword}
                    onChange={(e) => setNewPassword(e.target.value)}
@@ -392,9 +392,8 @@ const AdminUsers = () => {
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
+                  <PasswordInput
                     id="create-password"
-                    type="text"
                     placeholder="Generates securely..."
                     value={createForm.password}
                     onChange={(e) => setCreateForm(f => ({ ...f, password: e.target.value }))}

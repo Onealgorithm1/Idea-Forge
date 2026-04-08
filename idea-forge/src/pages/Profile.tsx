@@ -15,8 +15,6 @@ import {
   X,
   Loader2,
   Lock,
-  Eye,
-  EyeOff,
   Building2,
   Sparkles,
   ShieldCheck,
@@ -45,6 +43,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTenant } from "@/contexts/TenantContext";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Textarea } from "@/components/ui/textarea";
 import ProfileIdeaCard from "@/components/ProfileIdeaCard";
 
@@ -94,9 +93,6 @@ const ChangePasswordModal = ({
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNext, setShowNext] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -166,20 +162,12 @@ const ChangePasswordModal = ({
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Current Password</label>
             <div className="relative">
-              <Input
-                type={showCurrent ? "text" : "password"}
+              <PasswordInput
                 value={current}
                 onChange={(e) => setCurrent(e.target.value)}
                 placeholder="Enter current password"
-                className="pr-10 h-11 rounded-xl border-border focus:border-primary bg-background"
+                className="h-11 rounded-xl border-border focus:border-primary bg-background"
               />
-              <button
-                type="button"
-                onClick={() => setShowCurrent(!showCurrent)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
             </div>
           </div>
 
@@ -187,20 +175,12 @@ const ChangePasswordModal = ({
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">New Password</label>
             <div className="relative">
-              <Input
-                type={showNext ? "text" : "password"}
+              <PasswordInput
                 value={next}
                 onChange={(e) => setNext(e.target.value)}
                 placeholder="Min. 8 characters"
-                className="pr-10 h-11 rounded-xl border-slate-200 focus:border-primary"
+                className="h-11 rounded-xl border-slate-200 focus:border-primary"
               />
-              <button
-                type="button"
-                onClick={() => setShowNext(!showNext)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                {showNext ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
             </div>
             {/* Strength bar */}
             {next && (
@@ -225,21 +205,13 @@ const ChangePasswordModal = ({
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Confirm New Password</label>
             <div className="relative">
-              <Input
-                type={showConfirm ? "text" : "password"}
+              <PasswordInput
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder="Re-enter new password"
-                className={`pr-10 h-11 rounded-xl border-slate-200 focus:border-primary ${confirm && next !== confirm ? "border-rose-300 focus:border-rose-400" : ""
+                className={`h-11 rounded-xl border-slate-200 focus:border-primary ${confirm && next !== confirm ? "border-rose-300 focus:border-rose-400" : ""
                   }`}
               />
-              <button
-                type="button"
-                onClick={() => setShowConfirm(!showConfirm)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
             </div>
             {confirm && next !== confirm && (
               <p className="text-[10px] text-rose-500 font-semibold">Passwords don't match</p>
