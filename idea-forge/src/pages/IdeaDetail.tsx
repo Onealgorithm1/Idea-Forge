@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronLeft, MessageSquare, Bookmark, BookmarkCheck, Calendar,
   Target, Loader2, Pencil, Star, X, Check, Trash2, Layers,
-  Send, AlertCircle, Hash, ChevronDown, ChevronUp,
+  Send, AlertCircle, Hash, ChevronDown, ChevronUp, Reply, MessageCircle
 } from "lucide-react";
 import Header from "@/components/Header";
 import SidebarNav from "@/components/SidebarNav";
@@ -212,6 +212,9 @@ const IdeaDetail = () => {
   const [editingCommentContent, setEditingCommentContent] = useState("");
   const [isDeleteIdeaModalOpen, setIsDeleteIdeaModalOpen] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
+  const [replyToId, setReplyToId] = useState<string | null>(null);
+  const [newReply, setNewReply] = useState("");
+  const [collapsedThreads, setCollapsedThreads] = useState<Set<string>>(new Set());
 
   const { data: ideaSpaces = [] } = useQuery({
     queryKey: ["idea-spaces", tenantSlug],
@@ -219,14 +222,16 @@ const IdeaDetail = () => {
   });
 
   const commentMutation = useMutation({
-    mutationFn: (content: string) => {
+    mutationFn: ({ content, parent_id }: { content: string; parent_id?: string }) => {
       if (!content || content.trim().length < 2)
         throw new Error("Comment must be at least 2 characters");
       if (content.length > 500) throw new Error("Comment is too long (max 500)");
-      return api.post(`/ideas/${id}/comments`, { content }, token!);
+      return api.post(`/ideas/${id}/comments`, { content, parent_id }, token!);
     },
     onSuccess: () => {
       setNewComment("");
+      setNewReply("");
+      setReplyToId(null);
       queryClient.invalidateQueries({ queryKey: ["comments", id] });
       queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
       toast.success("Comment added");
@@ -361,6 +366,15 @@ const IdeaDetail = () => {
       title: editTitle,
       description: editDescription,
       idea_space_id: editIdeaSpace,
+    });
+  };
+
+  const toggleThread = (commentId: string) => {
+    setCollapsedThreads(prev => {
+      const next = new Set(prev);
+      if (next.has(commentId)) next.delete(commentId);
+      else next.add(commentId);
+      return next;
     });
   };
 
@@ -754,7 +768,7 @@ const IdeaDetail = () => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       if (!newComment.trim()) return;
                       if (!token) return toast.error("Please login to comment");
-                      commentMutation.mutate(newComment);
+                      commentMutation.mutate({ content: newComment });
                     }
                   }}
                   className="flex-1 bg-card/60 backdrop-blur-sm border border-border rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all shadow-sm placeholder:text-muted-foreground text-foreground"
@@ -763,7 +777,7 @@ const IdeaDetail = () => {
                   onClick={() => {
                     if (!newComment.trim()) return;
                     if (!token) return toast.error("Please login to comment");
-                    commentMutation.mutate(newComment);
+                    commentMutation.mutate({ content: newComment });
                   }}
                   disabled={!newComment.trim() || commentMutation.isPending || !token}
                   className="gap-2 rounded-2xl font-bold shadow-premium-hover px-8 h-auto bg-primary text-white hover:bg-primary/90 transition-all border-none"
@@ -778,101 +792,226 @@ const IdeaDetail = () => {
               </div>
 
               {/* Comment list */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <AnimatePresence>
-                  {comments.map((c: any, i: number) => (
-                    <motion.div
-                      key={c.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                      transition={{ duration: 0.2, delay: i * 0.03 }}
-                      className="group bg-card/50 border border-border rounded-2xl p-6 hover:border-primary/20 hover:shadow-premium-hover transition-all duration-300"
-                    >
-                      <div className="flex gap-4">
-                        <Avatar className="h-10 w-10 ring-2 ring-background shadow-md border border-border shrink-0">
-                          <AvatarFallback className="text-xs font-black bg-primary/10 text-primary uppercase">
-                            {getInitials(c.author || "?")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-black text-foreground">{c.author}</span>
-                              {c.is_edited && (
-                                <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-lg italic font-medium">
-                                  edited
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-[11px] text-muted-foreground font-semibold">
-                                {format(new Date(c.created_at), "MMM d, HH:mm")}
-                              </span>
-                              {(c.user_id === user?.id || isAdmin) && (
-                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                                  <button
-                                    onClick={() => {
-                                      setEditingCommentId(c.id);
-                                      setEditingCommentContent(c.content);
-                                    }}
-                                    className="p-1.5 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary transition-all"
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                  </button>
-                                  <button
-                                    onClick={() => setCommentToDelete(c.id)}
-                                    className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-all"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                  {(() => {
+                    // Group comments into threads
+                    const topLevel = comments.filter((c: any) => !c.parent_id);
+                    const repliesMap = comments.filter((c: any) => c.parent_id).reduce((acc: any, c: any) => {
+                      if (!acc[c.parent_id]) acc[c.parent_id] = [];
+                      acc[c.parent_id].push(c);
+                      return acc;
+                    }, {});
 
-                          {editingCommentId === c.id ? (
-                            <div className="space-y-2 mt-1">
-                              <Textarea
-                                value={editingCommentContent}
-                                onChange={(e) => setEditingCommentContent(e.target.value)}
-                                className="min-h-[72px] text-sm rounded-xl border-slate-200 focus:border-primary"
-                              />
-                              <div className="flex gap-2 justify-end">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 text-xs rounded-xl text-slate-500 font-semibold"
-                                  onClick={() => setEditingCommentId(null)}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  className="h-7 text-xs rounded-xl font-bold"
-                                  onClick={() =>
-                                    editCommentMutation.mutate({
-                                      commentId: c.id,
-                                      content: editingCommentContent,
-                                    })
-                                  }
-                                  disabled={editCommentMutation.isPending}
-                                >
-                                  {editCommentMutation.isPending ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : (
-                                    "Update"
-                                  )}
-                                </Button>
+                    return topLevel.map((c: any, i: number) => {
+                      const replies = repliesMap[c.id] || [];
+                      const isCollapsed = collapsedThreads.has(c.id);
+                      
+                      return (
+                        <div key={c.id} className="space-y-3">
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                            transition={{ duration: 0.2, delay: i * 0.03 }}
+                            className="group bg-card/50 border border-border rounded-2xl p-5 hover:border-primary/20 hover:shadow-premium-hover transition-all duration-300 relative overflow-hidden"
+                          >
+                            <div className="flex gap-4">
+                              <Avatar className="h-10 w-10 ring-2 ring-background shadow-md border border-border shrink-0">
+                                <AvatarFallback className="text-xs font-black bg-primary/10 text-primary uppercase">
+                                  {getInitials(c.author || "?")}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-black text-foreground">{c.author}</span>
+                                    {c.is_edited && (
+                                      <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-lg italic font-medium">
+                                        edited
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-[11px] text-muted-foreground font-semibold">
+                                      {format(new Date(c.created_at), "MMM d, HH:mm")}
+                                    </span>
+                                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                                      <button
+                                        onClick={() => setReplyToId(replyToId === c.id ? null : c.id)}
+                                        className="p-1.5 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary transition-all"
+                                        title="Reply"
+                                      >
+                                        <Reply className="h-3 w-3" />
+                                      </button>
+                                      {(c.user_id === user?.id || isAdmin) && (
+                                        <>
+                                          <button
+                                            onClick={() => {
+                                              setEditingCommentId(c.id);
+                                              setEditingCommentContent(c.content);
+                                            }}
+                                            className="p-1.5 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary transition-all"
+                                          >
+                                            <Pencil className="h-3 w-3" />
+                                          </button>
+                                          <button
+                                            onClick={() => setCommentToDelete(c.id)}
+                                            className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-all"
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {editingCommentId === c.id ? (
+                                  <div className="space-y-2 mt-1">
+                                    <Textarea
+                                      value={editingCommentContent}
+                                      onChange={(e) => setEditingCommentContent(e.target.value)}
+                                      className="min-h-[72px] text-sm rounded-xl border-slate-200 focus:border-primary"
+                                    />
+                                    <div className="flex gap-2 justify-end">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 text-xs rounded-xl text-slate-500 font-semibold"
+                                        onClick={() => setEditingCommentId(null)}
+                                      >
+                                        Cancel
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        className="h-7 text-xs rounded-xl font-bold"
+                                        onClick={() =>
+                                          editCommentMutation.mutate({
+                                            commentId: c.id,
+                                            content: editingCommentContent,
+                                          })
+                                        }
+                                        disabled={editCommentMutation.isPending}
+                                      >
+                                        {editCommentMutation.isPending ? (
+                                          <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : (
+                                          "Update"
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <p className="text-sm text-slate-600 leading-relaxed mt-1">{c.content}</p>
+                                    
+                                    {/* Thread Toggle (if replies exist) */}
+                                    {replies.length > 0 && (
+                                      <button 
+                                        onClick={() => toggleThread(c.id)}
+                                        className="flex items-center gap-1.5 mt-2.5 text-[11px] font-bold text-primary/70 hover:text-primary transition-colors"
+                                      >
+                                        {isCollapsed ? (
+                                          <><ChevronDown className="h-3 w-3" /> Show {replies.length} repli{replies.length === 1 ? 'y' : 'es'}</>
+                                        ) : (
+                                          <><ChevronUp className="h-3 w-3" /> Hide replies</>
+                                        )}
+                                      </button>
+                                    )}
+                                  </>
+                                )}
                               </div>
                             </div>
-                          ) : (
-                            <p className="text-sm text-slate-600 leading-relaxed mt-1">{c.content}</p>
+                          </motion.div>
+
+                          {/* Reply Input Area */}
+                          <AnimatePresence>
+                            {replyToId === c.id && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="ml-14 mr-2"
+                              >
+                                <div className="bg-muted/30 border border-border p-3 rounded-2xl flex gap-3 shadow-sm mb-3">
+                                  <input 
+                                    autoFocus
+                                    placeholder={`Reply to ${c.author}...`}
+                                    value={newReply}
+                                    onChange={(e) => setNewReply(e.target.value)}
+                                    className="flex-1 bg-transparent border-none text-sm focus:outline-none focus:ring-0 py-1"
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter" && newReply.trim()) {
+                                        commentMutation.mutate({ content: newReply, parent_id: c.id });
+                                      }
+                                    }}
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button size="sm" variant="ghost" className="h-8 rounded-xl text-xs font-semibold" onClick={() => setReplyToId(null)}>Cancel</Button>
+                                    <Button 
+                                      size="sm" 
+                                      className="h-8 rounded-xl text-xs font-bold px-4" 
+                                      disabled={!newReply.trim() || commentMutation.isPending}
+                                      onClick={() => commentMutation.mutate({ content: newReply, parent_id: c.id })}
+                                    >
+                                      {commentMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin"/> : "Reply"}
+                                    </Button>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
+                          {/* Render Replies */}
+                          {!isCollapsed && (
+                            <div className="ml-14 space-y-3">
+                              {replies.map((r: any) => (
+                                <motion.div
+                                  key={r.id}
+                                  initial={{ opacity: 0, x: -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  className="group bg-card/30 border border-border/60 rounded-2xl p-4 hover:border-primary/10 transition-all relative overflow-hidden"
+                                >
+                                  {/* Thread line visual */}
+                                  <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-primary/10 ml-[-8px]" />
+                                  
+                                  <div className="flex gap-3">
+                                    <Avatar className="h-8 w-8 ring-1 ring-background shadow-sm border border-border shrink-0">
+                                      <AvatarFallback className="text-[10px] font-black bg-primary/5 text-primary/70 uppercase">
+                                        {getInitials(r.author || "?")}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center justify-between mb-0.5">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-[13px] font-bold text-foreground">{r.author}</span>
+                                          <span className="text-[10px] text-muted-foreground font-semibold">
+                                            {format(new Date(r.created_at), "MMM d, HH:mm")}
+                                          </span>
+                                        </div>
+                                        {(r.user_id === user?.id || isAdmin) && (
+                                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                              onClick={() => setCommentToDelete(r.id)}
+                                              className="p-1 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-all"
+                                            >
+                                              <Trash2 className="h-2.5 w-2.5" />
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <p className="text-sm text-slate-600 leading-relaxed">{r.content}</p>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
                           )}
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      );
+                    });
+                  })()}
                 </AnimatePresence>
 
                 {comments.length === 0 && (

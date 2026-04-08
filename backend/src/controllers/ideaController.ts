@@ -383,7 +383,7 @@ export const voteIdea = async (req: any, res: Response) => {
 
 export const addComment = async (req: any, res: Response) => {
   const { id } = req.params;
-  const { content } = req.body;
+  const { content, parent_id } = req.body;
   const user_id = req.user.id;
 
   if (!content || content.trim().length < 2) {
@@ -395,8 +395,8 @@ export const addComment = async (req: any, res: Response) => {
 
   try {
     const result = await query(
-      'INSERT INTO comments (idea_id, user_id, content, tenant_id) VALUES ($1, $2, $3, $4) RETURNING *',
-      [id, user_id, content, req.tenantId]
+      'INSERT INTO comments (idea_id, user_id, content, tenant_id, parent_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [id, user_id, content, req.tenantId, parent_id || null]
     );
     
     // Update comments_count
@@ -453,6 +453,18 @@ export const addComment = async (req: any, res: Response) => {
           ).catch(e => console.error('Bookmarker email notification failed:', e));
         }
       });
+
+      // 3. If it's a reply, notify the author of the parent comment
+      if (parent_id) {
+        const parentInfo = await query('SELECT user_id FROM comments WHERE id = $1', [parent_id]);
+        if (parentInfo.rows.length > 0 && parentInfo.rows[0].user_id !== user_id) {
+          const parentAuthorId = parentInfo.rows[0].user_id;
+          await query(
+            'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
+            [parentAuthorId, 'comment_reply', id, `${commenterName} replied to your comment on: ${idea.title}`, idea.tenant_id]
+          );
+        }
+      }
     }
   } catch (error) {
     console.error('Add comment error:', error);
