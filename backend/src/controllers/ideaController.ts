@@ -771,3 +771,72 @@ export const deleteIdea = async (req: any, res: Response) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const getSimilarIdeas = async (req: any, res: Response) => {
+  const { q } = req.query as { q: string };
+  const tenant_id = req.tenantId;
+
+  if (!q || q.trim().length < 3) {
+    return res.json([]);
+  }
+
+  try {
+    // PostgreSQL full-text search: rank by relevance across title + description
+    const ftsResult = await query(
+      `SELECT
+         i.id,
+         i.title,
+         i.status,
+         i.votes_count,
+         u.name AS author_name,
+         c.name AS category,
+         s.name AS space_name,
+         ts_rank(
+           to_tsvector('english', i.title || ' ' || COALESCE(i.description, '')),
+           plainto_tsquery('english', $1)
+         ) AS rank
+       FROM ideas i
+       LEFT JOIN users u ON i.author_id = u.id
+       LEFT JOIN categories c ON i.category_id = c.id
+       LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
+       WHERE i.tenant_id = $2
+         AND to_tsvector('english', i.title || ' ' || COALESCE(i.description, ''))
+             @@ plainto_tsquery('english', $1)
+       ORDER BY rank DESC
+       LIMIT 5`,
+      [q.trim(), tenant_id]
+    );
+
+    if (ftsResult.rows.length > 0) {
+      return res.json(ftsResult.rows);
+    }
+
+    // Fallback: ILIKE prefix search on title when FTS returns nothing
+    // (useful for very short or partial words that FTS tokenizes differently)
+    const likeResult = await query(
+      `SELECT
+         i.id,
+         i.title,
+         i.status,
+         i.votes_count,
+         u.name AS author_name,
+         c.name AS category,
+         s.name AS space_name,
+         0.0 AS rank
+       FROM ideas i
+       LEFT JOIN users u ON i.author_id = u.id
+       LEFT JOIN categories c ON i.category_id = c.id
+       LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
+       WHERE i.tenant_id = $2
+         AND i.title ILIKE $1
+       ORDER BY i.created_at DESC
+       LIMIT 5`,
+      [`%${q.trim()}%`, tenant_id]
+    );
+
+    return res.json(likeResult.rows);
+  } catch (error) {
+    console.error('Get similar ideas error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
