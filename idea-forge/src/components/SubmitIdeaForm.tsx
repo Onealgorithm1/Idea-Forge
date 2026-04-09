@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import SimilarIdeasPanel from "@/components/SimilarIdeasPanel";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import {
   Bold, Strikethrough, List, ListOrdered,
@@ -70,6 +71,7 @@ function CharacterCount({ value, max }: CharacterCountProps) {
 
 const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
   const [title, setTitle] = useState("");
+  const [debouncedTitle, setDebouncedTitle] = useState("");
   const [category, setCategory] = useState<string>("");
   const [ideaSpace, setIdeaSpace] = useState<string>("");
   const [description, setDescription] = useState("");
@@ -81,7 +83,7 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
   const { tenant } = useTenant();
   const navigate = useNavigate();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
-  
+
   // Use tenant context slug if available, fallback to param
   const currentSlug = tenant?.slug || tenantSlug || "default";
 
@@ -104,17 +106,25 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
     if (ideaSpaces.length > 0 && !ideaSpace) setIdeaSpace(ideaSpaces[0].id);
   }, [ideaSpaces, ideaSpace]);
 
+  // Debounce title → FTS search (600ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedTitle(title);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [title]);
+
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
     if (!title.trim()) newErrors.title = "Title is required";
     else if (title.trim().length < 5) newErrors.title = "Title must be at least 5 characters";
-    
+
     if (!category) newErrors.category = "Please select a category";
     if (!ideaSpace) newErrors.ideaSpace = "Please select an idea space";
-    
+
     if (!description.trim()) newErrors.description = "Description is required";
     else if (description.trim().length < 20) newErrors.description = "Description must be at least 20 characters";
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -140,13 +150,13 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
         idea_space_id: ideaSpace,
         tags: tags.split(',').map(t => t.trim()).filter(t => t !== "")
       }, token || undefined);
-      
+
       toast.success("Idea posted successfully!");
       setTitle("");
       setDescription("");
       setTags("");
       setErrors({});
-      
+
       // Invalidate relevant queries to refresh the board immediately
       queryClient.invalidateQueries({ queryKey: ["ideas", currentSlug] });
       queryClient.invalidateQueries({ queryKey: ["recent-ideas", currentSlug] });
@@ -168,7 +178,7 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
@@ -191,7 +201,7 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
                 <Sparkles className="h-3 w-3" />
                 New Initiative
               </span>
-              
+
               <h1 className="text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                 Share Your Idea
               </h1>
@@ -245,8 +255,8 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
                   <Label className="text-[13px] font-bold text-slate-700">
                     Category <span className="text-rose-400 font-normal">*</span>
                   </Label>
-                  <Select 
-                    value={category} 
+                  <Select
+                    value={category}
                     onValueChange={(val) => {
                       setCategory(val);
                       if (errors.category) setErrors(prev => ({ ...prev, category: "" }));
@@ -284,8 +294,8 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
                   <Label className="text-[13px] font-bold text-slate-700">
                     Idea Space <span className="text-rose-400 font-normal">*</span>
                   </Label>
-                  <Select 
-                    value={ideaSpace} 
+                  <Select
+                    value={ideaSpace}
                     onValueChange={(val) => {
                       setIdeaSpace(val);
                       if (errors.ideaSpace) setErrors(prev => ({ ...prev, ideaSpace: "" }));
@@ -351,8 +361,11 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
           </div>
         </Card>
 
-        {/* Right Side: Impact Guide */}
-        <div className="space-y-6">
+        {/* Right Side: Sidebar Panels */}
+        <div className="space-y-6 sticky top-6">
+          {/* Similar ideas FTS panel */}
+          <SimilarIdeasPanel query={debouncedTitle} />
+
           <Card className="border border-slate-200/60 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.05)] rounded-2xl bg-white p-6 relative overflow-hidden">
             {/* Background floating icon decoration */}
             <div className="absolute right-[-10px] top-4 opacity-[0.03] pointer-events-none">
@@ -360,7 +373,7 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
-            
+
             <div className="flex items-center gap-2 mb-3 relative z-10">
               <CheckCircle2 className="h-5 w-5 text-indigo-500" />
               <h3 className="font-bold text-slate-800 text-[15px]">Impact Guide</h3>
@@ -368,7 +381,7 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
             <p className="text-[13px] text-slate-500 mb-5 relative z-10 leading-relaxed">
               A great idea has clarity and context.
             </p>
-            
+
             <ul className="space-y-4 relative z-10 text-[13px] text-slate-600">
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
