@@ -270,7 +270,18 @@ const AdminUsers = () => {
                         </td>
                       </tr>
                     ) : (
-                    users.map((u: any) => (
+                    users.map((u: any) => {
+                      const myRole = currentUser?.role || 'user';
+                      const targetRole = u.role;
+                      const myLevel = ROLE_CONFIG[myRole]?.level || 0;
+                      const targetLevel = ROLE_CONFIG[targetRole]?.level || 0;
+                      const isSelf = u.id === currentUser?.id;
+
+                      const canManage = myRole === 'super_admin' ||
+                                       (myRole === 'tenant_admin' && (targetLevel <= myLevel)) ||
+                                       (myRole === 'admin' && targetLevel < myLevel);
+
+                      return (
                          <tr key={u.id} className="hover:bg-muted/30 transition-colors">
                            <td className="px-6 py-4">
                              <div className="flex items-center gap-3">
@@ -322,7 +333,7 @@ const AdminUsers = () => {
                                  size="icon" 
                                  className="h-8 w-8 text-muted-foreground hover:text-primary"
                                  onClick={() => handleOpenSpaceDialog(u)}
-                                 disabled={u.id === currentUser?.id || (ROLE_CONFIG[u.role]?.level || 0) >= (ROLE_CONFIG[currentUser?.role || 'user']?.level || 0)}
+                                 disabled={!canManage}
                                  title="Manage Spaces"
                                >
                                  <Layers className="h-4 w-4" />
@@ -332,7 +343,7 @@ const AdminUsers = () => {
                                  size="icon" 
                                  className="h-8 w-8 text-muted-foreground hover:text-primary"
                                  onClick={() => handleOpenPasswordDialog(u)}
-                                 disabled={u.id === currentUser?.id || (ROLE_CONFIG[u.role]?.level || 0) >= (ROLE_CONFIG[currentUser?.role || 'user']?.level || 0)}
+                                 disabled={isSelf || !canManage}
                                  title="Change Password"
                                >
                                  <Key className="h-4 w-4" />
@@ -343,7 +354,7 @@ const AdminUsers = () => {
                                      variant="ghost" 
                                      size="icon" 
                                      className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                     disabled={u.id === currentUser?.id || (ROLE_CONFIG[u.role]?.level || 0) >= (ROLE_CONFIG[currentUser?.role || 'user']?.level || 0)}
+                                     disabled={isSelf || !canManage}
                                      title="Change User Role"
                                    >
                                      <Shield className={`h-4 w-4 ${['admin', 'tenant_admin'].includes(u.role) ? 'fill-current' : ''}`} />
@@ -381,7 +392,7 @@ const AdminUsers = () => {
                                  size="icon" 
                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
                                  onClick={() => handleDeleteUser(u.id)}
-                                 disabled={u.id === currentUser?.id || (ROLE_CONFIG[u.role]?.level || 0) >= (ROLE_CONFIG[currentUser?.role || 'user']?.level || 0)}
+                                 disabled={isSelf || !canManage}
                                  title="Delete User"
                                 >
                                  <Trash2 className="h-4 w-4" />
@@ -389,8 +400,9 @@ const AdminUsers = () => {
                              </div>
                            </td>
                          </tr>
-                       ))
-                     )}
+                       );
+                    })
+                  )}
                    </tbody>
                  </table>
                </div>

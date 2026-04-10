@@ -389,7 +389,7 @@ const Profile = () => {
   const handleBookmark = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!token) return toast.error("Please login to bookmark");
+    if (!token) return toast.error("Please login to follow");
     bookmarkMutation.mutate(id);
   };
 
@@ -720,28 +720,28 @@ const Profile = () => {
                     )}
                   </AnimatePresence>
 
-                  {/* ── Saved Ideas section ────────────────── */}
+                  {/* ── Followed Ideas section ────────────────── */}
                   <div className="pt-8 border-t border-border mt-8 transition-colors">
                     <div 
                       className="flex items-center justify-between w-full sm:w-auto cursor-pointer sm:cursor-default mb-6"
-                      onClick={() => { if (window.innerWidth < 640) toggleSection('saved-ideas') }}
+                      onClick={() => { if (window.innerWidth < 640) toggleSection('followed-ideas') }}
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center w-9 h-9 rounded-2xl bg-amber-500/10 shadow-sm text-amber-500">
                           <Bookmark className="h-4 w-4 fill-current" />
                         </div>
                         <div>
-                          <h2 className="text-xl font-black tracking-tight text-foreground transition-colors">Saved Ideas</h2>
-                          <p className="text-xs text-muted-foreground font-medium transition-colors">{bookmarkedIdeas.length} ideas bookmarked</p>
+                          <h2 className="text-xl font-black tracking-tight text-foreground transition-colors">Followed Ideas</h2>
+                          <p className="text-xs text-muted-foreground font-medium transition-colors">{bookmarkedIdeas.length} ideas followed</p>
                         </div>
                       </div>
                       <div className="sm:hidden p-2 rounded-xl bg-muted/50">
-                        {collapsedSections.includes('saved-ideas') ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                        {collapsedSections.includes('followed-ideas') ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                       </div>
                     </div>
 
                     <AnimatePresence initial={false}>
-                      {(!collapsedSections.includes('saved-ideas') || window.innerWidth >= 640) && (
+                      {(!collapsedSections.includes('followed-ideas') || window.innerWidth >= 640) && (
                         <motion.div
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: "auto", opacity: 1 }}
@@ -752,7 +752,7 @@ const Profile = () => {
                           {bookmarkedIdeas.length === 0 ? (
                             <div className="text-center py-16 bg-card/50 border-2 border-dashed border-border rounded-3xl flex flex-col items-center justify-center gap-3 grayscale opacity-60">
                               <Bookmark className="h-10 w-10 text-muted-foreground/30" />
-                              <p className="text-sm font-bold text-muted-foreground font-mono tracking-tighter">You haven't saved any ideas yet.</p>
+                              <p className="text-sm font-bold text-muted-foreground font-mono tracking-tighter">You haven't followed any ideas yet.</p>
                             </div>
                           ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

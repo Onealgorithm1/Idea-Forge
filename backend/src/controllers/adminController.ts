@@ -122,7 +122,7 @@ export const updateUserRole = async (req: Request, res: Response) => {
     const actorLevel = roleLevels[actorRole] || 0;
     const targetLevel = roleLevels[targetUser.rows[0].role] || 0;
 
-    if (actorLevel <= targetLevel && actorRole !== 'super_admin') {
+    if (actorLevel <= targetLevel && !['super_admin', 'tenant_admin'].includes(actorRole)) {
       return res.status(403).json({ message: 'Insufficient permissions to modify users at your level or higher' });
     }
 
@@ -156,7 +156,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     const targetLevel = roleLevels[userResult.rows[0].role] || 0;
     const actorLevel = roleLevels[actorRole] || 0;
 
-    if (actorLevel <= targetLevel && actorRole !== 'super_admin') {
+    if (actorLevel <= targetLevel && !['super_admin', 'tenant_admin'].includes(actorRole)) {
       return res.status(403).json({ message: 'Insufficient permissions to delete users at your level or higher' });
     }
 
@@ -236,7 +236,7 @@ export const updateUserPassword = async (req: Request, res: Response) => {
     const targetLevel = roleLevels[userResult.rows[0].role] || 0;
     const actorLevel = roleLevels[actorRole] || 0;
 
-    if (actorLevel <= targetLevel && actorRole !== 'super_admin') {
+    if (actorLevel <= targetLevel && !['super_admin', 'tenant_admin'].includes(actorRole)) {
       return res.status(403).json({ message: 'Insufficient permissions to reset passwords for users at your level or higher' });
     }
 
@@ -588,7 +588,7 @@ export const assignUserSpaces = async (req: any, res: Response) => {
     const targetLevel = roleLevels[userResult.rows[0].role] || 0;
     const actorLevel = roleLevels[actorRole] || 0;
 
-    if (actorLevel <= targetLevel && actorRole !== 'super_admin') {
+    if (actorLevel <= targetLevel && !['super_admin', 'tenant_admin'].includes(actorRole)) {
       return res.status(403).json({ message: 'Insufficient permissions to manage spaces for users at your level or higher' });
     }
 

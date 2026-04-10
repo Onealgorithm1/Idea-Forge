@@ -64,7 +64,7 @@ const ProfileIdeaCard = ({ idea, tenantSlug, onBookmark }: ProfileIdeaCardProps)
               "p-1.5 rounded-xl transition-all border border-transparent hover:scale-110",
               idea.is_bookmarked ? "text-amber-500 bg-amber-500/10 border-amber-500/20" : "text-muted-foreground/40 hover:text-amber-500 hover:bg-amber-500/10 hover:border-amber-500/20"
             )}
-            title={idea.is_bookmarked ? "Remove Bookmark" : "Save Idea"}
+            title={idea.is_bookmarked ? "Unfollow Idea" : "Follow Idea"}
           >
             <Bookmark className={cn("h-3.5 w-3.5", idea.is_bookmarked && "fill-current")} />
           </button>

@@ -28,7 +28,7 @@ const SavedIdeasView = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookmarked-ideas", user?.id] });
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
-      toast.success("Bookmark updated");
+      toast.success("Followed state updated");
     },
   });
 
@@ -53,8 +53,8 @@ const SavedIdeasView = () => {
             <BookmarkIcon className="h-7 w-7 text-amber-500 fill-amber-500/20" />
           </div>
           <div>
-            <h2 className="text-3xl font-black tracking-tight text-foreground">Saved Ideas</h2>
-            <p className="text-muted-foreground font-medium">{bookmarkedIdeas.length} bookmarked items for reference.</p>
+            <h2 className="text-3xl font-black tracking-tight text-foreground">Followed Ideas</h2>
+            <p className="text-muted-foreground font-medium">{bookmarkedIdeas.length} followed items for reference.</p>
           </div>
         </div>
 
@@ -62,7 +62,7 @@ const SavedIdeasView = () => {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <input
             type="text"
-            placeholder="Search saved ideas…"
+            placeholder="Search followed ideas…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-card border border-border rounded-2xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all shadow-sm text-foreground"
@@ -91,8 +91,8 @@ const SavedIdeasView = () => {
         <div className="text-center py-24 bg-card border-2 border-dashed border-border rounded-[2rem] flex flex-col items-center gap-4 transition-colors">
           <div className="h-20 w-20 bg-amber-500/10 rounded-full flex items-center justify-center text-4xl">🔖</div>
           <div className="space-y-1">
-            <p className="text-xl font-black text-foreground">No saved ideas</p>
-            <p className="text-muted-foreground">You haven't bookmarked any ideas yet.</p>
+            <p className="text-xl font-black text-foreground">No followed ideas</p>
+            <p className="text-muted-foreground">You haven't followed any ideas yet.</p>
           </div>
           <Button asChild variant="outline" className="rounded-xl font-bold h-11 px-6 border-border hover:border-primary hover:text-primary hover:bg-primary/5 transition-all text-foreground">
              <Link to={getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)}>Explore Idea Board</Link>

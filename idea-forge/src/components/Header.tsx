@@ -71,7 +71,7 @@ const Header = () => {
     { name: "Idea Board", path: getTenantPath(ROUTES.IDEA_BOARD, currentSlug) },
     { name: "Roadmap", path: getTenantPath(ROUTES.ROADMAP, currentSlug) },
     { name: "My Ideas", path: getTenantPath(ROUTES.MY_IDEAS, currentSlug) },
-    { name: "Saved Ideas", path: getTenantPath(ROUTES.SAVED_IDEAS, currentSlug) },
+    { name: "Followed Ideas", path: getTenantPath(ROUTES.SAVED_IDEAS, currentSlug) },
   ];
   
   if (user?.role === "admin" || user?.role === "reviewer" || user?.role === "super_admin") {
