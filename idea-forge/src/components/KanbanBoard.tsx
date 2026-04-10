@@ -250,7 +250,9 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
   const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
-  const [collapsedSections, setCollapsedSections] = useState<string[]>([]);
+  const [collapsedSections, setCollapsedSections] = useState<string[]>(
+    window.innerWidth < 1024 ? ['ideation', 'development'] : []
+  );
 
   const toggleSection = (section: string) => {
     setCollapsedSections(prev => 
@@ -404,9 +406,9 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-6 overflow-x-auto pb-6 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
+      <div className="flex flex-col lg:flex-row gap-6 lg:overflow-x-auto pb-6 no-scrollbar lg:-mx-6 lg:px-6">
         {/* Idea Pool */}
-        <Card className="flex flex-col flex-shrink-0 w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-muted/50 to-muted/10 backdrop-blur-sm border-t-4 border-muted/50 transition-colors duration-300">
+        <Card className="flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-muted/50 to-muted/10 backdrop-blur-sm border-t-4 border-muted/50 transition-colors duration-300">
           <div 
             className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30 cursor-pointer lg:cursor-default"
             onClick={() => { if (window.innerWidth < 1024) toggleSection('ideation') }}
@@ -453,7 +455,7 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
         </Card>
 
         {/* In Development */}
-        <Card className="flex flex-col flex-shrink-0 w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30 transition-colors duration-300">
+        <Card className="flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30 transition-colors duration-300">
           <div 
             className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-primary/10 bg-primary/10 cursor-pointer lg:cursor-default"
             onClick={() => { if (window.innerWidth < 1024) toggleSection('development') }}
@@ -500,7 +502,7 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
         </Card>
 
         {/* In Production */}
-        <Card className="flex flex-col flex-shrink-0 w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30 transition-colors duration-300">
+        <Card className="flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30 transition-colors duration-300">
           <div 
             className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-success/10 bg-success/10 cursor-pointer lg:cursor-default"
             onClick={() => { if (window.innerWidth < 1024) toggleSection('production') }}

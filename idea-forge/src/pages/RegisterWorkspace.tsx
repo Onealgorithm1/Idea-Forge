@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Building2, Mail, Lock, User, ArrowRight, Loader2, Globe, CheckCircle2 } from "lucide-react";
+import { isValidEmail } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -41,7 +42,7 @@ export default function RegisterWorkspacePage() {
     if (!orgName.trim()) newErrors.orgName = "Organization name is required";
     if (!orgSlug.trim()) newErrors.orgSlug = "URL slug is required";
     if (!adminName.trim()) newErrors.adminName = "Full name is required";
-    if (!adminEmail.includes("@")) newErrors.adminEmail = "Valid email is required";
+    if (!adminEmail || !isValidEmail(adminEmail)) newErrors.adminEmail = "Valid email is required";
     if (!adminPhone.trim()) newErrors.adminPhone = "Mobile number is required";
     if (adminPassword.length < 6) newErrors.adminPassword = "Password must be at least 6 characters";
 

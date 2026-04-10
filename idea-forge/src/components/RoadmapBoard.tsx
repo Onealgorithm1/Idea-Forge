@@ -212,7 +212,9 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
   const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
-  const [collapsedStages, setCollapsedStages] = useState<string[]>([]);
+  const [collapsedStages, setCollapsedStages] = useState<string[]>(
+    window.innerWidth < 1024 ? ['backlog', 'progress'] : []
+  );
 
   const toggleStage = (stageId: string) => {
     setCollapsedStages(prev => 
@@ -330,7 +332,7 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
   return (
     <>
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex gap-6 overflow-x-auto pb-8 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
+        <div className="flex flex-col lg:flex-row gap-6 lg:overflow-x-auto pb-8 no-scrollbar lg:-mx-6 lg:px-6">
           {roadmapStages.map((stage) => {
             const stageIdeas = ideas.filter(i => {
               const statusMatch = stage.statuses.includes(i.status);
@@ -340,7 +342,7 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
             const Icon = stage.icon;
 
             return (
-              <Card key={stage.id} className={`flex flex-col flex-shrink-0 w-[420px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]}`}>
+              <Card key={stage.id} className={`flex flex-col flex-shrink-0 w-full lg:w-[420px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]}`}>
                 <div 
                   className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-black/5 cursor-pointer lg:cursor-default"
                   onClick={() => { if (window.innerWidth < 1024) toggleStage(stage.id) }}

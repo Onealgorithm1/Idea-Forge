@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Mail, ArrowRight, Loader2, CheckCircle2, ChevronLeft } from "lucide-react";
 import { ROUTES, getTenantPath } from "@/lib/constants";
+import { isValidEmail } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +27,7 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !email.includes("@")) {
+    if (!email || !isValidEmail(email)) {
       setError("Please enter a valid email address");
       return;
     }

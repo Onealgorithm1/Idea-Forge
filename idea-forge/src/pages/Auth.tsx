@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Zap, Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, isValidEmail } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,7 @@ export default function AuthPage() {
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
-    if (!email || !email.includes("@")) newErrors.email = "Valid email is required";
+    if (!email || !isValidEmail(email)) newErrors.email = "Valid email is required";
     if (!password || password.length < 6) newErrors.password = "Password must be at least 6 characters";
     
     if (!isLogin) {
@@ -76,6 +76,8 @@ export default function AuthPage() {
       setIsLoading(false);
     }
   };
+
+
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 relative overflow-hidden bg-slate-950">

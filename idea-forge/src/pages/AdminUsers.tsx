@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getInitials, cn } from "@/lib/utils";
+import { getInitials, cn, isValidEmail } from "@/lib/utils";
 import { format } from "date-fns";
 import { Trash2, Shield, User, Loader2, Key, Lock, UserPlus, Plus, Mail, Layers, ChevronDown, MoreVertical } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -206,6 +206,16 @@ const AdminUsers = () => {
       deleteUserMutation.mutate(userToDelete);
       setUserToDelete(null);
     }
+  };
+
+  const handleCreateUser = () => {
+    if (!createForm.name || !createForm.email || !createForm.password) {
+      return toast.error("All fields are required");
+    }
+    if (!isValidEmail(createForm.email)) {
+      return toast.error("Please enter a valid email address");
+    }
+    createUserMutation.mutate(createForm);
   };
 
   return (
@@ -526,7 +536,7 @@ const AdminUsers = () => {
               Cancel
             </Button>
             <Button 
-              onClick={() => createUserMutation.mutate(createForm)} 
+              onClick={handleCreateUser} 
               disabled={createUserMutation.isPending || !createForm.name || !createForm.email || !createForm.password}
               className="bg-primary hover:bg-primary/90 font-bold rounded-xl shadow-lg shadow-primary/20 px-6"
             >
