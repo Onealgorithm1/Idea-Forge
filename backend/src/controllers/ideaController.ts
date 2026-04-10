@@ -198,12 +198,17 @@ export const editIdea = async (req: any, res: Response) => {
     }
 
     // --- LOCKING LOGIC ---
-    // 1. Lock if status is 'In Development'
+    // 1. Lock if status is 'Shipped' (Production Lock) - NO ONE can edit
+    if (idea.status === 'Shipped') {
+      return res.status(403).json({ message: 'Ideas in Production cannot be edited.' });
+    }
+
+    // 2. Lock if status is 'In Development'
     if (idea.status === 'In Development') {
       return res.status(403).json({ message: 'Ideas in Development stage cannot be edited.' });
     }
 
-    // 2. Lock if older than 24 hours
+    // 3. Lock if older than 24 hours (unless admin)
     const oneDay = 24 * 60 * 60 * 1000;
     const isOlderThan24h = (Date.now() - new Date(idea.created_at).getTime()) > oneDay;
     if (isOlderThan24h && !isAdmin) {
@@ -346,6 +351,15 @@ export const voteIdea = async (req: any, res: Response) => {
       return res.status(404).json({ message: 'Idea not found.' });
     }
 
+    // ── Guard: Production Lock ────────────────────────────────────────────
+    const idea = ideaCheck.rows[0];
+    const statusCheck = await query('SELECT status FROM ideas WHERE id = $1', [id]);
+    if (statusCheck.rows[0]?.status === 'Shipped') {
+      await client.query('ROLLBACK');
+      client.release();
+      return res.status(403).json({ message: 'Voting is closed for ideas in Production.' });
+    }
+
     // ── Guard: one vote per user — check existence ──────
     const existingVote = await client.query(
       'SELECT id, type FROM votes WHERE idea_id = $1 AND user_id = $2 AND tenant_id = $3 FOR UPDATE',
@@ -429,6 +443,11 @@ export const addComment = async (req: any, res: Response) => {
   }
 
   try {
+    const statusCheck = await query('SELECT status FROM ideas WHERE id = $1', [id]);
+    if (statusCheck.rows[0]?.status === 'Shipped') {
+      return res.status(403).json({ message: 'Discussion is closed for ideas in Production.' });
+    }
+
     const result = await query(
       'INSERT INTO comments (idea_id, user_id, content, tenant_id, parent_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [id, user_id, content, req.tenantId, parent_id || null]
@@ -778,8 +797,14 @@ export const deleteIdea = async (req: any, res: Response) => {
     }
 
     const idea = ideaResult.rows[0];
-    const isAdmin = ['admin', 'tenant_admin', 'super_admin'].includes(user_role);
+    const isAdmin = ['admin', 'tenant_admin', 'super_admin', 'supportadmin'].includes(user_role);
+    const isTenantAdmin = ['tenant_admin', 'super_admin', 'supportadmin'].includes(user_role);
     const isCategoryManager = idea.category_manager_id === user_id;
+
+    // Production Lock: Only Tenant Admins can delete 'Shipped' ideas
+    if (idea.status === 'Shipped' && !isTenantAdmin) {
+      return res.status(403).json({ message: 'Ideas in Production can only be deleted by a Tenant Admin.' });
+    }
 
     if (idea.author_id !== user_id && !isAdmin && !isCategoryManager) {
       return res.status(403).json({ message: 'Not authorized to delete this idea' });

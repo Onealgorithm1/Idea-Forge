@@ -2,10 +2,10 @@ import { useEffect, useState, useRef } from "react";
 import { Link, useSearchParams, useParams, useNavigate } from "react-router-dom";
 import { 
   MoreVertical, Edit2, Trash2, Filter, Search, Plus, 
-  MessageSquare, ChevronDown, ChevronRight, Bookmark, GripVertical, ArrowBigUp, ChevronUp, ExternalLink 
+  MessageSquare, ChevronDown, ChevronRight, Bookmark, GripVertical, ArrowBigUp, ChevronUp, ExternalLink, Lock 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ROUTES, getTenantPath, PLATFORM_STATUS_LABELS } from "@/lib/constants";
+import { ROUTES, getTenantPath, PLATFORM_STATUS_LABELS, ADMIN_ROLES, MANAGEMENT_ROLES } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -133,6 +133,12 @@ const BoardIdeaCard = ({
                       #{tag}
                     </Badge>
                   ))}
+                  {item.status === 'Shipped' && (
+                    <Badge variant="outline" className="text-[8px] font-black px-1.5 py-0 leading-none h-4 border-none uppercase bg-blue-500/10 text-blue-600 flex items-center gap-1">
+                      <Lock className="h-2 w-2" />
+                      Closed
+                    </Badge>
+                  )}
                 </div>
               )}
             </div>
@@ -148,7 +154,7 @@ const BoardIdeaCard = ({
             >
               <Bookmark className={cn("h-3.5 w-3.5", item.is_bookmarked && "fill-current")} />
             </button>
-            {user?.role === 'admin' && (
+            {ADMIN_ROLES.includes(user?.role) && (
               <button 
                 onClick={(e) => { e.stopPropagation(); setIdeaToDelete(item.id); }} 
                 className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-300"
@@ -156,7 +162,7 @@ const BoardIdeaCard = ({
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             )}
-            {type === 'production' && user?.role === 'admin' && handleStatusChange && (
+            {type === 'production' && ADMIN_ROLES.includes(user?.role) && handleStatusChange && (
               <button
                 onClick={(e) => { e.stopPropagation(); handleStatusChange(item.id, item.status === 'Shipped' ? 'In Development' : 'In Progress'); }}
                 className="p-1.5 bg-white/90 backdrop-blur-sm shadow-md border border-white/20 rounded-xl text-muted-foreground hover:text-primary transition-all"
@@ -194,6 +200,7 @@ const BoardIdeaCard = ({
                 orientation="horizontal"
                 className="scale-95 origin-left"
                 isLoading={voteMutation.isPending && voteMutation.variables?.id === item.id}
+                disabled={item.status === 'Shipped'}
               />
               <button 
                 onClick={(e) => { e.stopPropagation(); setIsCommentOpen(!isCommentOpen); }}

@@ -39,3 +39,6 @@ export const PLATFORM_STATUS_LABELS: Record<string, string> = {
   "QA": "QA & Testing",
   "Shipped": "In Production",
 };
+
+export const ADMIN_ROLES = ["admin", "tenant_admin", "super_admin", "supportadmin"];
+export const MANAGEMENT_ROLES = ["admin", "tenant_admin", "super_admin", "supportadmin", "reviewer"];

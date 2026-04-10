@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { GripVertical, CheckCircle2, FlaskConical, PlayCircle, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, MessageSquare, Trash2, ArrowBigUp } from "lucide-react";
+import { GripVertical, CheckCircle2, FlaskConical, PlayCircle, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, MessageSquare, Trash2, ArrowBigUp, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ROUTES, getTenantPath } from "@/lib/constants";
+import { ROUTES, getTenantPath, ADMIN_ROLES, MANAGEMENT_ROLES } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -81,6 +81,12 @@ const RoadmapIdeaCard = ({
                       {idea.priority}
                     </Badge>
                   )}
+                  {idea.status === 'Shipped' && (
+                    <Badge variant="outline" className="text-[8px] font-black px-1.5 py-0 leading-none h-4 border-none uppercase bg-blue-500/10 text-blue-600 flex items-center gap-1">
+                      <Lock className="h-2 w-2" />
+                      Closed
+                    </Badge>
+                  )}
                 </div>
                 <h4 className="font-black text-base text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors pr-6">
                   {idea.title}
@@ -101,7 +107,7 @@ const RoadmapIdeaCard = ({
                 )}
               </div>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 absolute top-4 right-4 translate-x-2 group-hover:translate-x-0">
-                {(user?.role === 'admin' || user?.id === idea.author_id) && (
+                {(ADMIN_ROLES.includes(user?.role) || user?.id === idea.author_id) && (
                   <button 
                     onClick={(e) => { e.stopPropagation(); setIdeaToDelete(idea.id); }}
                     className="p-1.5 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive transition-all"
@@ -110,7 +116,7 @@ const RoadmapIdeaCard = ({
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 )}
-                {user?.role === 'admin' && (
+                {MANAGEMENT_ROLES.includes(user?.role) && (
                   <>
                     <button 
                       onClick={(e) => { e.stopPropagation(); handleStatusUpdate(idea.id, getPrevStatus(idea.status)); }}
@@ -152,6 +158,7 @@ const RoadmapIdeaCard = ({
                   onVote={(type) => handleVote(idea.id, type)}
                   userVote={idea.vote_type}
                   isLoading={voteMutation.isPending && voteMutation.variables?.id === idea.id}
+                  disabled={idea.status === 'Shipped'}
                   className="scale-90"
                 />
                 <button 
@@ -302,7 +309,7 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
-    if (user?.role !== 'admin' && user?.role !== 'reviewer') {
+    if (!MANAGEMENT_ROLES.includes(user?.role)) {
       toast.error("Only admins/reviewers can move ideas on the roadmap");
       return;
     }

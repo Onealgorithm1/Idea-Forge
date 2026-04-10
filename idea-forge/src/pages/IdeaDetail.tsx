@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
-import { ROUTES, getTenantPath, PLATFORM_STATUS_LABELS } from "@/lib/constants";
+import { ROUTES, getTenantPath, PLATFORM_STATUS_LABELS, ADMIN_ROLES, MANAGEMENT_ROLES } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { cn, getInitials } from "@/lib/utils";
@@ -333,18 +333,27 @@ const IdeaDetail = () => {
   });
 
   const isAuthor = idea?.author_id === user?.id;
-  const isAdmin = user?.role === "admin";
+  const isAdmin = ADMIN_ROLES.includes(user?.role);
   const canEdit = isAuthor || isAdmin;
-  const canChangeStatus = ["admin", "reviewer"].includes(user?.role ?? "");
+  const canChangeStatus = MANAGEMENT_ROLES.includes(user?.role ?? "");
 
   const isInDevelopment = idea?.status === "In Development";
+  const isShipped = idea?.status === "Shipped";
   const oneDay = 24 * 60 * 60 * 1000;
   const isOlderThan24h = idea
     ? Date.now() - new Date(idea.created_at).getTime() > oneDay
     : false;
-  const isEditLocked = isInDevelopment || (isOlderThan24h && !isAdmin);
+  
+  // Production Lock: No one can edit shipped ideas
+  // Development Lock: Author cannot edit (but admin can)
+  // Time Lock: No one except admin can edit after 24h
+  const isEditLocked = isShipped || isInDevelopment || (isOlderThan24h && !isAdmin);
+
+  const isTenantAdmin = ["tenant_admin", "super_admin", "supportadmin"].includes(user?.role ?? "");
+  const canDelete = isShipped ? isTenantAdmin : (isAuthor || isAdmin);
 
   const getLockReason = () => {
+    if (isShipped) return "Ideas in Production stage cannot be edited";
     if (isInDevelopment) return "Ideas in Development stage cannot be edited";
     if (isOlderThan24h && !isAdmin) return "Ideas cannot be edited after 24 hours";
     return "";
@@ -541,6 +550,21 @@ const IdeaDetail = () => {
                     </div>
                   </div>
 
+                  {/* ── Status Notice */}
+                  {isShipped && (
+                    <div className="mb-6 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20 flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+                        <AlertCircle className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-blue-700">Production Lock Active</span>
+                        <p className="text-xs text-blue-600/80 font-medium">
+                          This idea has been shipped. Voting, commenting, and editing are disabled for this stage.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* ── Action toolbar */}
                   <div className="flex flex-wrap items-center gap-2 py-4 border-t border-b border-border/50 mb-0">
                     {/* Voting */}
@@ -556,8 +580,13 @@ const IdeaDetail = () => {
                         userVote={idea.vote_type}
                         orientation="horizontal"
                         className="border-none bg-transparent shadow-none"
-                        isLoading={voteMutation.isPending}
+                        disabled={isShipped}
                       />
+                      {isShipped && (
+                        <span className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground opacity-60">
+                          Voting is closed
+                        </span>
+                      )}
                     </div>
 
                     {/* Bookmark */}
@@ -630,7 +659,7 @@ const IdeaDetail = () => {
                     )}
 
                     {/* Delete */}
-                    {canEdit && (
+                    {canDelete && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -686,7 +715,7 @@ const IdeaDetail = () => {
                 </div>
 
                 {/* ── Admin Scoring (collapsible) */}
-                {user?.role === "admin" && (
+                {ADMIN_ROLES.includes(user?.role) && (
                   <div className="bg-muted/30">
                     <ScoringPanel ideaId={id!} token={token} tenantSlug={tenantSlug!} />
                   </div>
@@ -761,30 +790,32 @@ const IdeaDetail = () => {
                 <input
                   type="text"
                   placeholder={
-                    token
-                      ? "Share your thoughts or feedback…"
-                      : "Login to leave a comment"
+                    !token
+                      ? "Login to leave a comment"
+                      : isShipped
+                      ? "Discussion is closed for production ideas"
+                      : "Share your thoughts or feedback…"
                   }
                   value={newComment}
-                  disabled={!token}
+                  disabled={!token || isShipped}
                   onChange={(e) => setNewComment(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
-                      if (!newComment.trim()) return;
+                      if (!newComment.trim() || isShipped) return;
                       if (!token) return toast.error("Please login to comment");
                       commentMutation.mutate({ content: newComment });
                     }
                   }}
-                  className="flex-1 bg-card/60 backdrop-blur-sm border border-border rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all shadow-sm placeholder:text-muted-foreground text-foreground"
+                  className="flex-1 bg-card/60 backdrop-blur-sm border border-border rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all shadow-sm placeholder:text-muted-foreground text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <Button
                   onClick={() => {
-                    if (!newComment.trim()) return;
+                    if (!newComment.trim() || isShipped) return;
                     if (!token) return toast.error("Please login to comment");
                     commentMutation.mutate({ content: newComment });
                   }}
-                  disabled={!newComment.trim() || commentMutation.isPending || !token}
-                  className="gap-2 rounded-2xl font-bold shadow-premium-hover px-8 h-auto bg-primary text-white hover:bg-primary/90 transition-all border-none"
+                  disabled={!newComment.trim() || commentMutation.isPending || !token || isShipped}
+                  className="gap-2 rounded-2xl font-bold shadow-premium-hover px-8 h-auto bg-primary text-white hover:bg-primary/90 transition-all border-none disabled:opacity-50"
                 >
                   {commentMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin text-white" />

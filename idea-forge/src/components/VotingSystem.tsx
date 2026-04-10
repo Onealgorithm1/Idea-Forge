@@ -58,6 +58,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
         )}
         disabled={isFullyDisabled}
         title={
+          disabled ? 'Voting is closed for ideas in Production' :
           userVote === 'up' ? 'Remove upvote' :
           isLoading ? 'Saving...' : 'Upvote'
         }
@@ -116,6 +117,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
         )}
         disabled={isFullyDisabled}
         title={
+          disabled ? 'Voting is closed for ideas in Production' :
           userVote === 'down' ? 'Remove downvote' :
           isLoading ? 'Saving...' : 'Downvote'
         }
