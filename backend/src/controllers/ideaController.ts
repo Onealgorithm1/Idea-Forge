@@ -20,17 +20,6 @@ export const getIdeas = async (req: any, res: Response) => {
   const tenantId = req.tenantId;
   let userId = req.user?.id;
 
-  // If userId is not already set (e.g. via optional middleware), try to get it from header
-  if (!userId) {
-    const authHeader = req.headers['authorization'];
-    if (authHeader) {
-      const token = authHeader.split(' ')[1];
-      try {
-        const decoded: any = jwt.verify(token, env.JWT_SECRET as string);
-        userId = decoded.id;
-      } catch (e) { /* ignore */ }
-    }
-  }
 
   try {
     const { role } = (req as any).user || { role: 'user' };
@@ -53,7 +42,6 @@ export const getIdeas = async (req: any, res: Response) => {
 
     const queryParams: any[] = [tenantId, userId || '00000000-0000-0000-0000-000000000000'];
 
-    // If not admin, restrict to assigned Idea Spaces
     if (!isAdmin && userId) {
       baseQuery += ` AND (i.idea_space_id IS NULL OR i.idea_space_id IN (SELECT idea_space_id FROM user_idea_spaces WHERE user_id = $${queryParams.length + 1}))`;
       queryParams.push(userId);
@@ -65,6 +53,50 @@ export const getIdeas = async (req: any, res: Response) => {
     res.json(result.rows);
   } catch (error) {
     console.error('Get ideas error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getIdea = async (req: any, res: Response) => {
+  const { id } = req.params;
+  const tenantId = req.tenantId;
+  let userId = req.user?.id;
+
+  // Extract user ID from token if not provided by middleware
+  if (!userId) {
+    const authHeader = req.headers['authorization'];
+    if (authHeader) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded: any = jwt.verify(token, env.JWT_SECRET as string);
+        userId = decoded.id;
+      } catch (e) { /* ignore */ }
+    }
+  }
+
+  try {
+    const result = await query(`
+      SELECT i.*, u.name as author_name, c.name as category, p.name as parent_name, s.name as space_name,
+             (SELECT json_agg(t.name) FROM tags t 
+              JOIN idea_tags it ON t.id = it.tag_id 
+              WHERE it.idea_id = i.id) as tags,
+             (SELECT type FROM votes WHERE idea_id = i.id AND user_id = $2 LIMIT 1) as vote_type,
+             (EXISTS (SELECT 1 FROM bookmarks WHERE idea_id = i.id AND user_id = $2 AND tenant_id = $1)) as is_bookmarked
+      FROM ideas i 
+      LEFT JOIN users u ON i.author_id = u.id 
+      LEFT JOIN categories c ON i.category_id = c.id
+      LEFT JOIN categories p ON c.parent_id = p.id
+      LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
+      WHERE i.id = $3 AND i.tenant_id = $1
+    `, [tenantId, userId || '00000000-0000-0000-0000-000000000000', id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Idea not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Get idea error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -768,6 +800,75 @@ export const deleteIdea = async (req: any, res: Response) => {
     await logAudit(tenant_id, user_id, 'idea', id, 'idea_deleted', { title: idea.title }, null);
   } catch (error) {
     console.error('Delete idea error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getSimilarIdeas = async (req: any, res: Response) => {
+  const { q } = req.query as { q: string };
+  const tenant_id = req.tenantId;
+
+  if (!q || q.trim().length < 3) {
+    return res.json([]);
+  }
+
+  try {
+    // PostgreSQL full-text search: rank by relevance across title + description
+    const ftsResult = await query(
+      `SELECT
+         i.id,
+         i.title,
+         i.status,
+         i.votes_count,
+         u.name AS author_name,
+         c.name AS category,
+         s.name AS space_name,
+         ts_rank(
+           to_tsvector('english', i.title || ' ' || COALESCE(i.description, '')),
+           plainto_tsquery('english', $1)
+         ) AS rank
+       FROM ideas i
+       LEFT JOIN users u ON i.author_id = u.id
+       LEFT JOIN categories c ON i.category_id = c.id
+       LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
+       WHERE i.tenant_id = $2
+         AND to_tsvector('english', i.title || ' ' || COALESCE(i.description, ''))
+             @@ plainto_tsquery('english', $1)
+       ORDER BY rank DESC
+       LIMIT 5`,
+      [q.trim(), tenant_id]
+    );
+
+    if (ftsResult.rows.length > 0) {
+      return res.json(ftsResult.rows);
+    }
+
+    // Fallback: ILIKE prefix search on title when FTS returns nothing
+    // (useful for very short or partial words that FTS tokenizes differently)
+    const likeResult = await query(
+      `SELECT
+         i.id,
+         i.title,
+         i.status,
+         i.votes_count,
+         u.name AS author_name,
+         c.name AS category,
+         s.name AS space_name,
+         0.0 AS rank
+       FROM ideas i
+       LEFT JOIN users u ON i.author_id = u.id
+       LEFT JOIN categories c ON i.category_id = c.id
+       LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
+       WHERE i.tenant_id = $2
+         AND i.title ILIKE $1
+       ORDER BY i.created_at DESC
+       LIMIT 5`,
+      [`%${q.trim()}%`, tenant_id]
+    );
+
+    return res.json(likeResult.rows);
+  } catch (error) {
+    console.error('Get similar ideas error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

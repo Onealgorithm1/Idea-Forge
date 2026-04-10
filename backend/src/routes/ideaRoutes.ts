@@ -1,5 +1,26 @@
 import express from 'express';
-import { getIdeas, createIdea, editIdea, getCategories, voteIdea, addComment, getComments, editComment, deleteComment, bookmarkIdea, getTags, getNotifications, markNotificationRead, getUserIdeas, updateIdeaStatus, deleteIdea, getIdeaSpaces, getBookmarkedIdeas } from '../controllers/ideaController.js';
+import { 
+  getIdeas, 
+  getIdea, 
+  createIdea, 
+  editIdea, 
+  getCategories, 
+  voteIdea, 
+  addComment, 
+  getComments, 
+  editComment, 
+  deleteComment, 
+  bookmarkIdea, 
+  getTags, 
+  getNotifications, 
+  markNotificationRead, 
+  getUserIdeas, 
+  updateIdeaStatus, 
+  deleteIdea, 
+  getIdeaSpaces, 
+  getBookmarkedIdeas, 
+  getSimilarIdeas 
+} from '../controllers/ideaController.js';
 import { authenticateToken, extractTenant, isAdminOrReviewer } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -14,13 +35,15 @@ router.get('/tags', getTags);
 router.get('/notifications', authenticateToken, getNotifications);
 router.get('/my-ideas', authenticateToken, getUserIdeas);
 router.get('/bookmarked', authenticateToken, getBookmarkedIdeas);
+router.get('/similar', getSimilarIdeas);
 
-// Comment management (Specific)
+// Comment management
 router.patch('/comments/:commentId', authenticateToken, editComment);
 router.delete('/comments/:commentId', authenticateToken, deleteComment);
 
 // Idea routes
 router.get('/', getIdeas);
+router.get('/:id', getIdea);
 router.post('/', authenticateToken, createIdea);
 router.patch('/:id', authenticateToken, editIdea);
 router.patch('/:id/status', authenticateToken, isAdminOrReviewer, updateIdeaStatus);
