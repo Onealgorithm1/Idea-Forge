@@ -115,7 +115,7 @@ export default function RegisterWorkspacePage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12 relative overflow-hidden bg-slate-950">
+    <div className="flex min-h-screen w-full items-center justify-center px-4 py-12 relative overflow-x-hidden bg-slate-950">
       {/* Background elements similar to Auth.tsx */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/90 to-primary/20" />

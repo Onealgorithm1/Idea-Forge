@@ -416,11 +416,11 @@ const IdeaDetail = () => {
   }
 
   return (
-    <div className="h-screen w-screen bg-background flex flex-col relative overflow-hidden transition-colors duration-300">
-      {/* Soft gradient blobs */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-40 dark:opacity-20">
-        <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[160px]" />
-        <div className="absolute bottom-0 right-[-5%] w-[40%] h-[40%] rounded-full bg-info/10 blur-[120px]" />
+    <div className="h-screen w-full bg-background flex flex-col relative overflow-hidden transition-colors duration-300">
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-60 dark:opacity-30">
+        <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[120%] h-[400px] bg-gradient-to-b from-primary/30 to-transparent rounded-[100%] blur-[120px]" />
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[160px]" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full bg-info/20 blur-[120px]" />
       </div>
 
       <Header />
@@ -428,7 +428,7 @@ const IdeaDetail = () => {
       <div className="flex flex-1 h-[calc(100vh-64px)] overflow-hidden relative z-10">
         <SidebarNav />
 
-        <main className="flex-1 overflow-y-auto no-scrollbar px-6 py-8 md:px-10 bg-background/50 dark:bg-background/20">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar px-4 py-6 md:px-10 md:py-8 bg-background/50 dark:bg-background/20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

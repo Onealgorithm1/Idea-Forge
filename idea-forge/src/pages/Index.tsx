@@ -80,11 +80,14 @@ const Index = () => {
         {/* Decorative Dotted Grid */}
         <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
         
+        {/* Top Premium Glow (The "Parabola" alternative) */}
+        <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[120%] h-[400px] bg-gradient-to-b from-primary/20 via-primary/5 to-transparent rounded-[100%] blur-[120px] opacity-60 dark:opacity-40" />
+
         {/* Larger, more vibrant mesh gradients for the periphery */}
-        <div className="absolute top-[-20%] left-[-15%] w-[60%] h-[60%] rounded-full bg-primary/15 dark:bg-primary/10 blur-[140px] animate-pulse-slow" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-info/10 blur-[120px]" />
-        <div className="absolute top-[30%] right-[-15%] w-[40%] h-[40%] rounded-full bg-success/5 blur-[100px]" />
-        <div className="absolute top-[60%] left-[-5%] w-[35%] h-[35%] rounded-full bg-primary/5 blur-[90px]" />
+        <div className="absolute top-[-10%] left-[-10%] w-[45%] h-[45%] rounded-full bg-primary/20 dark:bg-primary/15 blur-[120px] animate-pulse-slow" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full bg-info/15 blur-[100px]" />
+        <div className="absolute top-[20%] right-[-10%] w-[30%] h-[30%] rounded-full bg-success/10 blur-[80px]" />
+        <div className="absolute top-[50%] left-[-5%] w-[30%] h-[30%] rounded-full bg-primary/10 blur-[80px]" />
       </div>
 
       <Header />

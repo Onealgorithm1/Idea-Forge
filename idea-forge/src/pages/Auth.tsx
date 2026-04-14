@@ -80,7 +80,7 @@ export default function AuthPage() {
 
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 relative overflow-hidden bg-slate-950">
+    <div className="flex min-h-screen w-full items-center justify-center px-4 relative overflow-x-hidden bg-slate-950">
       {/* Dynamic Background */}
       <div className="absolute inset-0 z-0">
          <div 

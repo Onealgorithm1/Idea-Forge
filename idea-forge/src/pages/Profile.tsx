@@ -430,9 +430,16 @@ const Profile = () => {
   const totalVotes = ideas.reduce((sum: number, i: any) => sum + (i.votes_count || 0), 0);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col transition-colors duration-300">
+    <div className="min-h-screen w-full bg-background flex flex-col overflow-x-hidden transition-colors duration-300 relative">
+      {/* Mesh Gradient Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[120%] h-[400px] bg-gradient-to-b from-primary/15 via-primary/5 to-transparent rounded-[100%] blur-[120px] opacity-60 dark:opacity-40" />
+        <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] rounded-full bg-primary/10 dark:bg-primary/10 blur-[100px]" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[35%] h-[35%] rounded-full bg-info/10 blur-[80px]" />
+      </div>
+
       <Header />
-      <div className="flex flex-1 overflow-auto">
+      <div className="flex flex-1 overflow-auto relative z-10">
         <SidebarNav />
 
         <main className="flex-1 min-w-0">
