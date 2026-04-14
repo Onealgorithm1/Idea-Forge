@@ -909,9 +909,8 @@ export const searchIdeas = async (req: any, res: Response) => {
   const searchTerm = q.trim();
 
   try {
-    // We use COALESCE on all fields to prevent NULL propagation in string concatenation
-    // and provide a fallback rank of 0 for non-FTS matches
-    let sql = `
+    // 1. Try Full-Text Search first (high performance, ranked)
+    let ftsSql = `
       SELECT 
         i.id, i.title, i.status, i.votes_count, i.description, i.created_at,
         u.name AS author_name,
@@ -926,37 +925,55 @@ export const searchIdeas = async (req: any, res: Response) => {
       LEFT JOIN categories c ON i.category_id = c.id
       LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
       WHERE i.tenant_id = $2
+        AND to_tsvector('english', COALESCE(i.title, '') || ' ' || COALESCE(i.description, '')) @@ plainto_tsquery('english', $1)
     `;
 
-    const queryParams: any[] = [searchTerm, tenant_id];
-    let likeIdx = 3;
-
+    const ftsParams: any[] = [searchTerm, tenant_id];
     if (space_id && space_id.trim() !== "" && space_id !== 'undefined') {
-      sql += ` AND i.idea_space_id = $3`;
-      queryParams.push(space_id);
-      likeIdx = 4;
+      ftsSql += ` AND i.idea_space_id = $3`;
+      ftsParams.push(space_id);
     }
 
-    sql += `
-      AND (
-        to_tsvector('english', COALESCE(i.title, '') || ' ' || COALESCE(i.description, '')) @@ plainto_tsquery('english', $1)
-        OR i.title ILIKE $${likeIdx}
-        OR i.description ILIKE $${likeIdx}
-      )
-      ORDER BY rank DESC, i.created_at DESC
-      LIMIT 15
+    ftsSql += ` ORDER BY rank DESC LIMIT 15`;
+
+    const ftsResult = await query(ftsSql, ftsParams);
+    
+    if (ftsResult.rows.length > 0) {
+      return res.json(ftsResult.rows);
+    }
+
+    // 2. Fallback to ILIKE if FTS returns nothing (better for partial words/prefixes)
+    let fallbackSql = `
+      SELECT 
+        i.id, i.title, i.status, i.votes_count, i.description, i.created_at,
+        u.name AS author_name,
+        c.name AS category,
+        s.name AS space_name,
+        0.0 AS rank
+      FROM ideas i
+      LEFT JOIN users u ON i.author_id = u.id
+      LEFT JOIN categories c ON i.category_id = c.id
+      LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
+      WHERE i.tenant_id = $2
+        AND (i.title ILIKE $1 OR i.description ILIKE $1)
     `;
 
-    // Add ILIKE pattern to params
-    queryParams.push(`%${searchTerm}%`);
+    const fallbackParams: any[] = [`%${searchTerm}%`, tenant_id];
+    if (space_id && space_id.trim() !== "" && space_id !== 'undefined') {
+      fallbackSql += ` AND i.idea_space_id = $3`;
+      fallbackParams.push(space_id);
+    }
 
-    const result = await query(sql, queryParams);
-    res.json(result.rows);
-  } catch (error) {
+    fallbackSql += ` ORDER BY i.created_at DESC LIMIT 15`;
+
+    const fallbackResult = await query(fallbackSql, fallbackParams);
+    return res.json(fallbackResult.rows);
+
+  } catch (error: any) {
     console.error('Search ideas error:', error);
     res.status(500).json({ 
       message: 'Server error during search',
-      error: process.env.NODE_ENV === 'development' ? error : undefined 
+      error: error?.message || 'Unknown error'
     });
   }
 };
