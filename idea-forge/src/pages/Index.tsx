@@ -95,7 +95,7 @@ const Index = () => {
           onCategorySelect={setSelectedCategory}
         />
 
-        <main className={`flex-1 overflow-y-auto overflow-x-hidden px-6 py-8 md:px-10`}>
+        <main className={`flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 md:px-10 md:py-8`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={`${pathname}-${selectedCategory}`}
@@ -109,7 +109,6 @@ const Index = () => {
 
               {pathname === tenantIdeaBoard && (
                 <div className="space-y-8 relative">
-                  <div className="absolute inset-x-0 sm:inset-x-[-3rem] top-0 sm:top-[-3rem] bottom-0 sm:bottom-[-3rem] bg-gradient-to-b from-primary/5 via-transparent to-transparent -z-10 pointer-events-none rounded-[3rem]" />
                   <div className="flex flex-col gap-6">
                     {/* Dynamic Breadcrumbs */}
                     <Breadcrumb>
@@ -169,14 +168,14 @@ const Index = () => {
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="p-2 md:p-3 bg-card rounded-xl md:rounded-2xl border border-border shadow-sm ring-1 ring-border/50">
-                          <LayoutGrid className="h-5 w-5 md:h-7 md:w-7 text-primary" />
+                        <div className="p-3 bg-card rounded-2xl border border-border shadow-sm ring-1 ring-border/50">
+                          <LayoutGrid className="h-7 w-7 text-primary" />
                         </div>
                         <div>
-                          <h2 className="text-xl md:text-3xl font-black tracking-tight text-foreground transition-colors leading-tight">
+                          <h2 className="text-3xl font-black tracking-tight text-foreground transition-colors">
                             {activeCategory?.name || activeSpace?.name || "Idea Board"}
                           </h2>
-                          <p className="text-[11px] md:text-sm text-muted-foreground font-medium mt-0.5 line-clamp-1 md:line-clamp-none">
+                          <p className="text-muted-foreground font-medium mt-0.5">
                             {activeCategory?.description || "Browse and filter through the community's brightest ideas."}
                           </p>
                         </div>
