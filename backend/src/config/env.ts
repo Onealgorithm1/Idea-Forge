@@ -52,7 +52,7 @@ export function validateEnv() {
   } catch (e) {}
 
   console.log('✅ Environment variables validated successfully.\n');
-  
+
   return env;
 }
 

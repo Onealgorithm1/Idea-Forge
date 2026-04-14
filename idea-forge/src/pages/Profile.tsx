@@ -417,7 +417,7 @@ const Profile = () => {
 
   const VITE_API_URL = import.meta.env.VITE_API_URL
     ? import.meta.env.VITE_API_URL.replace(/\/api$/, "")
-    : "http://localhost:5000";
+    : "http://localhost:5001";
   const avatarUrl = profile?.avatar_url
     ? profile.avatar_url.startsWith("http")
       ? profile.avatar_url
