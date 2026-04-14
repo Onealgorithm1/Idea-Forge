@@ -906,15 +906,19 @@ export const searchIdeas = async (req: any, res: Response) => {
     return res.json([]);
   }
 
+  const searchTerm = q.trim();
+
   try {
-    let baseQuery = `
+    // We use COALESCE on all fields to prevent NULL propagation in string concatenation
+    // and provide a fallback rank of 0 for non-FTS matches
+    let sql = `
       SELECT 
         i.id, i.title, i.status, i.votes_count, i.description, i.created_at,
         u.name AS author_name,
         c.name AS category,
         s.name AS space_name,
         ts_rank(
-          to_tsvector('english', i.title || ' ' || COALESCE(i.description, '')),
+          to_tsvector('english', COALESCE(i.title, '') || ' ' || COALESCE(i.description, '')),
           plainto_tsquery('english', $1)
         ) AS rank
       FROM ideas i
@@ -924,26 +928,35 @@ export const searchIdeas = async (req: any, res: Response) => {
       WHERE i.tenant_id = $2
     `;
 
-    const queryParams: any[] = [q.trim(), tenant_id];
+    const queryParams: any[] = [searchTerm, tenant_id];
+    let likeIdx = 3;
 
-    if (space_id && space_id !== 'undefined') {
-      baseQuery += ` AND i.idea_space_id = $3`;
+    if (space_id && space_id.trim() !== "" && space_id !== 'undefined') {
+      sql += ` AND i.idea_space_id = $3`;
       queryParams.push(space_id);
+      likeIdx = 4;
     }
 
-    baseQuery += `
+    sql += `
       AND (
-        to_tsvector('english', i.title || ' ' || COALESCE(i.description, '')) @@ plainto_tsquery('english', $1)
-        OR i.title ILIKE '%' || $1 || '%'
+        to_tsvector('english', COALESCE(i.title, '') || ' ' || COALESCE(i.description, '')) @@ plainto_tsquery('english', $1)
+        OR i.title ILIKE $${likeIdx}
+        OR i.description ILIKE $${likeIdx}
       )
       ORDER BY rank DESC, i.created_at DESC
-      LIMIT 10
+      LIMIT 15
     `;
 
-    const result = await query(baseQuery, queryParams);
+    // Add ILIKE pattern to params
+    queryParams.push(`%${searchTerm}%`);
+
+    const result = await query(sql, queryParams);
     res.json(result.rows);
   } catch (error) {
     console.error('Search ideas error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'Server error during search',
+      error: process.env.NODE_ENV === 'development' ? error : undefined 
+    });
   }
 };
