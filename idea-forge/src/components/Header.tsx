@@ -248,7 +248,10 @@ const Header = () => {
               <Logo imageClassName="h-7 w-7 md:h-10 md:w-10" />
             </div>
             <div className="flex flex-col -gap-1">
-              <span className="font-black text-lg md:text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70 truncate max-w-[120px] md:max-w-none">
+              <span 
+                className="block font-black text-lg md:text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 truncate max-w-[150px] md:max-w-none"
+                style={{ WebkitTextFillColor: 'transparent' }}
+              >
                 {tenant?.name || "IdeaForge"}
               </span>
               {tenant?.name && (
