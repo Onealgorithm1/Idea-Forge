@@ -221,7 +221,7 @@ const BoardIdeaCard = ({
                 <span className="text-xs font-black">{item.comments_count || 0}</span>
               </button>
               <div className="flex flex-col items-center pl-3 border-l-2 border-primary/20 bg-primary/5 px-2 py-1 rounded-lg">
-                <span className="hidden sm:block text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">Points</span>
+                <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">Points</span>
                 <span className="text-sm font-black text-primary">{(item.votes_count || 0) * 10}</span>
               </div>
             </div>
@@ -424,21 +424,21 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
         <div className="flex flex-col gap-3">
           <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Phase Navigation</label>
           <Select value={activeStage} onValueChange={(val: any) => setActiveStage(val)}>
-            <SelectTrigger className="w-full h-14 bg-card border-border shadow-premium rounded-2xl px-5 focus:ring-primary/20 transition-all">
+            <SelectTrigger className="w-full h-12 bg-card border-border shadow-premium rounded-2xl px-4 focus:ring-primary/20 transition-all">
               <div className="flex items-center gap-3">
                 <div className={cn(
-                  "p-2 rounded-xl",
+                  "p-1.5 rounded-xl",
                   activeStage === 'ideation' ? "bg-muted" : activeStage === 'development' ? "bg-primary/20" : "bg-success/20"
                 )}>
-                  {activeStage === 'ideation' && <Lightbulb className="h-4 w-4 text-muted-foreground" />}
-                  {activeStage === 'development' && <ArrowBigUp className="h-4 w-4 text-primary" />}
-                  {activeStage === 'production' && <Rocket className="h-4 w-4 text-success" />}
+                  {activeStage === 'ideation' && <Lightbulb className="h-3.5 w-3.5 text-muted-foreground" />}
+                  {activeStage === 'development' && <ArrowBigUp className="h-3.5 w-3.5 text-primary" />}
+                  {activeStage === 'production' && <Rocket className="h-3.5 w-3.5 text-success" />}
                 </div>
                 <div className="flex flex-col items-start leading-tight">
-                  <span className="text-sm font-black text-foreground">
+                  <span className="text-xs font-black text-foreground">
                     {stages.find(s => s.id === activeStage)?.name}
                   </span>
-                  <span className="text-[10px] font-bold text-muted-foreground">
+                  <span className="text-[9px] font-bold text-muted-foreground">
                     {activeStage === 'ideation' ? ideaPoolItems.length : activeStage === 'development' ? votingItems.length : devItems.length} Ideas
                   </span>
                 </div>
@@ -475,7 +475,7 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
           "flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-muted/50 to-muted/10 backdrop-blur-sm border-t-4 border-muted/50 transition-all duration-300",
           activeStage === 'ideation' ? "flex" : "hidden lg:flex"
         )}>
-          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30">
+          <div className="shrink-0 hidden lg:flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-muted rounded-lg">
                 <GripVertical className="h-4 w-4 text-muted-foreground" />
@@ -484,7 +484,7 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
             </div>
             <div className="bg-muted text-muted-foreground px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{ideaPoolItems.length}</div>
           </div>
-          <div className="flex-1 p-3 space-y-3 overflow-y-auto lg:max-h-none lg:flex lg:flex-col">
+          <div className="flex-1 p-2 md:p-3 space-y-3 overflow-y-auto lg:max-h-none lg:flex lg:flex-col">
             {ideaPoolItems.map((item, idx) => (
               <BoardIdeaCard
                 key={item.id}
@@ -507,7 +507,7 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
           "flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30 transition-all duration-300",
           activeStage === 'development' ? "flex" : "hidden lg:flex"
         )}>
-          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-primary/10 bg-primary/10">
+          <div className="shrink-0 hidden lg:flex items-center justify-between px-5 py-4 border-b border-primary/10 bg-primary/10">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-primary/20 rounded-lg">
                 <ArrowBigUp className="h-4 w-4 text-primary fill-primary/20" />
@@ -516,7 +516,7 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
             </div>
             <div className="bg-primary/20 text-primary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{votingItems.length}</div>
           </div>
-          <div className="flex-1 p-3 space-y-3 overflow-y-auto lg:max-h-none lg:flex lg:flex-col">
+          <div className="flex-1 p-2 md:p-3 space-y-3 overflow-y-auto lg:max-h-none lg:flex lg:flex-col">
             {votingItems.map((item, idx) => (
               <BoardIdeaCard
                 key={item.id}
@@ -539,7 +539,7 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
           "flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30 transition-all duration-300",
           activeStage === 'production' ? "flex" : "hidden lg:flex"
         )}>
-          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-success/10 bg-success/10">
+          <div className="shrink-0 hidden lg:flex items-center justify-between px-5 py-4 border-b border-success/10 bg-success/10">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-success/20 rounded-lg">
                 <Plus className="h-4 w-4 text-success" />

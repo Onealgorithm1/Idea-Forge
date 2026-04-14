@@ -169,14 +169,14 @@ const Index = () => {
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="p-3 bg-card rounded-2xl border border-border shadow-sm ring-1 ring-border/50">
-                          <LayoutGrid className="h-7 w-7 text-primary" />
+                        <div className="p-2 md:p-3 bg-card rounded-xl md:rounded-2xl border border-border shadow-sm ring-1 ring-border/50">
+                          <LayoutGrid className="h-5 w-5 md:h-7 md:w-7 text-primary" />
                         </div>
                         <div>
-                          <h2 className="text-3xl font-black tracking-tight text-foreground transition-colors">
+                          <h2 className="text-xl md:text-3xl font-black tracking-tight text-foreground transition-colors leading-tight">
                             {activeCategory?.name || activeSpace?.name || "Idea Board"}
                           </h2>
-                          <p className="text-muted-foreground font-medium mt-0.5">
+                          <p className="text-[11px] md:text-sm text-muted-foreground font-medium mt-0.5 line-clamp-1 md:line-clamp-none">
                             {activeCategory?.description || "Browse and filter through the community's brightest ideas."}
                           </p>
                         </div>
