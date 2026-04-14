@@ -14,7 +14,7 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation, useParams } from "react-router-dom";
@@ -26,6 +26,7 @@ import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useTenant } from "@/contexts/TenantContext";
+import GlobalSearch from "./GlobalSearch";
 import {
   Sheet,
   SheetContent,
@@ -127,6 +128,9 @@ const Header = () => {
                 </SheetHeader>
                 <ScrollArea className="h-[calc(100vh-80px)] p-6">
                   <div className="space-y-8">
+                    <div className="px-2 mb-4">
+                      <GlobalSearch />
+                    </div>
                     <div className="space-y-4">
                       <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2">Navigation</p>
                       <nav className="flex flex-col gap-2">

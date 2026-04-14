@@ -897,3 +897,53 @@ export const getSimilarIdeas = async (req: any, res: Response) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const searchIdeas = async (req: any, res: Response) => {
+  const { q, space_id } = req.query as { q: string, space_id?: string };
+  const tenant_id = req.tenantId;
+
+  if (!q || q.trim().length < 2) {
+    return res.json([]);
+  }
+
+  try {
+    let baseQuery = `
+      SELECT 
+        i.id, i.title, i.status, i.votes_count, i.description, i.created_at,
+        u.name AS author_name,
+        c.name AS category,
+        s.name AS space_name,
+        ts_rank(
+          to_tsvector('english', i.title || ' ' || COALESCE(i.description, '')),
+          plainto_tsquery('english', $1)
+        ) AS rank
+      FROM ideas i
+      LEFT JOIN users u ON i.author_id = u.id
+      LEFT JOIN categories c ON i.category_id = c.id
+      LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
+      WHERE i.tenant_id = $2
+    `;
+
+    const queryParams: any[] = [q.trim(), tenant_id];
+
+    if (space_id && space_id !== 'undefined') {
+      baseQuery += ` AND i.idea_space_id = $3`;
+      queryParams.push(space_id);
+    }
+
+    baseQuery += `
+      AND (
+        to_tsvector('english', i.title || ' ' || COALESCE(i.description, '')) @@ plainto_tsquery('english', $1)
+        OR i.title ILIKE '%' || $1 || '%'
+      )
+      ORDER BY rank DESC, i.created_at DESC
+      LIMIT 10
+    `;
+
+    const result = await query(baseQuery, queryParams);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Search ideas error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

@@ -8,6 +8,7 @@ import { useTenant } from "@/contexts/TenantContext";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import GlobalSearch from "./GlobalSearch";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   "Sales": Briefcase,
@@ -168,6 +169,9 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
   return (
     <aside className="sticky top-0 h-screen w-[260px] shrink-0 border-r border-border hidden md:flex flex-col bg-card/40 dark:bg-card/20 backdrop-blur-xl shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 transition-colors duration-300">
       <div className="flex-1 overflow-y-auto no-scrollbar py-6">
+        <div className="px-5 mb-8">
+          <GlobalSearch />
+        </div>
         {['admin', 'tenant_admin', 'super_admin'].includes(user?.role || '') && (
           <div className="mb-6 space-y-1">
             <div className="px-5 mb-3">

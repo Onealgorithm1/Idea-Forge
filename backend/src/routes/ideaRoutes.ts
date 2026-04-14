@@ -19,7 +19,8 @@ import {
   deleteIdea, 
   getIdeaSpaces, 
   getBookmarkedIdeas, 
-  getSimilarIdeas 
+  getSimilarIdeas,
+  searchIdeas 
 } from '../controllers/ideaController.js';
 import { authenticateToken, extractTenant, isAdminOrReviewer } from '../middleware/auth.js';
 
@@ -36,6 +37,7 @@ router.get('/notifications', authenticateToken, getNotifications);
 router.get('/my-ideas', authenticateToken, getUserIdeas);
 router.get('/bookmarked', authenticateToken, getBookmarkedIdeas);
 router.get('/similar', getSimilarIdeas);
+router.get('/search', searchIdeas);
 
 // Comment management
 router.patch('/comments/:commentId', authenticateToken, editComment);
