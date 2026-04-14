@@ -95,7 +95,7 @@ const Index = () => {
           onCategorySelect={setSelectedCategory}
         />
 
-        <main className={`flex-1 overflow-y-auto px-6 py-8 md:px-10`}>
+        <main className={`flex-1 overflow-y-auto overflow-x-hidden px-6 py-8 md:px-10`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={`${pathname}-${selectedCategory}`}
@@ -109,7 +109,7 @@ const Index = () => {
 
               {pathname === tenantIdeaBoard && (
                 <div className="space-y-8 relative">
-                  <div className="absolute inset-x-[-3rem] top-[-3rem] bottom-[-3rem] bg-gradient-to-b from-primary/5 via-transparent to-transparent -z-10 pointer-events-none rounded-[3rem]" />
+                  <div className="absolute inset-x-0 sm:inset-x-[-3rem] top-0 sm:top-[-3rem] bottom-0 sm:bottom-[-3rem] bg-gradient-to-b from-primary/5 via-transparent to-transparent -z-10 pointer-events-none rounded-[3rem]" />
                   <div className="flex flex-col gap-6">
                     {/* Dynamic Breadcrumbs */}
                     <Breadcrumb>

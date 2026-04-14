@@ -185,19 +185,19 @@ const BoardIdeaCard = ({
         {/* Info Row */}
         <div className="mt-auto space-y-4">
           <div className="flex items-center justify-between pt-4 border-t border-border/50">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-6 w-6 border-2 border-background ring-1 ring-border shadow-sm">
-                <AvatarFallback className="text-[10px] font-bold bg-muted text-muted-foreground uppercase">
-                  {getInitials(item.author_name || "Un")}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col">
-                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-0.5">Author</span>
-                <span className="text-[11px] font-bold text-foreground truncate max-w-[80px]">
-                  {item.author_name?.split(' ')[0] || "Anonymous"}
-                </span>
+              <div className="flex items-center gap-2">
+                <Avatar className="h-6 w-6 border-2 border-background ring-1 ring-border shadow-sm">
+                  <AvatarFallback className="text-[10px] font-bold bg-muted text-muted-foreground uppercase">
+                    {getInitials(item.author_name || "Un")}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="hidden sm:flex flex-col">
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-0.5">Author</span>
+                  <span className="text-[11px] font-bold text-foreground truncate max-w-[80px]">
+                    {item.author_name?.split(' ')[0] || "Anonymous"}
+                  </span>
+                </div>
               </div>
-            </div>
 
             <div className="flex items-center gap-3">
               <VotingSystem
@@ -221,7 +221,7 @@ const BoardIdeaCard = ({
                 <span className="text-xs font-black">{item.comments_count || 0}</span>
               </button>
               <div className="flex flex-col items-center pl-3 border-l-2 border-primary/20 bg-primary/5 px-2 py-1 rounded-lg">
-                <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">Points</span>
+                <span className="hidden sm:block text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">Points</span>
                 <span className="text-sm font-black text-primary">{(item.votes_count || 0) * 10}</span>
               </div>
             </div>
