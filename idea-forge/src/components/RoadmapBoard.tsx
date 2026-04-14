@@ -1,8 +1,19 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { GripVertical, CheckCircle2, FlaskConical, PlayCircle, Clock, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, MessageSquare, Trash2, ArrowBigUp, Lock } from "lucide-react";
+import { 
+  GripVertical, CheckCircle2, FlaskConical, PlayCircle, Clock, 
+  ChevronRight, ChevronLeft, ChevronDown, ChevronUp, MessageSquare, 
+  Trash2, ArrowBigUp, Lock, Rocket, Lightbulb
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ROUTES, getTenantPath, ADMIN_ROLES, MANAGEMENT_ROLES } from "@/lib/constants";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -219,15 +230,7 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
   const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
-  const [collapsedStages, setCollapsedStages] = useState<string[]>(
-    window.innerWidth < 1024 ? ['backlog', 'progress'] : []
-  );
-
-  const toggleStage = (stageId: string) => {
-    setCollapsedStages(prev => 
-      prev.includes(stageId) ? prev.filter(s => s !== stageId) : [...prev, stageId]
-    );
-  };
+  const [activeStage, setActiveStage] = useState<string>(roadmapStages[0].id);
 
   const { data: ideas = [], isLoading } = useQuery({
     queryKey: ["ideas", tenantSlug],
@@ -339,87 +342,140 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
   return (
     <>
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex flex-col lg:flex-row gap-6 lg:overflow-x-auto pb-8 no-scrollbar lg:-mx-6 lg:px-6">
-          {roadmapStages.map((stage) => {
-            const stageIdeas = ideas.filter(i => {
-              const statusMatch = stage.statuses.includes(i.status);
-              const spaceMatch = !spaceId || i.idea_space_id === spaceId;
-              return statusMatch && spaceMatch;
-            });
-            const Icon = stage.icon;
-
-            return (
-              <Card key={stage.id} className={`flex flex-col flex-shrink-0 w-full lg:w-[420px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]}`}>
-                <div 
-                  className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-black/5 cursor-pointer lg:cursor-default"
-                  onClick={() => { if (window.innerWidth < 1024) toggleStage(stage.id) }}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className={`p-1.5 rounded-lg bg-${stage.color === 'slate' ? 'muted' : stage.color + '/20'}`}>
-                      <Icon className={`h-4 w-4 text-${stage.color === 'slate' ? 'muted-foreground' : stage.color}`} />
-                    </div>
-                    <h3 className="font-bold text-sm tracking-tight text-foreground">{stage.name}</h3>
+        <div className="space-y-6">
+          {/* Mobile Stage Selector */}
+          <div className="lg:hidden">
+            <div className="flex flex-col gap-3">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Roadmap Phase</label>
+              <Select value={activeStage} onValueChange={setActiveStage}>
+                <SelectTrigger className="w-full h-14 bg-card border-border shadow-premium rounded-2xl px-5 focus:ring-primary/20 transition-all">
+                  <div className="flex items-center gap-3">
+                    {(() => {
+                      const currentStage = roadmapStages.find(s => s.id === activeStage);
+                      if (!currentStage) return null;
+                      const Icon = currentStage.icon;
+                      return (
+                        <>
+                          <div className={cn(
+                            "p-2 rounded-xl",
+                            currentStage.color === 'slate' ? "bg-muted" : `bg-${currentStage.color}/20`
+                          )}>
+                            <Icon className={cn("h-4 w-4", currentStage.color === 'slate' ? "text-muted-foreground" : `text-${currentStage.color}`)} />
+                          </div>
+                          <div className="flex flex-col items-start leading-tight">
+                            <span className="text-sm font-black text-foreground">{currentStage.name}</span>
+                            <span className="text-[10px] font-bold text-muted-foreground">
+                              {ideas.filter(i => {
+                                const statusMatch = currentStage.statuses.includes(i.status);
+                                const spaceMatch = !spaceId || i.idea_space_id === spaceId;
+                                return statusMatch && spaceMatch;
+                              }).length} Ideas
+                            </span>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
-                  <div className="flex items-center gap-2">
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-border bg-card/95 backdrop-blur-xl shadow-2xl">
+                  {roadmapStages.map(stage => {
+                    const count = ideas.filter(i => {
+                      const statusMatch = stage.statuses.includes(i.status);
+                      const spaceMatch = !spaceId || i.idea_space_id === spaceId;
+                      return statusMatch && spaceMatch;
+                    }).length;
+                    return (
+                      <SelectItem key={stage.id} value={stage.id} className="rounded-xl py-3 px-4 focus:bg-primary/5 cursor-pointer">
+                        <div className="flex items-center justify-between w-full min-w-[200px]">
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "p-1.5 rounded-lg",
+                              stage.color === 'slate' ? "bg-muted" : `bg-${stage.color}/10`
+                            )}>
+                              <stage.icon className={cn("h-3.5 w-3.5", stage.color === 'slate' ? "text-muted-foreground" : `text-${stage.color}`)} />
+                            </div>
+                            <span className="font-bold text-sm">{stage.name}</span>
+                          </div>
+                          <Badge variant="secondary" className="bg-muted/50 text-muted-foreground font-black text-[10px]">{count}</Badge>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex flex-col lg:flex-row gap-6 lg:overflow-x-auto pb-8 no-scrollbar lg:-mx-6 lg:px-6">
+            {roadmapStages.map((stage) => {
+              const stageIdeas = ideas.filter(i => {
+                const statusMatch = stage.statuses.includes(i.status);
+                const spaceMatch = !spaceId || i.idea_space_id === spaceId;
+                return statusMatch && spaceMatch;
+              });
+              const Icon = stage.icon;
+
+              return (
+                <Card key={stage.id} className={cn(
+                  `flex flex-col flex-shrink-0 w-full lg:w-[420px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]} transition-all duration-300`,
+                  activeStage === stage.id ? "flex" : "hidden lg:flex"
+                )}>
+                  <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-black/5">
+                    <div className="flex items-center gap-2.5">
+                      <div className={cn(
+                        "p-1.5 rounded-lg",
+                        stage.color === 'slate' ? "bg-muted" : `bg-${stage.color}/20`
+                      )}>
+                        <Icon className={cn("h-4 w-4", stage.color === 'slate' ? "text-muted-foreground" : `text-${stage.color}`)} />
+                      </div>
+                      <h3 className="font-bold text-sm tracking-tight text-foreground">{stage.name}</h3>
+                    </div>
                     <Badge variant="secondary" className="bg-card/50 text-muted-foreground border-none font-bold text-[10px]">
                       {stageIdeas.length}
                     </Badge>
-                    <div className="lg:hidden p-1 rounded-full hover:bg-black/5">
-                      {collapsedStages.includes(stage.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                    </div>
                   </div>
-                </div>
-                
-                <AnimatePresence initial={false}>
-                  {(!collapsedStages.includes(stage.id) || window.innerWidth >= 1024) && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                      className="flex-1 flex flex-col min-h-0 overflow-hidden"
-                    >
-                      <Droppable droppableId={stage.id}>
-                        {(provided, snapshot) => (
-                          <div 
-                            {...provided.droppableProps}
-                            ref={provided.innerRef}
-                            className={cn(
-                              "flex-1 overflow-y-auto p-3 space-y-3 min-h-[150px] transition-colors duration-200",
-                              snapshot.isDraggingOver ? 'bg-black/5' : ''
-                            )}
-                          >
-                            {stageIdeas.map((idea, index) => (
-                              <RoadmapIdeaCard
-                                key={idea.id}
-                                idea={idea}
-                                index={index}
-                                user={user}
-                                tenantSlug={tenantSlug || "default"}
-                                navigate={navigate}
-                                handleVote={handleVote}
-                                voteMutation={voteMutation}
-                                setIdeaToDelete={setIdeaToDelete}
-                                handleStatusUpdate={handleStatusUpdate}
-                              />
-                            ))}
-                            {provided.placeholder}
-                          </div>
-                        )}
-                      </Droppable>
-
-                      {stageIdeas.length === 0 && (
-                        <div className="flex-1 flex flex-col items-center justify-center py-10 opacity-30 grayscale italic text-[10px] text-muted-foreground pointer-events-none">
-                          <GripVertical className="h-5 w-5 mb-2" />
-                          No items in this stage
+                  
+                  <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                    <Droppable droppableId={stage.id}>
+                      {(provided, snapshot) => (
+                        <div 
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          className={cn(
+                            "flex-1 overflow-y-auto p-3 space-y-3 min-h-[150px] transition-colors duration-200",
+                            snapshot.isDraggingOver ? 'bg-black/5' : ''
+                          )}
+                        >
+                          {stageIdeas.map((idea, index) => (
+                            <RoadmapIdeaCard
+                              key={idea.id}
+                              idea={idea}
+                              index={index}
+                              user={user}
+                              tenantSlug={tenantSlug || "default"}
+                              navigate={navigate}
+                              handleVote={handleVote}
+                              voteMutation={voteMutation}
+                              setIdeaToDelete={setIdeaToDelete}
+                              handleStatusUpdate={handleStatusUpdate}
+                            />
+                          ))}
+                          {provided.placeholder}
                         </div>
                       )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Card>
-            );
-          })}
+                    </Droppable>
+
+                    {stageIdeas.length === 0 && (
+                      <div className="flex-1 flex flex-col items-center justify-center py-10 opacity-30 grayscale italic text-[10px] text-muted-foreground pointer-events-none">
+                        <GripVertical className="h-5 w-5 mb-2" />
+                        No items in this stage
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       </DragDropContext>
 

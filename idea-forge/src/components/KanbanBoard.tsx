@@ -1,11 +1,19 @@
 import { useEffect, useState, useRef } from "react";
 import { Link, useSearchParams, useParams, useNavigate } from "react-router-dom";
-import { 
-  MoreVertical, Edit2, Trash2, Filter, Search, Plus, 
-  MessageSquare, ChevronDown, ChevronRight, Bookmark, GripVertical, ArrowBigUp, ChevronUp, ExternalLink, Lock 
+import {
+  MoreVertical, Edit2, Trash2, Filter, Search, Plus,
+  MessageSquare, ChevronDown, ChevronRight, Bookmark, GripVertical, ArrowBigUp, ChevronUp, ExternalLink, Lock,
+  LayoutGrid, Rocket, Lightbulb
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ROUTES, getTenantPath, PLATFORM_STATUS_LABELS, ADMIN_ROLES, MANAGEMENT_ROLES } from "@/lib/constants";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -31,14 +39,14 @@ interface BoardIdeaCardProps {
   type: 'ideation' | 'development' | 'production';
 }
 
-const BoardIdeaCard = ({ 
-  item, 
-  idx, 
-  user, 
-  voteMutation, 
-  handleVote, 
-  handleSelectIdea, 
-  handleBookmark, 
+const BoardIdeaCard = ({
+  item,
+  idx,
+  user,
+  voteMutation,
+  handleVote,
+  handleSelectIdea,
+  handleBookmark,
   setIdeaToDelete,
   handleStatusChange,
   type
@@ -78,10 +86,10 @@ const BoardIdeaCard = ({
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ 
+      transition={{
         layout: { duration: 0.3, type: "spring", stiffness: 300, damping: 30 },
         opacity: { duration: 0.3 },
-        delay: idx * 0.05 
+        delay: idx * 0.05
       }}
       onClick={(e) => {
         if (!isCommentOpen) handleSelectIdea(item.id);
@@ -144,8 +152,8 @@ const BoardIdeaCard = ({
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-            <button 
-              onClick={(e) => { e.stopPropagation(); handleBookmark(item.id); }} 
+            <button
+              onClick={(e) => { e.stopPropagation(); handleBookmark(item.id); }}
               className={cn(
                 "p-1.5 rounded-lg transition-all duration-300",
                 item.is_bookmarked ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -155,8 +163,8 @@ const BoardIdeaCard = ({
               <Bookmark className={cn("h-3.5 w-3.5", item.is_bookmarked && "fill-current")} />
             </button>
             {ADMIN_ROLES.includes(user?.role) && (
-              <button 
-                onClick={(e) => { e.stopPropagation(); setIdeaToDelete(item.id); }} 
+              <button
+                onClick={(e) => { e.stopPropagation(); setIdeaToDelete(item.id); }}
                 className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-300"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -202,7 +210,7 @@ const BoardIdeaCard = ({
                 isLoading={voteMutation.isPending && voteMutation.variables?.id === item.id}
                 disabled={item.status === 'Shipped'}
               />
-              <button 
+              <button
                 onClick={(e) => { e.stopPropagation(); setIsCommentOpen(!isCommentOpen); }}
                 className={cn(
                   "flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all",
@@ -257,15 +265,13 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
   const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
-  const [collapsedSections, setCollapsedSections] = useState<string[]>(
-    window.innerWidth < 1024 ? ['ideation', 'development'] : []
-  );
+  const [activeStage, setActiveStage] = useState<'ideation' | 'development' | 'production'>('ideation');
 
-  const toggleSection = (section: string) => {
-    setCollapsedSections(prev => 
-      prev.includes(section) ? prev.filter(s => s !== section) : [...prev, section]
-    );
-  };
+  const stages = [
+    { id: 'ideation' as const, name: 'Ideation', icon: Lightbulb, color: 'muted' },
+    { id: 'development' as const, name: 'In Development', icon: ArrowBigUp, color: 'primary' },
+    { id: 'production' as const, name: 'In Production', icon: Rocket, color: 'success' },
+  ];
 
   const { data: ideas = [], isLoading } = useQuery({
     queryKey: ["ideas", tenantSlug],
@@ -288,10 +294,10 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
         if (!old) return old;
         return old.map(idea => {
           if (idea.id !== id) return idea;
-          
+
           let delta = 0;
           let newVoteType: "up" | "down" | null = null;
-          
+
           if (idea.vote_type === type) {
             // Unvote
             delta = type === 'up' ? -1 : 1;
@@ -300,13 +306,13 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
             // Changing vote or first vote
             if (idea.vote_type === 'up') delta -= 1;
             if (idea.vote_type === 'down') delta += 1;
-            
+
             if (type === 'up') delta += 1;
             if (type === 'down') delta -= 1;
-            
+
             newVoteType = type;
           }
-          
+
           return {
             ...idea,
             votes_count: (parseInt(idea.votes_count || 0) + delta),
@@ -413,147 +419,152 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
 
   return (
     <div className="space-y-6">
+      {/* Mobile Stage Selector */}
+      <div className="lg:hidden">
+        <div className="flex flex-col gap-3">
+          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Phase Navigation</label>
+          <Select value={activeStage} onValueChange={(val: any) => setActiveStage(val)}>
+            <SelectTrigger className="w-full h-14 bg-card border-border shadow-premium rounded-2xl px-5 focus:ring-primary/20 transition-all">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "p-2 rounded-xl",
+                  activeStage === 'ideation' ? "bg-muted" : activeStage === 'development' ? "bg-primary/20" : "bg-success/20"
+                )}>
+                  {activeStage === 'ideation' && <Lightbulb className="h-4 w-4 text-muted-foreground" />}
+                  {activeStage === 'development' && <ArrowBigUp className="h-4 w-4 text-primary" />}
+                  {activeStage === 'production' && <Rocket className="h-4 w-4 text-success" />}
+                </div>
+                <div className="flex flex-col items-start leading-tight">
+                  <span className="text-sm font-black text-foreground">
+                    {stages.find(s => s.id === activeStage)?.name}
+                  </span>
+                  <span className="text-[10px] font-bold text-muted-foreground">
+                    {activeStage === 'ideation' ? ideaPoolItems.length : activeStage === 'development' ? votingItems.length : devItems.length} Ideas
+                  </span>
+                </div>
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border-border bg-card/95 backdrop-blur-xl shadow-2xl">
+              {stages.map(stage => {
+                const count = stage.id === 'ideation' ? ideaPoolItems.length : stage.id === 'development' ? votingItems.length : devItems.length;
+                return (
+                  <SelectItem key={stage.id} value={stage.id} className="rounded-xl py-3 px-4 focus:bg-primary/5 cursor-pointer">
+                    <div className="flex items-center justify-between w-full min-w-[200px]">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "p-1.5 rounded-lg",
+                          stage.id === 'ideation' ? "bg-muted" : stage.id === 'development' ? "bg-primary/10" : "bg-success/10"
+                        )}>
+                          <stage.icon className={cn("h-3.5 w-3.5", stage.id === 'ideation' ? "text-muted-foreground" : stage.id === 'development' ? "text-primary" : "text-success")} />
+                        </div>
+                        <span className="font-bold text-sm">{stage.name}</span>
+                      </div>
+                      <Badge variant="secondary" className="bg-muted/50 text-muted-foreground font-black text-[10px]">{count}</Badge>
+                    </div>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-6 lg:overflow-x-auto pb-6 no-scrollbar lg:-mx-6 lg:px-6">
-        {/* Idea Pool */}
-        <Card className="flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-muted/50 to-muted/10 backdrop-blur-sm border-t-4 border-muted/50 transition-colors duration-300">
-          <div 
-            className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30 cursor-pointer lg:cursor-default"
-            onClick={() => { if (window.innerWidth < 1024) toggleSection('ideation') }}
-          >
+        {/* Idea Pool - Ideation */}
+        <Card className={cn(
+          "flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-muted/50 to-muted/10 backdrop-blur-sm border-t-4 border-muted/50 transition-all duration-300",
+          activeStage === 'ideation' ? "flex" : "hidden lg:flex"
+        )}>
+          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-muted rounded-lg">
                 <GripVertical className="h-4 w-4 text-muted-foreground" />
               </div>
               <h3 className="font-bold text-sm tracking-tight text-foreground">Ideation</h3>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="bg-muted text-muted-foreground px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{ideaPoolItems.length}</div>
-              <div className="lg:hidden p-1 rounded-full hover:bg-black/5">
-                {collapsedSections.includes('ideation') ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-              </div>
-            </div>
+            <div className="bg-muted text-muted-foreground px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{ideaPoolItems.length}</div>
           </div>
-          <AnimatePresence initial={false}>
-            {(!collapsedSections.includes('ideation') || window.innerWidth >= 1024) && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="flex-1 p-3 space-y-3 overflow-y-auto lg:max-h-none lg:flex lg:flex-col"
-              >
-                {ideaPoolItems.map((item, idx) => (
-                  <BoardIdeaCard
-                    key={item.id}
-                    item={item}
-                    idx={idx}
-                    user={user}
-                    voteMutation={voteMutation}
-                    handleVote={handleVote}
-                    handleSelectIdea={handleSelectIdea}
-                    handleBookmark={handleBookmark}
-                    setIdeaToDelete={setIdeaToDelete}
-                    type="ideation"
-                  />
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div className="flex-1 p-3 space-y-3 overflow-y-auto lg:max-h-none lg:flex lg:flex-col">
+            {ideaPoolItems.map((item, idx) => (
+              <BoardIdeaCard
+                key={item.id}
+                item={item}
+                idx={idx}
+                user={user}
+                voteMutation={voteMutation}
+                handleVote={handleVote}
+                handleSelectIdea={handleSelectIdea}
+                handleBookmark={handleBookmark}
+                setIdeaToDelete={setIdeaToDelete}
+                type="ideation"
+              />
+            ))}
+          </div>
         </Card>
 
         {/* In Development */}
-        <Card className="flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30 transition-colors duration-300">
-          <div 
-            className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-primary/10 bg-primary/10 cursor-pointer lg:cursor-default"
-            onClick={() => { if (window.innerWidth < 1024) toggleSection('development') }}
-          >
+        <Card className={cn(
+          "flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30 transition-all duration-300",
+          activeStage === 'development' ? "flex" : "hidden lg:flex"
+        )}>
+          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-primary/10 bg-primary/10">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-primary/20 rounded-lg">
                 <ArrowBigUp className="h-4 w-4 text-primary fill-primary/20" />
               </div>
               <h3 className="font-bold text-sm tracking-tight text-primary">In Development</h3>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="bg-primary/20 text-primary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{votingItems.length}</div>
-              <div className="lg:hidden p-1 rounded-full hover:bg-black/5">
-                {collapsedSections.includes('development') ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-              </div>
-            </div>
+            <div className="bg-primary/20 text-primary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{votingItems.length}</div>
           </div>
-          <AnimatePresence initial={false}>
-            {(!collapsedSections.includes('development') || window.innerWidth >= 1024) && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="flex-1 p-3 space-y-3 overflow-y-auto lg:max-h-none lg:flex lg:flex-col"
-              >
-                {votingItems.map((item, idx) => (
-                  <BoardIdeaCard
-                    key={item.id}
-                    item={item}
-                    idx={idx}
-                    user={user}
-                    voteMutation={voteMutation}
-                    handleVote={handleVote}
-                    handleSelectIdea={handleSelectIdea}
-                    handleBookmark={handleBookmark}
-                    setIdeaToDelete={setIdeaToDelete}
-                    type="development"
-                  />
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div className="flex-1 p-3 space-y-3 overflow-y-auto lg:max-h-none lg:flex lg:flex-col">
+            {votingItems.map((item, idx) => (
+              <BoardIdeaCard
+                key={item.id}
+                item={item}
+                idx={idx}
+                user={user}
+                voteMutation={voteMutation}
+                handleVote={handleVote}
+                handleSelectIdea={handleSelectIdea}
+                handleBookmark={handleBookmark}
+                setIdeaToDelete={setIdeaToDelete}
+                type="development"
+              />
+            ))}
+          </div>
         </Card>
 
         {/* In Production */}
-        <Card className="flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30 transition-colors duration-300">
-          <div 
-            className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-success/10 bg-success/10 cursor-pointer lg:cursor-default"
-            onClick={() => { if (window.innerWidth < 1024) toggleSection('production') }}
-          >
+        <Card className={cn(
+          "flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30 transition-all duration-300",
+          activeStage === 'production' ? "flex" : "hidden lg:flex"
+        )}>
+          <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-success/10 bg-success/10">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-success/20 rounded-lg">
                 <Plus className="h-4 w-4 text-success" />
               </div>
               <h3 className="font-bold text-sm tracking-tight text-success">In Production</h3>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="bg-success/20 text-success px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{devItems.length}</div>
-              <div className="lg:hidden p-1 rounded-full hover:bg-black/5">
-                {collapsedSections.includes('production') ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-              </div>
-            </div>
+            <div className="bg-success/20 text-success px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{devItems.length}</div>
           </div>
-          <AnimatePresence initial={false}>
-            {(!collapsedSections.includes('production') || window.innerWidth >= 1024) && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="flex-1 p-3 space-y-3 overflow-y-auto lg:max-h-none lg:flex lg:flex-col"
-              >
-                {devItems.map((item, idx) => (
-                  <BoardIdeaCard
-                    key={item.id}
-                    item={item}
-                    idx={idx}
-                    user={user}
-                    voteMutation={voteMutation}
-                    handleVote={handleVote}
-                    handleSelectIdea={handleSelectIdea}
-                    handleBookmark={handleBookmark}
-                    setIdeaToDelete={setIdeaToDelete}
-                    handleStatusChange={handleStatusChange}
-                    type="production"
-                  />
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div className="flex-1 p-3 space-y-3 overflow-y-auto lg:max-h-none lg:flex lg:flex-col">
+            {devItems.map((item, idx) => (
+              <BoardIdeaCard
+                key={item.id}
+                item={item}
+                idx={idx}
+                user={user}
+                voteMutation={voteMutation}
+                handleVote={handleVote}
+                handleSelectIdea={handleSelectIdea}
+                handleBookmark={handleBookmark}
+                setIdeaToDelete={setIdeaToDelete}
+                handleStatusChange={handleStatusChange}
+                type="production"
+              />
+            ))}
+          </div>
         </Card>
       </div>
 
