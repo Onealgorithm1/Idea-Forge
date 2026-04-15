@@ -67,10 +67,11 @@ export default function GlobalSearch({ autoFocus = false, onClose }: GlobalSearc
   };
 
   return (
-    <div ref={containerRef} className="relative w-full group">
+    <div ref={containerRef} className="flex flex-col w-full h-full">
       <div className={cn(
-        "relative flex items-center transition-all duration-300",
-        isOpen ? "scale-[1.01]" : "scale-100"
+        "relative flex items-center bg-muted/30 border border-border rounded-xl transition-all duration-300 group shrink-0",
+        "focus-within:bg-background focus-within:ring-0 focus:ring-0 outline-none focus-within:outline-none",
+        isOpen && query.length >= 2 && !autoFocus && "md:rounded-b-none md:border-b-transparent"
       )}>
         <div className="absolute left-4 z-10 text-muted-foreground pointer-events-none group-focus-within:text-primary transition-colors">
           <Search className="h-4 w-4" />
@@ -86,23 +87,20 @@ export default function GlobalSearch({ autoFocus = false, onClose }: GlobalSearc
           }}
           onFocus={() => setIsOpen(true)}
           placeholder={spaceId ? "Search in space..." : "Search ideas, members, or tools..."}
-          className={cn(
-            "w-full h-10 md:h-11 pl-11 pr-12 bg-transparent border-none text-sm font-medium text-white placeholder:text-white/40 focus:outline-none transition-all",
-            isOpen && "rounded-b-none"
-          )}
+          className="w-full h-12 md:h-14 pl-11 pr-12 bg-transparent border-none text-[15px] font-medium text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0 focus-visible:ring-0 transition-all outline-none"
         />
 
         <div className="absolute right-4 z-10 flex items-center gap-2">
           {isLoading ? (
-            <Loader2 className="h-3.5 w-3.5 text-muted-foreground animate-spin" />
+            <Loader2 className="h-4 w-4 text-muted-foreground/40 animate-spin" />
           ) : query ? (
-            <button onClick={() => { setQuery(""); setIsOpen(false); }} className="p-1 hover:bg-muted rounded-full text-muted-foreground hover:text-foreground transition-all">
-              <X className="h-3.5 w-3.5" />
+            <button onClick={() => { setQuery(""); setIsOpen(false); }} className="p-1.5 hover:bg-muted rounded-full text-muted-foreground hover:text-foreground transition-all">
+              <X className="h-4 w-4" />
             </button>
           ) : (
-            <div className="hidden md:flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted border border-border opacity-40">
-              <Command className="h-2.5 w-2.5" />
-              <span className="text-[9px] font-black">K</span>
+            <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted border border-border opacity-60">
+              <Command className="h-3 w-3" />
+              <span className="text-[10px] font-bold">K</span>
             </div>
           )}
         </div>
@@ -111,92 +109,79 @@ export default function GlobalSearch({ autoFocus = false, onClose }: GlobalSearc
       <AnimatePresence>
         {isOpen && query.length >= 2 && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            className="absolute top-full left-0 right-0 z-[100] bg-card border border-border border-t-0 rounded-b-2xl shadow-premium overflow-hidden backdrop-blur-xl"
+            exit={{ opacity: 0, y: 10 }}
+            className={cn(
+              "z-[100] mt-4 flex flex-col min-h-0 overflow-hidden",
+              autoFocus ? "relative w-full flex-1" : "absolute top-full left-0 right-0 hidden md:flex rounded-2xl border border-border bg-card/50 backdrop-blur-xl shadow-premium"
+            )}
           >
-            <div className="max-h-[60vh] overflow-y-auto no-scrollbar py-2">
+            <div className="flex-1 overflow-y-auto no-scrollbar py-2">
               {results.length > 0 ? (
                 <>
-                  <div className="px-5 py-2 mb-1">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                  <div className="px-5 py-3 mb-1 border-b border-border/50">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+                      <Layers className="h-3 w-3" />
                       Results {spaceId && "in space"}
                     </p>
                   </div>
-                  {results.map((idea: SearchResult, idx: number) => {
-                    const uiStatus = PLATFORM_STATUS_LABELS[idea.status] ?? idea.status;
-                    const theme = STATUS_THEMES[uiStatus] ?? { bg: "bg-muted", text: "text-muted-foreground", dot: "bg-muted-foreground/30" };
+                  <div className="flex flex-col">
+                    {results.map((idea: SearchResult) => {
+                      const uiStatus = PLATFORM_STATUS_LABELS[idea.status] ?? idea.status;
+                      const theme = STATUS_THEMES[uiStatus] ?? { bg: "bg-muted", text: "text-muted-foreground", dot: "bg-muted-foreground/30" };
 
-                    return (
-                      <button
-                        key={idea.id}
-                        onClick={() => handleSelect(idea.id)}
-                        className="w-full flex flex-col text-left px-5 py-3.5 border-b border-border last:border-0 hover:bg-muted/50 group transition-all"
-                      >
-                        <div className="flex items-start justify-between gap-3 mb-2">
-                          <div className="flex flex-col gap-0.5">
-                            <h4 className="text-[14px] font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                              {idea.title}
-                            </h4>
-                            <p className="text-[11px] text-muted-foreground line-clamp-1 italic font-medium">
-                              {idea.description || "No description"}
-                            </p>
-                          </div>
-                          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-primary group-hover:translate-x-0.5 transition-all mt-1" />
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                          <div className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-md", theme.bg)}>
-                            <div className={cn("h-1 w-1 rounded-full", theme.dot)} />
-                            <span className={cn("text-[9px] font-black uppercase tracking-wider", theme.text)}>
-                              {uiStatus}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Layers className="h-3 w-3" />
-                            <span className="text-[10px] font-bold tracking-tight">{idea.category || "General"}</span>
-                          </div>
-
-                          {!spaceId && idea.space_name && (
-                            <div className="flex items-center gap-1.5 text-primary/60">
-                              <Globe className="h-3 w-3" />
-                              <span className="text-[10px] font-bold tracking-tight">{idea.space_name}</span>
+                      return (
+                        <button
+                          key={idea.id}
+                          onClick={() => handleSelect(idea.id)}
+                          className="w-full flex flex-col text-left px-5 py-4 border-b border-border/50 last:border-0 hover:bg-muted transition-all"
+                        >
+                          <div className="flex items-start justify-between gap-3 mb-2.5">
+                            <div className="flex flex-col gap-1">
+                              <h4 className="text-[15px] font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                                {idea.title}
+                              </h4>
+                              <p className="text-[12px] text-muted-foreground line-clamp-1 italic font-medium leading-relaxed">
+                                {idea.description || "No description"}
+                              </p>
                             </div>
-                          )}
-
-                          <div className="ml-auto text-[10px] font-black text-muted-foreground/40">
-                            {idea.votes_count} VOTES
+                            <ArrowRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-1 transition-all mt-1" />
                           </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                            <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-full", theme.bg)}>
+                              <div className={cn("h-1.5 w-1.5 rounded-full", theme.dot)} />
+                              <span className={cn("text-[10px] font-bold uppercase tracking-wider", theme.text)}>
+                                {uiStatus}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                              <Layers className="h-3.5 w-3.5" />
+                              <span className="text-[11px] font-bold tracking-tight">{idea.category || "General"}</span>
+                            </div>
+
+                            <div className="ml-auto text-[10px] font-black text-muted-foreground/30">
+                              {idea.votes_count} VOTES
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </>
               ) : !isLoading ? (
-                <div className="p-10 text-center flex flex-col items-center gap-4">
-                  <div className="p-4 rounded-full bg-muted border border-border">
-                    <Search className="h-8 w-8 text-muted-foreground/20" />
+                <div className="p-12 text-center flex flex-col items-center gap-5">
+                  <div className="p-5 rounded-full bg-muted border border-border ring-8 ring-muted/20">
+                    <Search className="h-10 w-10 text-muted-foreground/20" />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-bold text-foreground">No matches</p>
-                    <p className="text-[11px] text-muted-foreground font-medium">Try different keywords</p>
+                  <div className="space-y-1.5">
+                    <p className="text-base font-bold text-foreground">No matches found</p>
+                    <p className="text-[12px] text-muted-foreground font-medium">Try different keywords</p>
                   </div>
                 </div>
               ) : null}
-            </div>
-
-            <div className="px-5 py-3 border-t border-border bg-muted/20 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                 <div className="flex items-center gap-1.5 text-muted-foreground/40">
-                   <CornerDownLeft className="h-2.5 w-2.5" />
-                   <span className="text-[9px] font-black uppercase tracking-widest">Select</span>
-                 </div>
-              </div>
-              <Badge variant="outline" className="border-border text-[9px] font-black text-muted-foreground/50">
-                QUICK SEARCH
-              </Badge>
             </div>
           </motion.div>
         )}
