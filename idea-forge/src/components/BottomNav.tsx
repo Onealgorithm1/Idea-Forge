@@ -22,7 +22,7 @@ const BottomNav = () => {
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-background/80 dark:bg-card/80 backdrop-blur-xl border-t border-border/50 pb-safe-area-inset-bottom ring-1 ring-black/5">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/80 dark:bg-card/80 backdrop-blur-xl border-t border-border/50 pb-safe-area-inset-bottom ring-1 ring-black/5">
       <div className="flex items-center justify-around h-16 max-w-md mx-auto px-2">
         {navItems.map((item) => {
           const isActive = pathname === item.path;
@@ -37,7 +37,7 @@ const BottomNav = () => {
               >
                 <div className="grid place-items-center bg-primary hover:bg-primary/90 text-white w-12 h-12 rounded-2xl shadow-premium-lg ring-4 ring-background transition-all active:scale-95 group">
                   <Icon className="h-6 w-6 group-hover:rotate-90 transition-transform duration-500" />
-                  <motion.div 
+                  <motion.div
                     initial={false}
                     animate={isActive ? { scale: 1.2, opacity: 1 } : { scale: 0, opacity: 0 }}
                     className="absolute -inset-1 bg-primary/20 blur-lg rounded-full -z-10"
@@ -61,11 +61,13 @@ const BottomNav = () => {
                      <span className="text-[10px] font-bold uppercase tracking-widest">{item.label}</span>
                    </button>
                  </SheetTrigger>
-                 <SheetContent side="bottom" className="h-[88vh] bg-background border-border p-0 rounded-t-[2.5rem] shadow-2xl flex flex-col overflow-hidden">
-                   <SheetHeader className="p-6 border-b border-border/50 shrink-0">
-                     <SheetTitle className="text-xl font-bold tracking-tight">Search Ideas</SheetTitle>
+                 <SheetContent side="bottom" className="h-full max-h-[100dvh] bg-background border-border p-0 rounded-none md:rounded-t-[2.5rem] shadow-2xl flex flex-col overflow-hidden fixed inset-0 z-[1001]">
+                   <SheetHeader className="px-6 py-4 border-b border-border/50 shrink-0">
+                     <div className="flex items-center justify-between">
+                       <SheetTitle className="text-xl font-bold tracking-tight">Search Ideas</SheetTitle>
+                     </div>
                    </SheetHeader>
-                   <div className="flex-1 min-h-0 p-6">
+                   <div className="flex-1 min-h-0 px-4 py-4 md:p-6">
                      <GlobalSearch autoFocus onClose={() => setIsSearchOpen(false)} />
                    </div>
                  </SheetContent>

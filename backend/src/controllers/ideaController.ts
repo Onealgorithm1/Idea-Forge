@@ -21,6 +21,19 @@ export const getIdeas = async (req: any, res: Response) => {
   const tenantId = req.tenantId;
   let userId = req.user?.id;
 
+  // Extract user ID from token if not provided by middleware
+  if (!userId) {
+    const authHeader = req.headers['authorization'];
+    if (authHeader) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded: any = jwt.verify(token, env.JWT_SECRET as string);
+        userId = decoded.id;
+        // Optionally also sync tenantId if missing
+        if (!tenantId) req.tenantId = decoded.tenantId;
+      } catch (e) { /* ignore invalid tokens */ }
+    }
+  }
 
   try {
     const { role } = (req as any).user || { role: 'user' };
@@ -479,7 +492,12 @@ export const voteIdea = async (req: any, res: Response) => {
 
     // ── Post-transaction ──────────────────────────────────────────────────
     emitVoteUpdate(id, totalVotes);
-    res.json({ message: 'Vote recorded', id, votes_count: totalVotes, vote_type: type });
+    let resultingVoteType: string | null = type;
+    if (existingVote.rows.length > 0 && existingVote.rows[0].type === type) {
+      resultingVoteType = null;
+    }
+    
+    res.json({ message: 'Vote recorded', id, votes_count: totalVotes, vote_type: resultingVoteType });
 
     // Non-blocking audit + notification
     logAudit(tenant_id, user_id, 'idea', id, 'vote_submitted', null, { type })

@@ -78,7 +78,11 @@ export default function GlobalSearch({ autoFocus = false, onClose }: GlobalSearc
         </div>
 
         <input
-          type="text"
+          type="search"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck="false"
           autoFocus={autoFocus}
           value={query}
           onChange={(e) => {
@@ -86,8 +90,8 @@ export default function GlobalSearch({ autoFocus = false, onClose }: GlobalSearc
             setIsOpen(true);
           }}
           onFocus={() => setIsOpen(true)}
-          placeholder={spaceId ? "Search in space..." : "Search ideas, members, or tools..."}
-          className="w-full h-12 md:h-14 pl-11 pr-12 bg-transparent border-none text-[15px] font-medium text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0 focus-visible:ring-0 transition-all outline-none"
+          placeholder={spaceId ? "Search in space..." : "Search ideas, members..."}
+          className="w-full h-12 md:h-14 pl-11 pr-12 bg-transparent border-none text-[16px] font-medium text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 focus-visible:ring-0 transition-all outline-none appearance-none"
         />
 
         <div className="absolute right-4 z-10 flex items-center gap-2">
