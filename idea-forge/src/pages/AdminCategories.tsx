@@ -7,7 +7,7 @@ import SidebarNav from "@/components/SidebarNav";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2, Edit2, Plus, Loader2, Tag, User, Search, Hash, Archive, RotateCcw, ChevronRight, FolderTree } from "lucide-react";
+import { Edit2, Plus, Loader2, Tag, User, Search, Hash, Archive, RotateCcw, ChevronRight, FolderTree } from "lucide-react";
 import { getInitials, cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -224,22 +224,23 @@ const AdminCategories = () => {
               <Button 
                 variant="secondary"
                 size="sm"
-                className="flex-1 rounded-xl font-bold bg-accent/50 hover:bg-accent text-accent-foreground border-none disabled:opacity-50"
+                className="flex-1 rounded-xl h-9 font-bold bg-accent/50 hover:bg-accent text-accent-foreground border-none disabled:opacity-50"
                 onClick={() => handleEdit(category)}
                 disabled={!canEdit}
               >
-                <Edit2 className="h-3.5 w-3.5 mr-2" />
+                <Edit2 className="h-3 w-3 mr-3" />
                 Edit
               </Button>
               {!category.is_default && (
                 <Button 
                   variant="ghost"
                   size="icon"
-                  className="rounded-xl h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-30"
+                  className="rounded-xl h-9 w-9 ml-4 text-muted-foreground hover:text-amber-600 hover:bg-amber-100 disabled:opacity-30"
                   onClick={() => setCategoryToDelete(category.id)}
                   disabled={!canEdit}
+                  title="Deactivate this category"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Archive className="h-4 w-4 ml-1" /> Archive
                 </Button>
               )}
             </>
@@ -247,7 +248,7 @@ const AdminCategories = () => {
             <Button 
               variant="secondary"
               size="sm"
-              className="flex-1 rounded-xl font-bold bg-primary/10 hover:bg-primary/20 text-primary border-none shadow-sm"
+              className="flex-1 rounded-xl h-9 font-bold bg-primary/10 hover:bg-primary/20 text-primary border-none shadow-sm"
               onClick={() => restoreCategoryMutation.mutate(category.id)}
               disabled={restoreCategoryMutation.isPending}
             >

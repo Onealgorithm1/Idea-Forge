@@ -44,6 +44,12 @@ export function validateEnv() {
     OAUTH_REFRESH_TOKEN: clean(process.env.OAUTH_REFRESH_TOKEN),
     RESEND_API_KEY: clean(process.env.RESEND_API_KEY),
     RESEND_FROM_EMAIL: clean(process.env.RESEND_FROM_EMAIL) || 'onboarding@resend.dev',
+    B2_KEY_ID: clean(process.env.B2_KEY_ID),
+    B2_APPLICATION_KEY: clean(process.env.B2_APPLICATION_KEY),
+    B2_BUCKET_ID: clean(process.env.B2_BUCKET_ID),
+    B2_BUCKET_NAME: clean(process.env.B2_BUCKET_NAME),
+    B2_ENDPOINT: clean(process.env.B2_ENDPOINT) || 's3.eu-central-003.backblazeb2.com',
+    B2_REGION: clean(process.env.B2_REGION) || 'eu-central-003',
   };
 
   try {

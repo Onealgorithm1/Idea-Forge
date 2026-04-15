@@ -28,7 +28,7 @@ export const SupportDialog = ({ children }: SupportDialogProps) => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token") || localStorage.getItem("super_admin_token");
-      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5001/api"}/super-admin/support`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/super-admin/support`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,

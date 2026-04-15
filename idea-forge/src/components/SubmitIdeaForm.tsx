@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import SimilarIdeasPanel from "@/components/SimilarIdeasPanel";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import {
   Bold, Strikethrough, List, ListOrdered,
   AlignLeft, AlignCenter, Link2, ImageIcon, Type, Loader2,
-  Sparkles, CheckCircle2, ChevronRight
+  Sparkles, CheckCircle2, ChevronRight, Paperclip, X, FileText, Upload
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -76,8 +76,11 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
   const [ideaSpace, setIdeaSpace] = useState<string>("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
+  const [attachments, setAttachments] = useState<Array<{ fileName: string; fileUrl: string; storedUrl: string; mimeType: string; fileSize: number }>>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { token, user } = useAuth();
   const { tenant } = useTenant();
@@ -148,13 +151,20 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
         description,
         category_id: category,
         idea_space_id: ideaSpace,
-        tags: tags.split(',').map(t => t.trim()).filter(t => t !== "")
+        tags: tags.split(',').map(t => t.trim()).filter(t => t !== ""),
+        attachments: attachments.length > 0 ? attachments.map(a => ({ 
+          fileName: a.fileName, 
+          fileUrl: a.storedUrl || a.fileUrl,  // Use storedUrl for database, fallback to fileUrl
+          mimeType: a.mimeType, 
+          fileSize: a.fileSize 
+        })) : undefined
       }, token || undefined);
 
       toast.success("Idea posted successfully!");
       setTitle("");
       setDescription("");
       setTags("");
+      setAttachments([]);
       setErrors({});
 
       // Invalidate relevant queries to refresh the board immediately
@@ -338,6 +348,126 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
                     <p className="text-[11px] text-rose-500 font-medium">{errors.description}</p>
                   ) : <span />}
                 </div>
+              </div>
+
+              {/* Attachments */}
+              <div className="space-y-2">
+                <Label className="text-[13px] font-bold text-slate-700 flex items-center gap-2">
+                  <Paperclip className="h-4 w-4" />
+                  Attachments
+                  <span className="text-xs font-normal text-slate-400">(Max 10MB per file)</span>
+                </Label>
+                
+                {/* File List */}
+                {attachments.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                    {attachments.map((file, index) => (
+                      <div 
+                        key={index} 
+                        className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm group"
+                      >
+                        {file.mimeType.startsWith('image/') ? (
+                          <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-slate-200 shrink-0">
+                            <img 
+                              src={file.fileUrl} 
+                              alt={file.fileName}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="h-12 w-12 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+                            <FileText className="h-6 w-6 text-indigo-500" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-slate-700 truncate font-medium">{file.fileName}</p>
+                          <p className="text-slate-400 text-xs">({(file.fileSize / 1024 / 1024).toFixed(2)} MB)</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
+                          className="text-slate-400 hover:text-rose-500 transition-colors shrink-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upload Button */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  multiple
+                  accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
+                  onChange={async (e) => {
+                    const files = e.target.files;
+                    if (!files || files.length === 0) return;
+
+                    // Check total files (max 5)
+                    if (attachments.length + files.length > 5) {
+                      toast.error("Maximum 5 files allowed");
+                      return;
+                    }
+
+                    setIsUploading(true);
+                    const newAttachments = [...attachments];
+
+                    for (const file of Array.from(files)) {
+                      // Check file size (10MB)
+                      if (file.size > 10 * 1024 * 1024) {
+                        toast.error(`File "${file.name}" exceeds 10MB limit`);
+                        continue;
+                      }
+
+                      try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        const response = await api.upload('/upload/single', formData, token || undefined);
+
+                        newAttachments.push({
+                          fileName: response.file.originalName,
+                          fileUrl: response.file.url,           // Pre-signed URL for preview
+                          storedUrl: response.file.storedUrl,   // Friendly URL for database storage
+                          mimeType: response.file.mimetype,
+                          fileSize: response.file.size
+                        });
+                      } catch (error: any) {
+                        toast.error(`Failed to upload "${file.name}": ${error.message}`);
+                      }
+                    }
+
+                    setAttachments(newAttachments);
+                    setIsUploading(false);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}
+                />
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading || attachments.length >= 5}
+                  className="h-10 px-4 border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl"
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      {attachments.length === 0 ? 'Add Files' : 'Add More Files'}
+                    </>
+                  )}
+                </Button>
+                {attachments.length >= 5 && (
+                  <p className="text-xs text-slate-400">Maximum 5 files allowed</p>
+                )}
               </div>
 
               {/* Actions */}

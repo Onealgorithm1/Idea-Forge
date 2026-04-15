@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronLeft, MessageSquare, Bookmark, BookmarkCheck, Calendar,
   Target, Loader2, Pencil, Star, X, Check, Trash2, Layers,
-  Send, AlertCircle, Hash, ChevronDown, ChevronUp, Reply, MessageCircle
+  Send, AlertCircle, Hash, ChevronDown, ChevronUp, Reply, MessageCircle,
+  Paperclip, FileText, ExternalLink
 } from "lucide-react";
 import Header from "@/components/Header";
 import SidebarNav from "@/components/SidebarNav";
@@ -189,13 +190,12 @@ const IdeaDetail = () => {
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: allIdeas = [] } = useQuery({
-    queryKey: ["ideas", tenantSlug, user?.id],
-    queryFn: () => api.get("/ideas", token || undefined),
+  const { data: idea, isLoading: isIdeaLoading } = useQuery({
+    queryKey: ["idea", id, tenantSlug],
+    queryFn: () => api.get(`/ideas/${id}`, token || undefined),
     staleTime: 1000 * 5,
+    enabled: !!id,
   });
-
-  const idea = allIdeas.find((i: any) => String(i.id) === id);
 
   const { data: comments = [] } = useQuery({
     queryKey: ["comments", id],
@@ -233,6 +233,7 @@ const IdeaDetail = () => {
       setNewReply("");
       setReplyToId(null);
       queryClient.invalidateQueries({ queryKey: ["comments", id] });
+      queryClient.invalidateQueries({ queryKey: ["idea", id, tenantSlug] });
       queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
       toast.success("Comment added");
     },
@@ -255,6 +256,7 @@ const IdeaDetail = () => {
       api.delete(`/ideas/comments/${commentId}`, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments", id] });
+      queryClient.invalidateQueries({ queryKey: ["idea", id, tenantSlug] });
       queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
       toast.success("Comment deleted");
     },
@@ -264,6 +266,7 @@ const IdeaDetail = () => {
   const editMutation = useMutation({
     mutationFn: (data: any) => api.patch(`/ideas/${id}`, data, token!),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["idea", id, tenantSlug] });
       queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
       setIsEditing(false);
       toast.success("Idea updated");
@@ -304,18 +307,25 @@ const IdeaDetail = () => {
         queryClient.setQueryData(["ideas", tenantSlug], context.previousIdeas);
       if ((err as any)?.status !== 409) toast.error(err.message || "Failed to vote");
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["ideas"] }),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["idea", id, tenantSlug] });
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+    },
   });
 
   const bookmarkMutation = useMutation({
     mutationFn: () => api.post(`/ideas/${id}/bookmark`, {}, token!),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ideas"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["idea", id, tenantSlug] });
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+    },
   });
 
   const statusMutation = useMutation({
     mutationFn: (status: string) =>
       api.patch(`/ideas/${id}/status`, { status }, token!),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["idea", id, tenantSlug] });
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
       toast.success("Status updated");
     },
@@ -387,9 +397,7 @@ const IdeaDetail = () => {
     });
   };
 
-  const isLoading = !idea && !allIdeas.length;
-
-  if (isLoading) {
+  if (isIdeaLoading) {
     return (
       <div className="h-screen w-screen bg-background flex flex-col overflow-hidden">
         <Header />
@@ -762,8 +770,58 @@ const IdeaDetail = () => {
                     </div>
                   )}
 
+                  {/* Attachments */}
+                  {idea.attachments && idea.attachments.length > 0 && (
+                    <div className="px-6 sm:px-8 pt-2 pb-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                          Attachments ({idea.attachments.length})
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {idea.attachments.map((attachment: any, index: number) => {
+                          const isImage = attachment.mimeType?.startsWith('image/');
+                          return (
+                            <a
+                              key={attachment.id || index}
+                              href={attachment.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group flex items-center gap-3 bg-muted/50 hover:bg-muted border border-border hover:border-primary/30 rounded-xl p-3 transition-all"
+                            >
+                              {isImage ? (
+                                <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-slate-200 shrink-0">
+                                  <img
+                                    src={attachment.fileUrl}
+                                    alt={attachment.fileName}
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="h-12 w-12 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+                                  <FileText className="h-6 w-6 text-indigo-500" />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground/80 truncate">
+                                  {attachment.fileName}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {(attachment.fileSize / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                              </div>
+                              <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Spacer if no tags */}
-                  {(!idea.tags || idea.tags.length === 0) && <div className="pb-4" />}
+                  {(!idea.tags || idea.tags.length === 0) && !idea.attachments?.length && <div className="pb-4" />}
                 </div>
               </Card>
             </div>

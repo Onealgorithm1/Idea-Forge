@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import pool, { query } from '../config/db.js';
 import { sendEmail } from '../config/mail.js';
 import { env } from '../config/env.js';
+import { deleteFileFromB2, generateViewUrl } from './uploadController.js';
 
 // ─── Audit log helper ─────────────────────────────────────────────────────────
 async function logAudit(tenantId: string, actorUserId: string | null, entityType: string, entityId: string, action: string, oldValues?: any, newValues?: any) {
@@ -81,7 +82,15 @@ export const getIdea = async (req: any, res: Response) => {
               JOIN idea_tags it ON t.id = it.tag_id 
               WHERE it.idea_id = i.id) as tags,
              (SELECT type FROM votes WHERE idea_id = i.id AND user_id = $2 LIMIT 1) as vote_type,
-             (EXISTS (SELECT 1 FROM bookmarks WHERE idea_id = i.id AND user_id = $2 AND tenant_id = $1)) as is_bookmarked
+             (EXISTS (SELECT 1 FROM bookmarks WHERE idea_id = i.id AND user_id = $2 AND tenant_id = $1)) as is_bookmarked,
+             (SELECT json_agg(json_build_object(
+                'id', a.id,
+                'fileName', a.file_name,
+                'fileUrl', a.file_url,
+                'mimeType', a.mime_type,
+                'fileSize', a.file_size_bytes,
+                'createdAt', a.created_at
+              )) FROM idea_attachments a WHERE a.idea_id = i.id) as attachments
       FROM ideas i 
       LEFT JOIN users u ON i.author_id = u.id 
       LEFT JOIN categories c ON i.category_id = c.id
@@ -94,7 +103,24 @@ export const getIdea = async (req: any, res: Response) => {
       return res.status(404).json({ message: 'Idea not found' });
     }
 
-    res.json(result.rows[0]);
+    const idea = result.rows[0];
+
+    // Generate pre-signed URLs for attachments
+    if (idea.attachments && Array.isArray(idea.attachments) && idea.attachments.length > 0) {
+      idea.attachments = await Promise.all(
+        idea.attachments.map(async (attachment: any) => {
+          if (attachment.fileUrl) {
+            const viewUrl = await generateViewUrl(attachment.fileUrl);
+            if (viewUrl) {
+              return { ...attachment, fileUrl: viewUrl };
+            }
+          }
+          return attachment;
+        })
+      );
+    }
+
+    res.json(idea);
   } catch (error) {
     console.error('Get idea error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -102,7 +128,7 @@ export const getIdea = async (req: any, res: Response) => {
 };
 
 export const createIdea = async (req: any, res: Response) => {
-  const { title, description, category_id, tags } = req.body;
+  const { title, description, category_id, tags, attachments } = req.body;
   const author_id = req.user.id;
   const tenant_id = req.tenantId;
 
@@ -147,6 +173,21 @@ export const createIdea = async (req: any, res: Response) => {
       }
     }
 
+    // Handle attachments if provided
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      for (const attachment of attachments) {
+        try {
+          await query(
+            `INSERT INTO idea_attachments (tenant_id, idea_id, file_name, file_url, mime_type, file_size_bytes, uploaded_by) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [tenant_id, idea.id, attachment.fileName, attachment.fileUrl, attachment.mimeType, attachment.fileSize, author_id]
+          );
+        } catch (attachError) {
+          console.error('Attachment processing error (non-fatal):', attachError);
+        }
+      }
+    }
+
     // Log Audit (Don't let it crash the response)
     logAudit(tenant_id, author_id, 'idea', idea.id, 'idea_created', null, { title: idea.title }).catch(e => console.error('Delayed audit log error:', e));
 
@@ -163,7 +204,7 @@ export const createIdea = async (req: any, res: Response) => {
 
 export const editIdea = async (req: any, res: Response) => {
   const { id } = req.params;
-  const { title, description, category_id, tags } = req.body;
+  const { title, description, category_id, tags, attachments } = req.body;
   const user_id = req.user.id;
   const tenant_id = req.tenantId;
 
@@ -234,6 +275,40 @@ export const editIdea = async (req: any, res: Response) => {
         `, [tagName, tagName.toLowerCase().replace(/\s+/g, '-'), tenant_id]);
         const tagId = tagResult.rows[0].id;
         await query('INSERT INTO idea_tags (idea_id, tag_id, tenant_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING', [id, tagId, tenant_id]);
+      }
+    }
+
+    // Handle attachments replacement
+    if (attachments !== undefined) {
+      // Get existing attachments to delete from B2
+      const existingAttachments = await query(
+        'SELECT file_url FROM idea_attachments WHERE idea_id = $1 AND tenant_id = $2',
+        [id, tenant_id]
+      );
+
+      // Delete old attachments from database
+      await query('DELETE FROM idea_attachments WHERE idea_id = $1 AND tenant_id = $2', [id, tenant_id]);
+
+      // Delete old files from B2 (non-blocking)
+      for (const attach of existingAttachments.rows) {
+        deleteFileFromB2(attach.file_url).catch(err => 
+          console.error('Failed to delete old attachment from B2:', err)
+        );
+      }
+
+      // Add new attachments if provided
+      if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+        for (const attachment of attachments) {
+          try {
+            await query(
+              `INSERT INTO idea_attachments (tenant_id, idea_id, file_name, file_url, mime_type, file_size_bytes, uploaded_by) 
+               VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+              [tenant_id, id, attachment.fileName, attachment.fileUrl, attachment.mimeType, attachment.fileSize, user_id]
+            );
+          } catch (attachError) {
+            console.error('Attachment processing error (non-fatal):', attachError);
+          }
+        }
       }
     }
 
@@ -811,12 +886,28 @@ export const deleteIdea = async (req: any, res: Response) => {
     }
 
     // 2. Cascade delete related data
+    // Get attachments to delete from B2
+    const attachmentsResult = await query(
+      'SELECT file_url FROM idea_attachments WHERE idea_id = $1 AND tenant_id = $2',
+      [id, tenant_id]
+    );
+
     await query('DELETE FROM idea_tags WHERE idea_id = $1', [id]);
     await query('DELETE FROM votes WHERE idea_id = $1', [id]);
     await query('DELETE FROM comments WHERE idea_id = $1', [id]);
     await query('DELETE FROM bookmarks WHERE idea_id = $1', [id]);
     await query('DELETE FROM idea_scores WHERE idea_id = $1', [id]);
     await query('DELETE FROM notifications WHERE reference_id = $1 AND type IN (\'vote\', \'comment\', \'idea\')', [id]);
+    
+    // Delete attachments from database
+    await query('DELETE FROM idea_attachments WHERE idea_id = $1 AND tenant_id = $2', [id, tenant_id]);
+    
+    // Delete attachment files from B2 (non-blocking)
+    for (const attach of attachmentsResult.rows) {
+      deleteFileFromB2(attach.file_url).catch(err => 
+        console.error('Failed to delete attachment from B2 during idea deletion:', err)
+      );
+    }
     
     // Finally delete the idea
     await query('DELETE FROM ideas WHERE id = $1 AND tenant_id = $2', [id, tenant_id]);

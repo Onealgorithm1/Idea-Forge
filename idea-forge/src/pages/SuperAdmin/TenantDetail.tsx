@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/Logo";
 
-const SUPER_ADMIN_API = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+const SUPER_ADMIN_API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const saApi = {
   get: async (endpoint: string) => {
