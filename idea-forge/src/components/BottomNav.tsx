@@ -1,12 +1,16 @@
-import { Home, Lightbulb, Rocket, Plus, User, Search, Bookmark } from "lucide-react";
+import { Home, Rocket, Plus, Search, Bookmark } from "lucide-react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import GlobalSearch from "./GlobalSearch";
+import { useState } from "react";
 
 const BottomNav = () => {
   const { pathname } = useLocation();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const currentSlug = tenantSlug || "default";
 
   const navItems = [
@@ -14,7 +18,7 @@ const BottomNav = () => {
     { icon: Rocket, label: "Roadmap", path: getTenantPath(ROUTES.ROADMAP, currentSlug) },
     { icon: Plus, label: "Submit", path: getTenantPath(ROUTES.SUBMIT_IDEA, currentSlug), primary: true },
     { icon: Bookmark, label: "Saved", path: getTenantPath(ROUTES.SAVED_IDEAS, currentSlug) },
-    { icon: User, label: "Profile", path: getTenantPath(ROUTES.PROFILE, currentSlug) },
+    { icon: Search, label: "Search", isSearch: true },
   ];
 
   return (
@@ -29,10 +33,10 @@ const BottomNav = () => {
               <Link
                 key={item.label}
                 to={item.path}
-                className="relative -top-3"
+                className="relative flex items-center justify-center min-w-[64px]"
               >
-                <div className="bg-primary hover:bg-primary/90 text-white p-3 rounded-2xl shadow-premium-lg ring-4 ring-background transition-all active:scale-95 group">
-                  <Icon className="h-6 w-6 group-hover:rotate-12 transition-transform duration-300" />
+                <div className="grid place-items-center bg-primary hover:bg-primary/90 text-white w-12 h-12 rounded-2xl shadow-premium-lg ring-4 ring-background transition-all active:scale-95 group">
+                  <Icon className="h-6 w-6 group-hover:rotate-90 transition-transform duration-500" />
                   <motion.div 
                     initial={false}
                     animate={isActive ? { scale: 1.2, opacity: 1 } : { scale: 0, opacity: 0 }}
@@ -41,6 +45,32 @@ const BottomNav = () => {
                 </div>
               </Link>
             );
+          }
+
+          if (item.isSearch) {
+             return (
+               <Sheet key="search-sheet" open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+                 <SheetTrigger asChild>
+                   <button
+                     className={cn(
+                       "flex flex-col items-center justify-center gap-1 min-w-[64px] transition-all",
+                       isSearchOpen ? "text-primary scale-110" : "text-muted-foreground"
+                     )}
+                   >
+                     <Icon className="h-5 w-5" />
+                     <span className="text-[10px] font-bold uppercase tracking-widest">{item.label}</span>
+                   </button>
+                 </SheetTrigger>
+                 <SheetContent side="bottom" className="h-[88vh] bg-background border-border p-0 rounded-t-[2.5rem] shadow-2xl flex flex-col overflow-hidden">
+                   <SheetHeader className="p-6 border-b border-border/50 shrink-0">
+                     <SheetTitle className="text-xl font-bold tracking-tight">Search Ideas</SheetTitle>
+                   </SheetHeader>
+                   <div className="flex-1 min-h-0 p-6">
+                     <GlobalSearch autoFocus onClose={() => setIsSearchOpen(false)} />
+                   </div>
+                 </SheetContent>
+               </Sheet>
+             );
           }
 
           return (

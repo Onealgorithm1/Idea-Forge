@@ -136,9 +136,6 @@ const Header = () => {
                 </SheetHeader>
                 <ScrollArea className="h-[calc(100vh-80px)] p-6">
                   <div className="space-y-8">
-                    <div className="px-2 mb-4">
-                      <GlobalSearch />
-                    </div>
                     <div className="space-y-4">
                       <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2">Navigation</p>
                       <nav className="flex flex-col gap-2">

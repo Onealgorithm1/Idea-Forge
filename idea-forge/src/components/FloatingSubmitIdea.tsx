@@ -24,7 +24,7 @@ export default function FloatingSubmitIdea() {
   };
 
   return (
-    <div className="fixed bottom-8 right-8 z-50">
+    <div className="fixed bottom-8 right-8 z-50 hidden md:block">
       <motion.button
         onClick={handleClick}
         className="group relative flex h-14 items-center justify-center gap-2 rounded-full bg-primary px-6 text-primary-foreground shadow-2xl hover:bg-primary/90 focus:outline-none"
