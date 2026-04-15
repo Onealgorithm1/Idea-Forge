@@ -436,7 +436,7 @@ const IdeaDetail = () => {
       <div className="flex flex-1 h-[calc(100vh-64px)] overflow-hidden relative z-10">
         <SidebarNav />
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar px-4 py-6 md:px-10 md:py-8 bg-background/50 dark:bg-background/20">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar px-4 py-6 md:px-10 md:py-8 bg-background/50 dark:bg-background/20 pb-safe-nav">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -534,10 +534,10 @@ const IdeaDetail = () => {
                   <div className="flex items-center gap-2 mb-6">
                     <Avatar className="h-7 w-7 ring-2 ring-background shadow-sm border border-border">
                       <AvatarFallback className="text-[9px] font-black bg-primary/10 text-primary uppercase">
-                        {getInitials(idea.author || "Guest")}
+                        {getInitials(idea.author_name || "Guest")}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm font-bold text-foreground">{idea.author}</span>
+                    <span className="text-sm font-bold text-foreground">{idea.author_name}</span>
                     <span className="text-muted-foreground">·</span>
                     <span className="flex items-center gap-1 text-xs text-muted-foreground font-semibold">
                       <Calendar className="h-3 w-3" />

@@ -27,6 +27,7 @@ const Index = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedCategory = searchParams.get("category") || "All";
   const selectedSpace = searchParams.get("space") || null;
+  const searchQuery = searchParams.get("search") || "";
 
   // Pre-calculate tenant paths for comparison
   const tenantIdeaBoard = getTenantPath(ROUTES.IDEA_BOARD, tenantSlug);
@@ -40,6 +41,15 @@ const Index = () => {
       searchParams.delete("category");
     } else {
       searchParams.set("category", category);
+    }
+    setSearchParams(searchParams);
+  };
+
+  const setSearchQuery = (query: string) => {
+    if (!query) {
+      searchParams.delete("search");
+    } else {
+      searchParams.set("search", query);
     }
     setSearchParams(searchParams);
   };
@@ -96,12 +106,14 @@ const Index = () => {
         <SidebarNav
           selectedCategory={selectedCategory}
           onCategorySelect={setSelectedCategory}
+          searchQuery={searchQuery}
+          onSearch={setSearchQuery}
         />
 
-        <main className={`flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 md:px-10 md:py-8`}>
+        <main className={`flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 md:px-10 md:py-8 pb-safe-nav`}>
           <AnimatePresence mode="wait">
             <motion.div
-              key={`${pathname}-${selectedCategory}`}
+              key={`${pathname}-${selectedCategory}-${searchQuery}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -122,6 +134,7 @@ const Index = () => {
                             onClick={() => {
                               searchParams.delete("space");
                               searchParams.delete("category");
+                              searchParams.delete("search");
                               setSearchParams(searchParams);
                             }}
                           >
@@ -203,7 +216,7 @@ const Index = () => {
                       ))}
                     </div>
                   )}
-                  <KanbanBoard category={selectedCategory} spaceId={selectedSpace} />
+                  <KanbanBoard category={selectedCategory} spaceId={selectedSpace} search={searchQuery} />
                 </div>
               )}
 

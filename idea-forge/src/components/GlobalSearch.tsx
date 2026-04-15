@@ -26,7 +26,12 @@ const STATUS_THEMES: Record<string, { bg: string; text: string; dot: string }> =
   "In Production": { bg: "bg-emerald-500/10", text: "text-emerald-600", dot: "bg-emerald-500" },
 };
 
-export default function GlobalSearch() {
+interface GlobalSearchProps {
+  autoFocus?: boolean;
+  onClose?: () => void;
+}
+
+export default function GlobalSearch({ autoFocus = false, onClose }: GlobalSearchProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const { tenantSlug, spaceId } = useParams<{ tenantSlug: string; spaceId?: string }>();
@@ -58,6 +63,7 @@ export default function GlobalSearch() {
     navigate(getTenantPath(ROUTES.IDEA_DETAIL.replace(":id", id), currentSlug));
     setIsOpen(false);
     setQuery("");
+    if (onClose) onClose();
   };
 
   return (
@@ -69,19 +75,20 @@ export default function GlobalSearch() {
         <div className="absolute left-4 z-10 text-muted-foreground pointer-events-none group-focus-within:text-primary transition-colors">
           <Search className="h-4 w-4" />
         </div>
-        
+
         <input
           type="text"
+          autoFocus={autoFocus}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
             setIsOpen(true);
           }}
           onFocus={() => setIsOpen(true)}
-          placeholder={spaceId ? "Search in space..." : "Search ideas..."}
+          placeholder={spaceId ? "Search in space..." : "Search ideas, members, or tools..."}
           className={cn(
-            "w-full h-10 md:h-11 pl-11 pr-12 bg-muted/30 border border-border rounded-xl text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-4 focus:ring-primary/10 focus:bg-background focus:border-primary/50 transition-all shadow-sm",
-            isOpen && "rounded-b-none border-b-transparent ring-0"
+            "w-full h-10 md:h-11 pl-11 pr-12 bg-transparent border-none text-sm font-medium text-white placeholder:text-white/40 focus:outline-none transition-all",
+            isOpen && "rounded-b-none"
           )}
         />
 
@@ -120,7 +127,7 @@ export default function GlobalSearch() {
                   {results.map((idea: SearchResult, idx: number) => {
                     const uiStatus = PLATFORM_STATUS_LABELS[idea.status] ?? idea.status;
                     const theme = STATUS_THEMES[uiStatus] ?? { bg: "bg-muted", text: "text-muted-foreground", dot: "bg-muted-foreground/30" };
-                    
+
                     return (
                       <button
                         key={idea.id}

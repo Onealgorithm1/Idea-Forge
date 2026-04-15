@@ -258,7 +258,7 @@ const statusColor: Record<string, string> = {
   "Shipped": "bg-success/15 text-success border-success/20",
 };
 
-const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, spaceId?: string | null }) => {
+const KanbanBoard = ({ category = "All", spaceId = null, search = "" }: { category?: string, spaceId?: string | null, search?: string }) => {
   const navigate = useNavigate();
   const [selectedIdea, setSelectedIdea] = useState<any>(null);
   const [newComment, setNewComment] = useState("");
@@ -408,11 +408,15 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
     );
   }
 
-  // Filter ideas based on category, state, and space
+  // Filter ideas based on category, state, space, and search query
   const filteredIdeas = ideas.filter((i: any) => {
     const categoryMatch = category === "All" || i.category === category;
     const spaceMatch = !spaceId || i.idea_space_id === spaceId;
-    return categoryMatch && spaceMatch;
+    const searchMatch = !search || 
+      i.title?.toLowerCase().includes(search.toLowerCase()) || 
+      i.description?.toLowerCase().includes(search.toLowerCase()) ||
+      i.tags?.some((t: string) => t.toLowerCase().includes(search.toLowerCase()));
+    return categoryMatch && spaceMatch && searchMatch;
   });
 
   const ideaPoolItems = filteredIdeas.filter((i: any) => i.status === 'Pending');
@@ -422,52 +426,44 @@ const KanbanBoard = ({ category = "All", spaceId = null }: { category?: string, 
   return (
     <div className="space-y-6">
       {/* Mobile Stage Selector */}
-      <div className="lg:hidden">
-        <div className="flex flex-col gap-3">
-          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Phase Navigation</label>
-          <Select value={activeStage} onValueChange={(val: any) => setActiveStage(val)}>
-            <SelectTrigger className="w-full h-14 bg-card border-border shadow-premium rounded-2xl px-5 focus:ring-primary/20 transition-all">
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "p-2 rounded-xl",
-                  activeStage === 'ideation' ? "bg-muted" : activeStage === 'development' ? "bg-primary/20" : "bg-success/20"
-                )}>
-                  {activeStage === 'ideation' && <Lightbulb className="h-4 w-4 text-muted-foreground" />}
-                  {activeStage === 'development' && <ArrowBigUp className="h-4 w-4 text-primary" />}
-                  {activeStage === 'production' && <Rocket className="h-4 w-4 text-success" />}
-                </div>
-                <div className="flex flex-col items-start leading-tight">
-                  <span className="text-sm font-black text-foreground">
-                    {stages.find(s => s.id === activeStage)?.name}
+      <div className="lg:hidden sticky top-0 z-20 bg-background/95 backdrop-blur-xl -mx-4 px-4 py-3 border-b border-border/50">
+        <div className="flex bg-muted/30 p-1 rounded-2xl border border-border/50">
+          {stages.map(stage => {
+            const isActive = activeStage === stage.id;
+            const count = stage.id === 'ideation' ? ideaPoolItems.length : stage.id === 'development' ? votingItems.length : devItems.length;
+            const Icon = stage.icon;
+            
+            return (
+              <button
+                key={stage.id}
+                onClick={() => setActiveStage(stage.id)}
+                className={cn(
+                  "flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl transition-all relative overflow-hidden",
+                  isActive ? "text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="active-stage-bg"
+                    className="absolute inset-0 bg-background shadow-premium ring-1 ring-border/20 z-0"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className={cn(
+                    "mb-1",
+                    isActive ? "scale-110 transition-transform" : "opacity-70"
+                  )}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-tight">{stage.name}</span>
+                  <span className="text-[8px] font-bold opacity-60">
+                    {count} {count === 1 ? 'Idea' : 'Ideas'}
                   </span>
-                  <span className="text-[10px] font-bold text-muted-foreground">
-                    {activeStage === 'ideation' ? ideaPoolItems.length : activeStage === 'development' ? votingItems.length : devItems.length} Ideas
-                  </span>
                 </div>
-              </div>
-            </SelectTrigger>
-            <SelectContent className="rounded-2xl border-border bg-card/95 backdrop-blur-xl shadow-2xl">
-              {stages.map(stage => {
-                const count = stage.id === 'ideation' ? ideaPoolItems.length : stage.id === 'development' ? votingItems.length : devItems.length;
-                return (
-                  <SelectItem key={stage.id} value={stage.id} className="rounded-xl py-3 px-4 focus:bg-primary/5 cursor-pointer">
-                    <div className="flex items-center justify-between w-full min-w-[200px]">
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "p-1.5 rounded-lg",
-                          stage.id === 'ideation' ? "bg-muted" : stage.id === 'development' ? "bg-primary/10" : "bg-success/10"
-                        )}>
-                          <stage.icon className={cn("h-3.5 w-3.5", stage.id === 'ideation' ? "text-muted-foreground" : stage.id === 'development' ? "text-primary" : "text-success")} />
-                        </div>
-                        <span className="font-bold text-sm">{stage.name}</span>
-                      </div>
-                      <Badge variant="secondary" className="bg-muted/50 text-muted-foreground font-black text-[10px]">{count}</Badge>
-                    </div>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+              </button>
+            );
+          })}
         </div>
       </div>
 

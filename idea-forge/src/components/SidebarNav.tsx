@@ -1,5 +1,5 @@
-import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, ShieldCheck, Activity, Building, ChevronDown, ChevronRight, type LucideIcon } from "lucide-react";
-import { useState } from "react";
+import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, ShieldCheck, Activity, Building, ChevronDown, ChevronRight, Search, X, type LucideIcon } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate, useLocation, useSearchParams, useParams } from "react-router-dom";
 import { ROUTES, getTenantPath } from "@/lib/constants";
@@ -8,7 +8,7 @@ import { useTenant } from "@/contexts/TenantContext";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import GlobalSearch from "./GlobalSearch";
+import { Input } from "@/components/ui/input";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   "Sales": Briefcase,
@@ -36,6 +36,8 @@ const getCategoryIcon = (name: string): LucideIcon => {
 interface SidebarNavProps {
   onCategorySelect?: (category: string) => void;
   selectedCategory?: string;
+  searchQuery?: string;
+  onSearch?: (query: string) => void;
 }
 
 interface SidebarButtonProps {
@@ -77,17 +79,51 @@ function SidebarButton({ icon: Icon, label, active, onClick }: SidebarButtonProp
   );
 }
 
-const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: SidebarNavProps) => {
+const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQuery = "", onSearch }: SidebarNavProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
   const [isSpacesExpanded, setIsSpacesExpanded] = useState(true);
+  const [localSearch, setLocalSearch] = useState(searchQuery);
 
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { tenant } = useTenant();
   const selectedCategory = propCategory || searchParams.get("category") || "All";
   const currentSlug = tenant?.slug || tenantSlug || "default";
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLocalSearch(value);
+    if (onSearch) {
+      onSearch(value);
+    }
+  };
+
+  const clearSearch = () => {
+    setLocalSearch("");
+    if (onSearch) {
+      onSearch("");
+    }
+  };
 
   const { data: dbCategories, isLoading: isCategoriesLoading } = useQuery({
     queryKey: ["categories", currentSlug, user?.id],
@@ -169,9 +205,38 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory }: Sideba
   return (
     <aside className="sticky top-0 h-screen w-[260px] shrink-0 border-r border-border hidden md:flex flex-col bg-card/40 dark:bg-card/20 backdrop-blur-xl shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 transition-colors duration-300">
       <div className="flex-1 overflow-y-auto no-scrollbar py-6">
+        {/* Search Bar in Sidebar */}
         <div className="px-5 mb-8">
-          <GlobalSearch />
+          <div className="relative group">
+            <div className="absolute inset-x-0 -bottom-2 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity" />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+              <Search className="h-4 w-4" />
+            </div>
+            <Input
+              ref={searchInputRef}
+              value={localSearch}
+              onChange={handleSearchChange}
+              placeholder="Search ideas..."
+              className="pl-10 pr-10 h-11 bg-background/50 border-border/50 focus:border-primary/30 focus:ring-primary/20 rounded-2xl transition-all shadow-sm group-hover:bg-background"
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {!localSearch && (
+                <kbd className="hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+              )}
+              {localSearch && (
+                <button
+                  onClick={clearSearch}
+                  className="p-1 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
+
         {['admin', 'tenant_admin', 'super_admin'].includes(user?.role || '') && (
           <div className="mb-6 space-y-1">
             <div className="px-5 mb-3">

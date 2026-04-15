@@ -25,6 +25,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ROUTES } from "./lib/constants";
 import FloatingSubmitIdea from "./components/FloatingSubmitIdea";
+import BottomNav from "./components/BottomNav";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ const AppContent = () => (
         <Route path="*" element={<NotFound />} />
       </Routes>
       <FloatingSubmitIdea />
+      <BottomNav />
     </TenantProvider>} />
 
     {/* Catch-all for very deep unknown paths */}

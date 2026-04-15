@@ -15,7 +15,7 @@ const SubmitIdea = () => {
       <Header />
       <div className="flex flex-1 overflow-hidden relative z-10">
         <SidebarNav />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-10 no-scrollbar">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-10 no-scrollbar pb-safe-nav">
           <SubmitIdeaForm />
         </main>
       </div>
