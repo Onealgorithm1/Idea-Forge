@@ -245,6 +245,11 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
                 </div>
               </div>
 
+              {/* Mobile-only: similar ideas panel appears right after title input */}
+              <div className="lg:hidden">
+                <SimilarIdeasPanel query={debouncedTitle} />
+              </div>
+
               {/* Tags */}
               <div className="space-y-1.5">
                 <Label htmlFor="tags" className="text-[13px] font-bold text-slate-700">
@@ -491,8 +496,8 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
           </div>
         </Card>
 
-        {/* Right Side: Sidebar Panels */}
-        <div className="space-y-6 sticky top-6">
+        {/* Right Side: Sidebar Panels — desktop only */}
+        <div className="hidden lg:block space-y-6 sticky top-6">
           {/* Similar ideas FTS panel */}
           <SimilarIdeasPanel query={debouncedTitle} />
 

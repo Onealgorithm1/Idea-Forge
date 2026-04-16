@@ -1021,10 +1021,16 @@ export const searchIdeas = async (req: any, res: Response) => {
     // 1. Try Full-Text Search first (high performance, ranked)
     let ftsSql = `
       SELECT 
-        i.id, i.title, i.status, i.votes_count, i.description, i.created_at,
+        i.*,
         u.name AS author_name,
         c.name AS category,
+        p.name AS parent_name,
         s.name AS space_name,
+        (SELECT json_agg(t.name) FROM tags t 
+         JOIN idea_tags it ON t.id = it.tag_id 
+         WHERE it.idea_id = i.id) as tags,
+        (SELECT type FROM votes WHERE idea_id = i.id AND user_id = $2 LIMIT 1) as vote_type,
+        (EXISTS (SELECT 1 FROM bookmarks WHERE idea_id = i.id AND user_id = $2 AND tenant_id = i.tenant_id)) as is_bookmarked,
         ts_rank(
           to_tsvector('english', COALESCE(i.title, '') || ' ' || COALESCE(i.description, '')),
           plainto_tsquery('english', $1)
@@ -1032,18 +1038,19 @@ export const searchIdeas = async (req: any, res: Response) => {
       FROM ideas i
       LEFT JOIN users u ON i.author_id = u.id
       LEFT JOIN categories c ON i.category_id = c.id
+      LEFT JOIN categories p ON c.parent_id = p.id
       LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
-      WHERE i.tenant_id = $2
+      WHERE i.tenant_id = $3
         AND to_tsvector('english', COALESCE(i.title, '') || ' ' || COALESCE(i.description, '')) @@ plainto_tsquery('english', $1)
     `;
 
-    const ftsParams: any[] = [searchTerm, tenant_id];
+    const ftsParams: any[] = [searchTerm, req.user?.id || '00000000-0000-0000-0000-000000000000', tenant_id];
     if (space_id && space_id.trim() !== "" && space_id !== 'undefined') {
-      ftsSql += ` AND i.idea_space_id = $3`;
+      ftsSql += ` AND i.idea_space_id = $4`;
       ftsParams.push(space_id);
     }
 
-    ftsSql += ` ORDER BY rank DESC LIMIT 15`;
+    ftsSql += ` ORDER BY rank DESC LIMIT 30`;
 
     const ftsResult = await query(ftsSql, ftsParams);
     
@@ -1054,26 +1061,33 @@ export const searchIdeas = async (req: any, res: Response) => {
     // 2. Fallback to ILIKE if FTS returns nothing (better for partial words/prefixes)
     let fallbackSql = `
       SELECT 
-        i.id, i.title, i.status, i.votes_count, i.description, i.created_at,
+        i.*,
         u.name AS author_name,
         c.name AS category,
+        p.name AS parent_name,
         s.name AS space_name,
+        (SELECT json_agg(t.name) FROM tags t 
+         JOIN idea_tags it ON t.id = it.tag_id 
+         WHERE it.idea_id = i.id) as tags,
+        (SELECT type FROM votes WHERE idea_id = i.id AND user_id = $2 LIMIT 1) as vote_type,
+        (EXISTS (SELECT 1 FROM bookmarks WHERE idea_id = i.id AND user_id = $2 AND tenant_id = i.tenant_id)) as is_bookmarked,
         0.0 AS rank
       FROM ideas i
       LEFT JOIN users u ON i.author_id = u.id
       LEFT JOIN categories c ON i.category_id = c.id
+      LEFT JOIN categories p ON c.parent_id = p.id
       LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
-      WHERE i.tenant_id = $2
+      WHERE i.tenant_id = $3
         AND (i.title ILIKE $1 OR i.description ILIKE $1)
     `;
 
-    const fallbackParams: any[] = [`%${searchTerm}%`, tenant_id];
+    const fallbackParams: any[] = [`%${searchTerm}%`, req.user?.id || '00000000-0000-0000-0000-000000000000', tenant_id];
     if (space_id && space_id.trim() !== "" && space_id !== 'undefined') {
-      fallbackSql += ` AND i.idea_space_id = $3`;
+      fallbackSql += ` AND i.idea_space_id = $4`;
       fallbackParams.push(space_id);
     }
 
-    fallbackSql += ` ORDER BY i.created_at DESC LIMIT 15`;
+    fallbackSql += ` ORDER BY i.created_at DESC LIMIT 30`;
 
     const fallbackResult = await query(fallbackSql, fallbackParams);
     return res.json(fallbackResult.rows);
