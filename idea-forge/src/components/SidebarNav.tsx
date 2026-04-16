@@ -1,4 +1,4 @@
-import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, ShieldCheck, Activity, Building, ChevronDown, ChevronRight, Search, X, type LucideIcon } from "lucide-react";
+import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, ShieldCheck, Activity, Building, ChevronDown, ChevronRight, type LucideIcon } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate, useLocation, useSearchParams, useParams } from "react-router-dom";
@@ -8,7 +8,8 @@ import { useTenant } from "@/contexts/TenantContext";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Input } from "@/components/ui/input";
+
+import BoardSearchBar from "@/components/BoardSearchBar";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   "Sales": Briefcase,
@@ -110,20 +111,6 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setLocalSearch(value);
-    if (onSearch) {
-      onSearch(value);
-    }
-  };
-
-  const clearSearch = () => {
-    setLocalSearch("");
-    if (onSearch) {
-      onSearch("");
-    }
-  };
 
   const { data: dbCategories, isLoading: isCategoriesLoading } = useQuery({
     queryKey: ["categories", currentSlug, user?.id],
@@ -207,34 +194,16 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
       <div className="flex-1 overflow-y-auto no-scrollbar py-6">
         {/* Search Bar in Sidebar */}
         <div className="px-5 mb-8">
-          <div className="relative group">
-            <div className="absolute inset-x-0 -bottom-2 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity" />
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
-              <Search className="h-4 w-4" />
-            </div>
-            <Input
-              ref={searchInputRef}
-              value={localSearch}
-              onChange={handleSearchChange}
-              placeholder="Search ideas..."
-              className="pl-10 pr-10 h-11 bg-background/50 border-border/50 focus:border-primary/30 focus:ring-primary/20 rounded-2xl transition-all shadow-sm group-hover:bg-background"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              {!localSearch && (
-                <kbd className="hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-                  <span className="text-xs">⌘</span>K
-                </kbd>
-              )}
-              {localSearch && (
-                <button
-                  onClick={clearSearch}
-                  className="p-1 rounded-full hover:bg-muted text-muted-foreground transition-colors"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-          </div>
+          <BoardSearchBar
+            ref={searchInputRef}
+            value={localSearch}
+            onChange={(val) => {
+              setLocalSearch(val);
+              if (onSearch) onSearch(val);
+            }}
+            placeholder="Search ideas..."
+            showKbdHint
+          />
         </div>
 
         {['admin', 'tenant_admin', 'super_admin'].includes(user?.role || '') && (

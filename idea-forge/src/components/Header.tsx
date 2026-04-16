@@ -1,4 +1,5 @@
 import {
+  Briefcase,
   Activity,
   Bell,
   ChevronDown,
@@ -23,10 +24,10 @@ import { Logo } from "@/components/Logo";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useTenant } from "@/contexts/TenantContext";
-import GlobalSearch from "./GlobalSearch";
 import {
   Sheet,
   SheetContent,
@@ -70,6 +71,23 @@ const Header = () => {
     queryFn: () => api.get("/ideas/categories"),
     staleTime: 1000 * 60 * 5,
   });
+
+  const { data: ideaSpaces = [] } = useQuery({
+    queryKey: ["idea-spaces", currentSlug],
+    queryFn: () => api.get("/ideas/spaces"),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const buildTree = (cats: any[], parentId: string | null = null): any[] => {
+    return (Array.isArray(cats) ? cats : [])
+      .filter(c => (parentId === null) ? !c.parent_id : c.parent_id === parentId)
+      .map(c => ({
+        ...c,
+        children: buildTree(cats, c.id)
+      }));
+  };
+
+  const categoryTree = buildTree(dbCategories);
 
   const displayCategories = [
     { label: "All" },
@@ -136,24 +154,32 @@ const Header = () => {
                 </SheetHeader>
                 <ScrollArea className="h-[calc(100vh-80px)] p-6">
                   <div className="space-y-8">
+
                     <div className="space-y-4">
-                      <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2">Navigation</p>
-                      <nav className="flex flex-col gap-2">
-                        {tabs.map((tab) => {
-                          const isActive = location.pathname === tab.path;
+                      <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2 flex items-center gap-2">
+                        <Briefcase className="h-3 w-3" /> Idea Spaces
+                      </p>
+                      <div className="flex flex-wrap gap-2 px-1">
+                        {Array.isArray(ideaSpaces) && ideaSpaces.map((space: any) => {
+                          const searchParams = new URLSearchParams(location.search);
+                          const isActive = searchParams.get("space") === space.id;
+                          const params = new URLSearchParams(location.search);
+                          params.set("space", space.id);
+                          const path = `${getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}?${params.toString()}`;
+
                           return (
                             <Link
-                              key={tab.name}
-                              to={tab.path}
-                              className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all ${
-                                isActive ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-white/60 hover:bg-white/5 hover:text-white"
+                              key={space.id}
+                              to={path}
+                              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${
+                                isActive ? "bg-primary text-white border-primary" : "bg-white/5 text-white/70 border-white/10 hover:border-white/20"
                               }`}
                             >
-                              {tab.name}
+                              {space.name}
                             </Link>
                           );
                         })}
-                      </nav>
+                      </div>
                     </div>
 
                     {(location.pathname === getTenantPath(ROUTES.IDEA_BOARD, currentSlug)) && (
@@ -161,27 +187,38 @@ const Header = () => {
                         <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2 flex items-center gap-2">
                           <Tag className="h-3 w-3" /> Categories
                         </p>
-                        <div className="flex flex-wrap gap-2 px-1">
-                          {displayCategories.map((cat) => {
-                            const searchParams = new URLSearchParams(location.search);
-                            const currentCat = searchParams.get("category") || "All";
-                            const isActive = currentCat === cat.label;
-                            const params = new URLSearchParams();
-                            if (cat.label !== "All") params.set("category", cat.label);
-                            const path = `${getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}${params.toString() ? "?" + params.toString() : ""}`;
-
-                            return (
-                              <Link
-                                key={cat.label}
-                                to={path}
-                                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${
-                                  isActive ? "bg-white text-header border-white" : "bg-white/5 text-white/70 border-white/10 hover:border-white/20"
-                                }`}
-                              >
-                                {cat.label}
-                              </Link>
+                        <div className="flex flex-col gap-1 px-1">
+                          <Link
+                            to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}
+                            className={cn(
+                              "px-4 py-2 text-sm font-bold rounded-xl transition-all",
+                              !(new URLSearchParams(location.search).get("category")) 
+                                ? "bg-white/10 text-white" 
+                                : "text-white/60 hover:text-white hover:bg-white/5"
+                            )}
+                          >
+                            All Categories
+                          </Link>
+                          {(() => {
+                            const renderCategory = (cat: any, depth = 0) => (
+                              <div key={cat.id} className="flex flex-col gap-1">
+                                <Link
+                                  to={`${getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}?category=${encodeURIComponent(cat.name)}`}
+                                  className={cn(
+                                    "px-4 py-2 text-sm font-bold rounded-xl transition-all",
+                                    new URLSearchParams(location.search).get("category") === cat.name 
+                                      ? "bg-white/10 text-white" 
+                                      : "text-white/60 hover:text-white hover:bg-white/5"
+                                  )}
+                                  style={{ paddingLeft: `${(depth + 1) * 1}rem` }}
+                                >
+                                  {cat.name}
+                                </Link>
+                                {cat.children?.map((child: any) => renderCategory(child, depth + 1))}
+                              </div>
                             );
-                          })}
+                            return categoryTree.map((cat: any) => renderCategory(cat));
+                          })()}
                         </div>
                       </div>
                     )}
@@ -201,6 +238,9 @@ const Header = () => {
                           <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, currentSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
                             Organization Settings
                           </Link>
+                          <Link to={getTenantPath(ROUTES.ADMIN_CATEGORIES, currentSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
+                            Manage Categories
+                          </Link>
                         </div>
                       </div>
                     )}
@@ -214,34 +254,6 @@ const Header = () => {
                       </SupportDialog>
                     </div>
 
-                    <div className="space-y-4">
-                      <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2">Account</p>
-                      <div className="space-y-2">
-                        {user ? (
-                          <>
-                            <Link
-                              to={getTenantPath(ROUTES.PROFILE, currentSlug)}
-                              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all"
-                            >
-                              Profile Settings
-                            </Link>
-                            <button
-                              onClick={logout}
-                              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-red-400 hover:bg-red-500/10 transition-all text-left"
-                            >
-                              Logout
-                            </button>
-                          </>
-                        ) : (
-                          <Link
-                            to={getTenantPath(ROUTES.LOGIN, currentSlug)}
-                            className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold bg-primary text-white text-center justify-center"
-                          >
-                            Login
-                          </Link>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 </ScrollArea>
               </SheetContent>
@@ -353,8 +365,8 @@ const Header = () => {
             </SheetContent>
           </Sheet>
 
-          {user ? (
-            <div className="flex items-center gap-2 ml-1 border-l border-white/10 pl-3">
+          <div className="hidden md:flex items-center gap-2 ml-1 border-l border-white/10 pl-3">
+            {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-0 focus-visible:outline-none transition-all group">
@@ -424,14 +436,14 @@ const Header = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 ml-2">
-              <Button asChild variant="default" size="sm" className="h-8 px-4 rounded-full text-xs font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
-                <Link to={getTenantPath(ROUTES.LOGIN, currentSlug)}>Login</Link>
-              </Button>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-center gap-2 ml-2">
+                <Button asChild variant="default" size="sm" className="h-8 px-4 rounded-full text-xs font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
+                  <Link to={getTenantPath(ROUTES.LOGIN, currentSlug)}>Login</Link>
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

@@ -11,7 +11,7 @@ export default function FloatingSubmitIdea() {
   const navigate = useNavigate();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { tenant } = useTenant();
-  
+
   const currentSlug = tenant?.slug || tenantSlug || "default";
 
   const hiddenPaths = ["/submit-idea", "/admin", "/profile", "/login", "/super-admin", "/register-workspace"];
@@ -41,10 +41,10 @@ export default function FloatingSubmitIdea() {
       >
         <Plus className="h-6 w-6 transition-transform group-hover:rotate-90" />
         <span className="font-bold text-sm tracking-wide">Submit Idea</span>
-        
+
         {/* Tooltip Label */}
         <span className="absolute right-full mr-4 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 shadow-xl border border-white/10">
-          Post Your Innovation
+          Post Your Idea
         </span>
       </motion.button>
     </div>
