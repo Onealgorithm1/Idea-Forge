@@ -3,17 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { 
   GripVertical, CheckCircle2, FlaskConical, PlayCircle, Clock, 
   ChevronRight, ChevronLeft, ChevronDown, ChevronUp, MessageSquare, 
-  Trash2, ArrowBigUp, Lock, Rocket, Lightbulb
+  Trash2, ArrowBigUp, Lock, Rocket, Lightbulb, SearchX, Inbox
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ROUTES, getTenantPath, ADMIN_ROLES, MANAGEMENT_ROLES } from "@/lib/constants";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -26,6 +20,40 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import ConfirmationModal from "./ConfirmationModal";
 import VotingSystem from "./VotingSystem";
 import CommentSection from "./CommentSection";
+
+import { Skeleton } from "@/components/ui/skeleton";
+
+const RoadmapCardSkeleton = () => (
+  <div className="bg-card/40 rounded-2xl p-4 border border-border/50 space-y-3 animate-pulse">
+    <div className="flex items-start justify-between gap-3">
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-4 w-4 rounded-full" />
+    </div>
+    <Skeleton className="h-3 w-full opacity-50" />
+    <div className="flex gap-2 pt-2">
+      <Skeleton className="h-6 w-12 rounded-lg" />
+      <Skeleton className="h-6 w-12 rounded-lg" />
+    </div>
+  </div>
+);
+
+const RoadmapBoardSkeleton = () => (
+  <div className="flex flex-col lg:flex-row gap-6 overflow-hidden pb-8 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
+    {[1, 2, 3, 4].map((col) => (
+      <div key={col} className="flex-shrink-0 w-full lg:w-[420px] space-y-4">
+        <div className="flex items-center justify-between px-4 py-2">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-5 w-8 rounded-md" />
+        </div>
+        <div className="bg-muted/10 rounded-2xl p-4 space-y-4 border border-border/20 h-[calc(100vh-18rem)] overflow-hidden">
+          {[1, 2, 3].map((card) => (
+            <RoadmapCardSkeleton key={card} />
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+);
 
 interface RoadmapIdeaCardProps {
   idea: any;
@@ -224,7 +252,7 @@ const stageColors: Record<string, string> = {
   success: "border-t-success/40 bg-success/5",
 };
 
-const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
+const RoadmapBoard = ({ spaceId = null, search = "" }: { spaceId?: string | null, search?: string }) => {
   const navigate = useNavigate();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { token, user } = useAuth();
@@ -232,19 +260,62 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
   const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
   const [activeStage, setActiveStage] = useState<string>(roadmapStages[0].id);
 
-  const { data: ideas = [], isLoading } = useQuery({
-    queryKey: ["ideas", tenantSlug],
-    queryFn: () => api.get("/ideas", token || undefined),
+  const { data: ideas = [], isLoading, isFetching } = useQuery({
+    queryKey: ["ideas", tenantSlug, search, spaceId],
+    queryFn: () => {
+      const endpoint = (search && search.trim().length >= 2) 
+        ? `/ideas/search?q=${encodeURIComponent(search)}&space_id=${spaceId || ''}` 
+        : `/ideas?space_id=${spaceId || ''}`;
+      return api.get(endpoint, token!);
+    },
+    enabled: !!tenantSlug,
     staleTime: 1000 * 60,
   });
+
+  const isCurrentlySearching = isFetching && !!search;
+
+  // Calculate stage items even during loading for hook consistency
+  const getStageItems = (statuses: string[]) => {
+    return ideas.filter(i => {
+      const statusMatch = statuses.includes(i.status);
+      const spaceMatch = !spaceId || i.idea_space_id === spaceId;
+      return statusMatch && spaceMatch;
+    });
+  };
+
+  const backlogItems = getStageItems(roadmapStages[0].statuses);
+  const progressItems = getStageItems(roadmapStages[1].statuses);
+  const qaItems = getStageItems(roadmapStages[2].statuses);
+  const doneItems = getStageItems(roadmapStages[3].statuses);
+
+  // Auto-switch mobile stage if current stage has no results but another does (when searching)
+  useEffect(() => {
+    if (search && search.length >= 1) {
+      const counts = {
+        backlog: backlogItems.length,
+        progress: progressItems.length,
+        qa: qaItems.length,
+        done: doneItems.length
+      };
+
+      const currentCount = counts[activeStage as keyof typeof counts];
+
+      if (currentCount === 0) {
+        if (counts.backlog > 0) setActiveStage('backlog');
+        else if (counts.progress > 0) setActiveStage('progress');
+        else if (counts.qa > 0) setActiveStage('qa');
+        else if (counts.done > 0) setActiveStage('done');
+      }
+    }
+  }, [search, backlogItems.length, progressItems.length, qaItems.length, doneItems.length, activeStage]);
 
   const voteMutation = useMutation({
     mutationFn: ({ id, type }: { id: string; type: "up" | "down" }) =>
       api.post(`/ideas/${id}/vote`, { type }, token!),
     onMutate: async ({ id, type }) => {
-      await queryClient.cancelQueries({ queryKey: ["ideas", tenantSlug] });
-      const previousIdeas = queryClient.getQueryData(["ideas", tenantSlug]);
-      queryClient.setQueryData(["ideas", tenantSlug], (old: any[] | undefined) => {
+      await queryClient.cancelQueries({ queryKey: ["ideas", tenantSlug, search, spaceId] });
+      const previousIdeas = queryClient.getQueryData(["ideas", tenantSlug, search, spaceId]);
+      queryClient.setQueryData(["ideas", tenantSlug, search, spaceId], (old: any[] | undefined) => {
         if (!old) return old;
         return old.map(idea => {
           if (idea.id !== id) return idea;
@@ -271,12 +342,12 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
     },
     onError: (err: any, variables, context) => {
       if (context?.previousIdeas) {
-        queryClient.setQueryData(["ideas", tenantSlug], context.previousIdeas);
+        queryClient.setQueryData(["ideas", tenantSlug, search, spaceId], context.previousIdeas);
       }
       toast.error(err.message || "Failed to vote");
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
+      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug, search, spaceId] });
     },
   });
 
@@ -289,18 +360,18 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       api.patch(`/ideas/${id}/status`, { status }, token!),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
+      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug, search, spaceId] });
     },
     onError: (error: any) => {
       toast.error(error.message || "Update failed");
-      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
+      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug, search, spaceId] });
     }
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/ideas/${id}`, token!),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug, search, spaceId] });
       toast.success("Idea deleted");
     },
     onError: (error: any) => toast.error(error.message || "Failed to delete idea"),
@@ -329,12 +400,29 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
     statusMutation.mutate({ id, status: newStatus });
   };
 
-  if (isLoading) {
+  if (isLoading || isCurrentlySearching) {
+    return <RoadmapBoardSkeleton />;
+  }
+
+  if (ideas.length === 0) {
     return (
-      <div className="flex gap-6 overflow-x-auto pb-8 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex-shrink-0 w-[420px] h-[calc(100vh-14rem)] bg-muted/20 animate-pulse rounded-3xl border border-border/50" />
-        ))}
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-12rem)] w-full text-center space-y-6 animate-in fade-in zoom-in duration-500">
+        <div className="relative">
+          <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full scale-150" />
+          <div className="relative bg-card/50 backdrop-blur-xl border border-border/50 p-10 rounded-[2.5rem] shadow-premium">
+            {search ? <SearchX className="h-16 w-16 text-primary/40 mb-2" /> : <Inbox className="h-16 w-16 text-muted-foreground/30 mb-2" />}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black tracking-tight text-foreground">
+            {search ? "No matches found" : "No roadmap items"}
+          </h2>
+          <p className="text-muted-foreground text-sm font-medium max-w-[280px]">
+            {search 
+              ? `We couldn't find anything for "${search}". Try adjusting your keywords or filters.`
+              : "The roadmap is currently clear. Ideas will appear here once they move into planning."}
+          </p>
+        </div>
       </div>
     );
   }
@@ -343,81 +431,58 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
     <>
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="space-y-6">
-          {/* Mobile Stage Selector */}
-          <div className="lg:hidden">
-            <div className="flex flex-col gap-3">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Roadmap Phase</label>
-              <Select value={activeStage} onValueChange={setActiveStage}>
-                <SelectTrigger className="w-full h-14 bg-card border-border shadow-premium rounded-2xl px-5 focus:ring-primary/20 transition-all">
-                  <div className="flex items-center gap-3">
-                    {(() => {
-                      const currentStage = roadmapStages.find(s => s.id === activeStage);
-                      if (!currentStage) return null;
-                      const Icon = currentStage.icon;
-                      return (
-                        <>
-                          <div className={cn(
-                            "p-2 rounded-xl",
-                            currentStage.color === 'slate' ? "bg-muted" : `bg-${currentStage.color}/20`
-                          )}>
-                            <Icon className={cn("h-4 w-4", currentStage.color === 'slate' ? "text-muted-foreground" : `text-${currentStage.color}`)} />
-                          </div>
-                          <div className="flex flex-col items-start leading-tight">
-                            <span className="text-sm font-black text-foreground">{currentStage.name}</span>
-                            <span className="text-[10px] font-bold text-muted-foreground">
-                              {ideas.filter(i => {
-                                const statusMatch = currentStage.statuses.includes(i.status);
-                                const spaceMatch = !spaceId || i.idea_space_id === spaceId;
-                                return statusMatch && spaceMatch;
-                              }).length} Ideas
-                            </span>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl border-border bg-card/95 backdrop-blur-xl shadow-2xl">
-                  {roadmapStages.map(stage => {
-                    const count = ideas.filter(i => {
-                      const statusMatch = stage.statuses.includes(i.status);
-                      const spaceMatch = !spaceId || i.idea_space_id === spaceId;
-                      return statusMatch && spaceMatch;
-                    }).length;
-                    return (
-                      <SelectItem key={stage.id} value={stage.id} className="rounded-xl py-3 px-4 focus:bg-primary/5 cursor-pointer">
-                        <div className="flex items-center justify-between w-full min-w-[200px]">
-                          <div className="flex items-center gap-3">
-                            <div className={cn(
-                              "p-1.5 rounded-lg",
-                              stage.color === 'slate' ? "bg-muted" : `bg-${stage.color}/10`
-                            )}>
-                              <stage.icon className={cn("h-3.5 w-3.5", stage.color === 'slate' ? "text-muted-foreground" : `text-${stage.color}`)} />
-                            </div>
-                            <span className="font-bold text-sm">{stage.name}</span>
-                          </div>
-                          <Badge variant="secondary" className="bg-muted/50 text-muted-foreground font-black text-[10px]">{count}</Badge>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+          {/* Mobile Stage Selector — pill tabs matching KanbanBoard */}
+          <div className="lg:hidden sticky top-0 z-20 bg-background/95 backdrop-blur-xl -mx-4 px-4 py-3 border-b border-border/50">
+            <div className="flex bg-muted/30 p-1 rounded-2xl border border-border/50">
+              {roadmapStages.map(stage => {
+                const isActive = activeStage === stage.id;
+                const stageIdeas = stage.id === 'backlog' ? backlogItems : 
+                                  stage.id === 'progress' ? progressItems : 
+                                  stage.id === 'qa' ? qaItems : doneItems;
+                const count = stageIdeas.length;
+                const Icon = stage.icon;
+
+                return (
+                  <button
+                    key={stage.id}
+                    onClick={() => setActiveStage(stage.id)}
+                    className={cn(
+                      "flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl transition-all relative overflow-hidden",
+                      isActive ? "text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="active-roadmap-stage-bg"
+                        className="absolute inset-0 bg-background shadow-sm ring-1 ring-border/20 z-0"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    <div className="relative z-10 flex flex-col items-center">
+                      <div className={cn("mb-1", isActive ? "scale-110 transition-transform" : "opacity-70")}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-tight">{stage.name}</span>
+                      <span className="text-[8px] font-bold opacity-60">
+                        {count} {count === 1 ? 'Idea' : 'Ideas'}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           <div className="flex flex-col lg:flex-row gap-6 lg:overflow-x-auto pb-8 no-scrollbar lg:-mx-6 lg:px-6">
             {roadmapStages.map((stage) => {
-              const stageIdeas = ideas.filter(i => {
-                const statusMatch = stage.statuses.includes(i.status);
-                const spaceMatch = !spaceId || i.idea_space_id === spaceId;
-                return statusMatch && spaceMatch;
-              });
+              const stageIdeas = stage.id === 'backlog' ? backlogItems : 
+                                stage.id === 'progress' ? progressItems : 
+                                stage.id === 'qa' ? qaItems : doneItems;
               const Icon = stage.icon;
 
               return (
                 <Card key={stage.id} className={cn(
-                  `flex flex-col flex-shrink-0 w-full lg:w-[420px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]} transition-all duration-300`,
+                  `flex flex-col flex-shrink-0 w-full lg:w-[420px] h-auto lg:h-[calc(100vh-10rem)] p-0 overflow-hidden border-none shadow-premium backdrop-blur-sm border-t-4 ${stageColors[stage.color]} transition-all duration-300`,
                   activeStage === stage.id ? "flex" : "hidden lg:flex"
                 )}>
                   <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-black/5">
@@ -496,6 +561,7 @@ const RoadmapBoard = ({ spaceId = null }: { spaceId?: string | null }) => {
     </>
   );
 };
+
 
 // Helper to determine next logic status
 function getNextStatus(current: string): string {

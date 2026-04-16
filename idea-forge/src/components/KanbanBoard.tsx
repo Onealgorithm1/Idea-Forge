@@ -3,7 +3,7 @@ import { Link, useSearchParams, useParams, useNavigate } from "react-router-dom"
 import {
   MoreVertical, Edit2, Trash2, Filter, Search, Plus,
   MessageSquare, ChevronDown, ChevronRight, Bookmark, GripVertical, ArrowBigUp, ChevronUp, ExternalLink, Lock,
-  LayoutGrid, Rocket, Lightbulb
+  LayoutGrid, Rocket, Lightbulb, Inbox, SearchX
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ROUTES, getTenantPath, PLATFORM_STATUS_LABELS, ADMIN_ROLES, MANAGEMENT_ROLES } from "@/lib/constants";
@@ -25,6 +25,52 @@ import { api } from "@/lib/api";
 import VotingSystem from "./VotingSystem";
 import ConfirmationModal from "./ConfirmationModal";
 import CommentSection from "./CommentSection";
+
+import { Skeleton } from "@/components/ui/skeleton";
+
+const CardSkeleton = () => (
+  <div className="bg-card/40 rounded-[2rem] p-6 border border-border/50 space-y-5 animate-pulse shadow-sm">
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start gap-4 flex-1">
+        <Skeleton className="h-12 w-12 rounded-2xl shrink-0" />
+        <div className="space-y-2 flex-1 pt-1">
+          <Skeleton className="h-3 w-20 opacity-60" />
+          <Skeleton className="h-5 w-full" />
+          <Skeleton className="h-4 w-4/5 opacity-50" />
+        </div>
+      </div>
+    </div>
+    <div className="flex gap-2 mb-2">
+      <Skeleton className="h-4 w-12 rounded-lg opacity-40" />
+      <Skeleton className="h-4 w-16 rounded-lg opacity-40" />
+    </div>
+    <div className="pt-5 border-t border-border/40 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-9 w-24 rounded-xl" />
+        <Skeleton className="h-8 w-8 rounded-full" />
+      </div>
+      <Skeleton className="h-10 w-16 rounded-xl" />
+    </div>
+  </div>
+);
+
+const BoardSkeleton = () => (
+  <div className="flex flex-col lg:flex-row gap-6 overflow-hidden pb-8 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
+    {[1, 2, 3].map((col) => (
+      <div key={col} className="flex-shrink-0 w-full lg:w-[450px] space-y-4">
+        <div className="flex items-center justify-between px-4 py-2">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-5 w-8 rounded-md" />
+        </div>
+        <div className="bg-muted/10 rounded-[2.5rem] p-4 space-y-4 border border-border/20 h-[calc(100vh-18rem)] overflow-hidden">
+          {[1, 2, 3].map((card) => (
+            <CardSkeleton key={card} />
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+);
 
 interface BoardIdeaCardProps {
   item: any;
@@ -275,11 +321,19 @@ const KanbanBoard = ({ category = "All", spaceId = null, search = "" }: { catego
     { id: 'production' as const, name: 'In Production', icon: Rocket, color: 'success' },
   ];
 
-  const { data: ideas = [], isLoading } = useQuery({
-    queryKey: ["ideas", tenantSlug],
-    queryFn: () => api.get("/ideas", token || undefined),
-    staleTime: 1000 * 60, // 1 minute
+  const { data: ideas = [], isLoading, isFetching } = useQuery({
+    queryKey: ["ideas", tenantSlug, search, spaceId],
+    queryFn: () => {
+      const endpoint = (search && search.trim().length >= 2) 
+        ? `/ideas/search?q=${encodeURIComponent(search)}&space_id=${spaceId || ''}` 
+        : `/ideas?space_id=${spaceId || ''}`;
+      return api.get(endpoint, token!);
+    },
+    enabled: !!tenantSlug,
+    staleTime: 1000 * 60,
   });
+
+  const isCurrentlySearching = isFetching && !!search;
 
   const voteMutation = useMutation({
     mutationFn: ({ id, type }: { id: string; type: "up" | "down" }) =>
@@ -398,30 +452,62 @@ const KanbanBoard = ({ category = "All", spaceId = null, search = "" }: { catego
     });
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex gap-6 overflow-x-auto pb-6 no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="flex-shrink-0 w-[450px] h-[calc(100vh-14rem)] bg-muted/20 animate-pulse rounded-3xl border border-border/50" />
-        ))}
-      </div>
-    );
-  }
-
-  // Filter ideas based on category, state, space, and search query
+  // Calculate filtered ideas even during loading to keep hook order consistent
   const filteredIdeas = ideas.filter((i: any) => {
     const categoryMatch = category === "All" || i.category === category;
     const spaceMatch = !spaceId || i.idea_space_id === spaceId;
-    const searchMatch = !search || 
-      i.title?.toLowerCase().includes(search.toLowerCase()) || 
-      i.description?.toLowerCase().includes(search.toLowerCase()) ||
-      i.tags?.some((t: string) => t.toLowerCase().includes(search.toLowerCase()));
-    return categoryMatch && spaceMatch && searchMatch;
+    return categoryMatch && spaceMatch;
   });
 
   const ideaPoolItems = filteredIdeas.filter((i: any) => i.status === 'Pending');
   const votingItems = filteredIdeas.filter((i: any) => i.status === 'Under Review' || i.status === 'In Progress' || i.status === 'In Development' || i.status === 'QA');
   const devItems = filteredIdeas.filter((i: any) => i.status === 'Shipped');
+
+  // Auto-switch mobile stage if current stage has no results but another does (when searching)
+  useEffect(() => {
+    if (search && search.length >= 1) {
+      const counts = {
+        ideation: ideaPoolItems.length,
+        development: votingItems.length,
+        production: devItems.length
+      };
+
+      const currentCount = counts[activeStage as keyof typeof counts];
+
+      if (currentCount === 0) {
+        if (counts.ideation > 0) setActiveStage('ideation');
+        else if (counts.development > 0) setActiveStage('development');
+        else if (counts.production > 0) setActiveStage('production');
+      }
+    }
+  }, [search, ideaPoolItems.length, votingItems.length, devItems.length, activeStage]);
+
+  if (isLoading || isCurrentlySearching) {
+    return <BoardSkeleton />;
+  }
+
+  if (filteredIdeas.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-12rem)] w-full text-center space-y-6 animate-in fade-in zoom-in duration-500">
+        <div className="relative">
+          <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full scale-150" />
+          <div className="relative bg-card/50 backdrop-blur-xl border border-border/50 p-10 rounded-[2.5rem] shadow-premium">
+            {search ? <SearchX className="h-16 w-16 text-primary/40 mb-2" /> : <Inbox className="h-16 w-16 text-muted-foreground/30 mb-2" />}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black tracking-tight text-foreground">
+            {search ? "No matches found" : "No ideas yet"}
+          </h2>
+          <p className="text-muted-foreground text-sm font-medium max-w-[280px]">
+            {search 
+              ? `We couldn't find anything for "${search}". Try adjusting your keywords or filters.`
+              : "This board is currently empty. Be the first to submit a bright idea!"}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -470,7 +556,7 @@ const KanbanBoard = ({ category = "All", spaceId = null, search = "" }: { catego
       <div className="flex flex-col lg:flex-row gap-6 lg:overflow-x-auto pb-6 no-scrollbar lg:-mx-6 lg:px-6">
         {/* Idea Pool - Ideation */}
         <Card className={cn(
-          "flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-muted/50 to-muted/10 backdrop-blur-sm border-t-4 border-muted/50 transition-all duration-300",
+          "flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-10rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-muted/50 to-muted/10 backdrop-blur-sm border-t-4 border-muted/50 transition-all duration-300",
           activeStage === 'ideation' ? "flex" : "hidden lg:flex"
         )}>
           <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30">
@@ -502,7 +588,7 @@ const KanbanBoard = ({ category = "All", spaceId = null, search = "" }: { catego
 
         {/* In Development */}
         <Card className={cn(
-          "flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30 transition-all duration-300",
+          "flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-10rem)] p-0 overflow-hidden border-none shadow-premium bg-primary/5 backdrop-blur-sm border-t-4 border-primary/30 transition-all duration-300",
           activeStage === 'development' ? "flex" : "hidden lg:flex"
         )}>
           <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-primary/10 bg-primary/10">
@@ -534,7 +620,7 @@ const KanbanBoard = ({ category = "All", spaceId = null, search = "" }: { catego
 
         {/* In Production */}
         <Card className={cn(
-          "flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-14rem)] p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30 transition-all duration-300",
+          "flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-10rem)] p-0 overflow-hidden border-none shadow-premium bg-success/5 backdrop-blur-sm border-t-4 border-success/30 transition-all duration-300",
           activeStage === 'production' ? "flex" : "hidden lg:flex"
         )}>
           <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-success/10 bg-success/10">

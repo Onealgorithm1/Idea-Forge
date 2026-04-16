@@ -9,6 +9,8 @@ import SavedIdeasView from "@/components/SavedIdeasView";
 import { useLocation, useSearchParams, useParams } from "react-router-dom";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { LayoutGrid, Activity, BarChart, ChevronRight, FolderTree } from "lucide-react";
+import BoardSearchBar from "@/components/BoardSearchBar";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -20,6 +22,16 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { useState, useEffect } from "react";
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 const Index = () => {
   const { pathname } = useLocation();
@@ -28,6 +40,8 @@ const Index = () => {
   const selectedCategory = searchParams.get("category") || "All";
   const selectedSpace = searchParams.get("space") || null;
   const searchQuery = searchParams.get("search") || "";
+
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Pre-calculate tenant paths for comparison
   const tenantIdeaBoard = getTenantPath(ROUTES.IDEA_BOARD, tenantSlug);
@@ -110,7 +124,17 @@ const Index = () => {
           onSearch={setSearchQuery}
         />
 
-        <main className={`flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 md:px-10 md:py-8 pb-safe-nav`}>
+        <main className={`flex-1 overflow-y-auto overflow-x-hidden pb-safe-nav flex flex-col`}>
+          {/* Mobile Search Bar */}
+          <div className="md:hidden px-4 py-3 bg-background/50 backdrop-blur-md border-b border-border/10 sticky top-0 z-30 ring-1 ring-black/5">
+            <BoardSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search ideas, tags..."
+            />
+          </div>
+
+          <div className="px-4 py-4 md:px-8 md:py-6 space-y-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={`${pathname}-${selectedCategory}-${searchQuery}`}
@@ -216,7 +240,11 @@ const Index = () => {
                       ))}
                     </div>
                   )}
-                  <KanbanBoard category={selectedCategory} spaceId={selectedSpace} search={searchQuery} />
+                  <KanbanBoard 
+                  category={selectedCategory} 
+                  spaceId={selectedSpace} 
+                  search={debouncedSearchQuery}
+                />
                 </div>
               )}
 
@@ -231,7 +259,10 @@ const Index = () => {
                       <p className="text-muted-foreground font-medium">Tracking ideas from conception to delivery.</p>
                     </div>
                   </div>
-                  <RoadmapBoard spaceId={selectedSpace} />
+                  <RoadmapBoard 
+                  spaceId={selectedSpace} 
+                  search={debouncedSearchQuery}
+                />
                 </div>
               )}
 
@@ -263,6 +294,7 @@ const Index = () => {
               )}
             </motion.div>
           </AnimatePresence>
+          </div>
         </main>
       </div>
     </div>
