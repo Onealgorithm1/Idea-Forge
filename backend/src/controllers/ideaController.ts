@@ -506,10 +506,15 @@ export const voteIdea = async (req: any, res: Response) => {
     if (type === 'up') {
       const idea = ideaCheck.rows[0];
       if (idea.author_id !== user_id) {
-        query(
-          'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
-          [idea.author_id, 'vote', id, `Someone upvoted your idea: ${idea.title}`, tenant_id]
-        ).catch(e => console.error('Notification error:', e));
+        query('SELECT notify_on_vote FROM notification_settings WHERE user_id = $1', [idea.author_id]).then(settingsRes => {
+          const shouldNotify = settingsRes.rows.length === 0 || settingsRes.rows[0].notify_on_vote;
+          if (shouldNotify) {
+            query(
+              'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
+              [idea.author_id, 'vote', id, `Someone upvoted your idea: ${idea.title}`, tenant_id]
+            ).catch(e => console.error('Notification error:', e));
+          }
+        }).catch(e => console.error('Settings fetch error:', e));
       }
     }
 
@@ -560,56 +565,72 @@ export const addComment = async (req: any, res: Response) => {
 
       // 1. Notify author (if not the commenter)
       if (idea.author_id !== user_id) {
-         await query(
-          'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
-          [idea.author_id, 'comment', id, `${commenterName} commented on your idea: ${idea.title}`, idea.tenant_id]
-        );
+        const settingsRes = await query('SELECT notify_on_comment, email_enabled FROM notification_settings WHERE user_id = $1', [idea.author_id]);
+        const shouldNotify = settingsRes.rows.length === 0 || settingsRes.rows[0].notify_on_comment;
+        const shouldEmail = settingsRes.rows.length === 0 || settingsRes.rows[0].email_enabled;
 
-        const author = await query('SELECT email FROM users WHERE id = $1', [idea.author_id]);
-        if (author.rows[0]?.email) {
-          sendEmail(
-            author.rows[0].email,
-            `New Comment on: ${idea.title}`,
-            `${commenterName} commented on your idea "${idea.title}":\n\n"${content.substring(0, 100)}${content.length > 100 ? '...' : ''}"`,
-            `<h3>New Comment on Idea</h3>
-             <p><strong>${commenterName}</strong> commented on your idea "<strong>${idea.title}</strong>":</p>
-             <blockquote style="border-left: 4px solid #eee; padding-left: 10px; color: #666 italic;">${content}</blockquote>
-             <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View on IdeaForge</a></p>`
-          ).catch(e => console.error('Author email notification failed:', e));
+        if (shouldNotify) {
+           await query(
+            'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
+            [idea.author_id, 'comment', id, `${commenterName} commented on your idea: ${idea.title}`, idea.tenant_id]
+          );
+        }
+
+        if (shouldEmail) {
+          const author = await query('SELECT email FROM users WHERE id = $1', [idea.author_id]);
+          if (author.rows[0]?.email) {
+            sendEmail(
+              author.rows[0].email,
+              `New Comment on: ${idea.title}`,
+              `${commenterName} commented on your idea "${idea.title}":\n\n"${content.substring(0, 100)}${content.length > 100 ? '...' : ''}"`,
+              `<h3>New Comment on Idea</h3>
+               <p><strong>${commenterName}</strong> commented on your idea "<strong>${idea.title}</strong>":</p>
+               <blockquote style="border-left: 4px solid #eee; padding-left: 10px; color: #666 italic;">${content}</blockquote>
+               <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View on IdeaForge</a></p>`
+            ).catch(e => console.error('Author email notification failed:', e));
+          }
         }
       }
 
       // 2. Notify bookmarkers
       const bookmarkers = await query(`
-        SELECT u.email 
+        SELECT u.email, u.id 
         FROM users u 
         JOIN bookmarks b ON u.id = b.user_id 
         WHERE b.idea_id = $1 AND b.user_id != $2 AND b.user_id != $3
       `, [id, user_id, idea.author_id]);
 
-      bookmarkers.rows.forEach(b => {
-        if (b.email) {
-          sendEmail(
-            b.email,
-            `Activity on saved idea: ${idea.title}`,
-            `${commenterName} commented on an idea you saved: "${idea.title}"`,
-            `<h3>Discussion Activity</h3>
-             <p><strong>${commenterName}</strong> commented on an idea you bookmarked: "<strong>${idea.title}</strong>":</p>
-             <blockquote style="border-left: 4px solid #eee; padding-left: 10px; color: #666 italic;">${content}</blockquote>
-             <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View Discussion</a></p>`
-          ).catch(e => console.error('Bookmarker email notification failed:', e));
-        }
-      });
+      for (const b of bookmarkers.rows) {
+        query('SELECT email_enabled FROM notification_settings WHERE user_id = $1', [b.id]).then(settingsRes => {
+          const shouldEmail = settingsRes.rows.length === 0 || settingsRes.rows[0].email_enabled;
+          if (shouldEmail && b.email) {
+            sendEmail(
+              b.email,
+              `Activity on saved idea: ${idea.title}`,
+              `${commenterName} commented on an idea you saved: "${idea.title}"`,
+              `<h3>Discussion Activity</h3>
+               <p><strong>${commenterName}</strong> commented on an idea you bookmarked: "<strong>${idea.title}</strong>":</p>
+               <blockquote style="border-left: 4px solid #eee; padding-left: 10px; color: #666 italic;">${content}</blockquote>
+               <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View Discussion</a></p>`
+            ).catch(e => console.error('Bookmarker email notification failed:', e));
+          }
+        }).catch(e => console.error('Settings fetch error:', e));
+      }
 
       // 3. If it's a reply, notify the author of the parent comment
       if (parent_id) {
         const parentInfo = await query('SELECT user_id FROM comments WHERE id = $1', [parent_id]);
         if (parentInfo.rows.length > 0 && parentInfo.rows[0].user_id !== user_id) {
           const parentAuthorId = parentInfo.rows[0].user_id;
-          await query(
-            'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
-            [parentAuthorId, 'comment_reply', id, `${commenterName} replied to your comment on: ${idea.title}`, idea.tenant_id]
-          );
+          query('SELECT notify_on_comment FROM notification_settings WHERE user_id = $1', [parentAuthorId]).then(settingsRes => {
+            const shouldNotify = settingsRes.rows.length === 0 || settingsRes.rows[0].notify_on_comment;
+            if (shouldNotify) {
+              query(
+                'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
+                [parentAuthorId, 'comment_reply', id, `${commenterName} replied to your comment on: ${idea.title}`, idea.tenant_id]
+              ).catch(e => console.error('Notification error:', e));
+            }
+          }).catch(e => console.error('Settings fetch error:', e));
         }
       }
     }

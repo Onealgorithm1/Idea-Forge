@@ -53,3 +53,48 @@ export const getProfile = async (req: any, res: Response) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const getNotificationSettings = async (req: any, res: Response) => {
+  const user_id = req.user.id;
+  try {
+    let result = await query('SELECT * FROM notification_settings WHERE user_id = $1', [user_id]);
+    if (result.rows.length === 0) {
+      await query('INSERT INTO notification_settings (user_id) VALUES ($1)', [user_id]);
+      result = await query('SELECT * FROM notification_settings WHERE user_id = $1', [user_id]);
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Get notification settings error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateNotificationSettings = async (req: any, res: Response) => {
+  const user_id = req.user.id;
+  const { email_enabled, push_enabled, notify_on_vote, notify_on_comment, notify_on_status_change } = req.body;
+  try {
+    const result = await query(
+      `UPDATE notification_settings 
+       SET email_enabled = COALESCE($1, email_enabled), 
+           push_enabled = COALESCE($2, push_enabled), 
+           notify_on_vote = COALESCE($3, notify_on_vote), 
+           notify_on_comment = COALESCE($4, notify_on_comment), 
+           notify_on_status_change = COALESCE($5, notify_on_status_change), 
+           updated_at = CURRENT_TIMESTAMP 
+       WHERE user_id = $6 RETURNING *`,
+      [email_enabled, push_enabled, notify_on_vote, notify_on_comment, notify_on_status_change, user_id]
+    );
+    if (result.rows.length === 0) {
+       const insertResult = await query(
+         `INSERT INTO notification_settings (user_id, email_enabled, push_enabled, notify_on_vote, notify_on_comment, notify_on_status_change)
+          VALUES ($1, COALESCE($2, TRUE), COALESCE($3, TRUE), COALESCE($4, TRUE), COALESCE($5, TRUE), COALESCE($6, TRUE)) RETURNING *`,
+         [user_id, email_enabled, push_enabled, notify_on_vote, notify_on_comment, notify_on_status_change]
+       );
+       return res.json(insertResult.rows[0]);
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Update notification settings error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

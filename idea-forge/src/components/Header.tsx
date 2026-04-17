@@ -18,11 +18,12 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { NotificationSettingsDialog } from "./NotificationSettingsDialog";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -57,6 +58,7 @@ const Header = () => {
   const [mounted, setMounted] = useState(false);
   const location = useLocation();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
@@ -123,13 +125,16 @@ const Header = () => {
     }
   }, [user, token]);
 
-  const markAsRead = async (id: string) => {
-    try {
-      await api.post(`/ideas/notifications/${id}/read`, {}, token);
-      fetchNotifications();
-    } catch (error) {
-      console.error("Failed to mark notification as read:", error);
+  const markAsReadAndNavigate = async (n: any) => {
+    if (!n.is_read) {
+      try {
+        await api.post(`/ideas/notifications/${n.id}/read`, {}, token);
+        fetchNotifications();
+      } catch (error) {
+        console.error("Failed to mark notification as read:", error);
+      }
     }
+    navigate(getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', n.reference_id), currentSlug));
   };
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
@@ -305,8 +310,8 @@ const Header = () => {
         </nav>
 
         <div className="flex-1 flex items-center justify-end gap-3">
-          <Sheet>
-            <SheetTrigger asChild>
+          <Popover>
+            <PopoverTrigger asChild>
               <button className="relative p-2 rounded-xl hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-0 focus-visible:outline-none transition-all group">
                 <Bell className="h-5 w-5 text-white/70 group-hover:text-white transition-colors" />
                 {unreadCount > 0 && (
@@ -316,54 +321,72 @@ const Header = () => {
                 )}
                 <span className="sr-only">Notifications</span>
               </button>
-            </SheetTrigger>
-            <SheetContent className="bg-header border-white/10 text-white p-0 w-[400px] sm:w-[540px]">
-              <SheetHeader className="p-6 border-b border-white/10">
-                <div className="flex items-center justify-between">
-                  <SheetTitle className="text-white flex items-center gap-3">
-                    <Bell className="h-5 w-5 text-primary" />
-                    Notifications
-                  </SheetTitle>
-                  <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/20">
-                    {unreadCount} New
-                  </Badge>
-                </div>
-              </SheetHeader>
-              <ScrollArea className="h-[calc(100vh-100px)]">
+            </PopoverTrigger>
+            <PopoverContent align="end" className="bg-header border-white/10 text-white p-0 w-[380px] shadow-2xl rounded-2xl overflow-hidden mt-2 z-50">
+              <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  Notifications
+                  {unreadCount > 0 && (
+                    <Badge variant="secondary" className="bg-destructive/20 text-destructive border-destructive/20 ml-2">
+                      {unreadCount} New
+                    </Badge>
+                  )}
+                </h3>
+                <NotificationSettingsDialog>
+                  <button className="p-2 rounded-full hover:bg-white/10 transition-colors" title="Notification Settings">
+                    <Settings className="w-4 h-4 text-white/70" />
+                  </button>
+                </NotificationSettingsDialog>
+              </div>
+              <ScrollArea className="h-[400px] max-h-[60vh]">
                 <div className="p-2">
                   {notifications.length > 0 ? (
                     notifications.map((n) => (
                       <div
                         key={n.id}
-                        onClick={() => markAsRead(n.id)}
-                        className={`p-4 rounded-2xl mb-1 transition-all cursor-pointer group ${
+                        onClick={() => markAsReadAndNavigate(n)}
+                        className={`p-3 rounded-xl mb-1 transition-all cursor-pointer flex gap-4 items-start ${
                           !n.is_read 
-                            ? "bg-primary/10 border border-primary/20 hover:bg-primary/15" 
-                            : "hover:bg-white/5 border border-transparent"
+                            ? "bg-primary/5 hover:bg-primary/10" 
+                            : "hover:bg-white/5"
                         }`}
                       >
-                        <div className="flex gap-4">
-                          <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${!n.is_read ? "bg-primary" : "bg-white/10"}`} />
-                          <div className="space-y-1">
-                            <p className="text-sm leading-snug font-medium text-white/90">{n.message}</p>
-                            <p className="text-[10px] text-white/40">{new Date(n.created_at).toLocaleString()}</p>
-                          </div>
+                        <div className="relative mt-1">
+                           <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center relative shadow-inner">
+                              <Bell className="w-5 h-5 text-primary/70" />
+                              {!n.is_read && (
+                                <div className="absolute top-0 right-0 w-3 h-3 bg-primary border-2 border-header rounded-full"></div>
+                              )}
+                           </div>
+                        </div>
+                        <div className="flex-1 space-y-1 py-1">
+                          <p className={`text-sm leading-snug ${!n.is_read ? 'font-semibold text-white' : 'font-medium text-white/80'}`}>
+                            {n.message}
+                          </p>
+                          <p className={`text-[11px] ${!n.is_read ? 'text-primary/80 font-medium' : 'text-white/40'}`}>
+                            {new Date(n.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </p>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-                      <div className="bg-white/5 p-4 rounded-full mb-4">
-                        <Bell className="h-8 w-8 text-white/20" />
+                    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                      <div className="bg-white/5 p-4 rounded-full mb-3">
+                        <Bell className="h-6 w-6 text-white/20" />
                       </div>
-                      <h3 className="text-lg font-bold mb-1">No notifications yet</h3>
-                      <p className="text-sm text-white/40">We'll notify you when something important happens.</p>
+                      <h3 className="text-base font-bold mb-1">No notifications</h3>
+                      <p className="text-xs text-white/40">You're all caught up!</p>
                     </div>
                   )}
                 </div>
               </ScrollArea>
-            </SheetContent>
-          </Sheet>
+              <div className="p-2 border-t border-white/10 bg-white/5 text-center">
+                 <button className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors py-1 w-full" onClick={() => navigate(getTenantPath(ROUTES.ROOT, currentSlug))}>
+                    See all Activity
+                 </button>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           <div className="hidden md:flex items-center gap-2 ml-1 border-l border-white/10 pl-3">
             {user ? (

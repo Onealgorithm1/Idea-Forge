@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import type { Request, Response } from 'express';
 import path from 'path';
-import { updateProfile, uploadAvatar, getProfile } from '../controllers/userController.js';
+import { updateProfile, uploadAvatar, getProfile, getNotificationSettings, updateNotificationSettings } from '../controllers/userController.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -36,5 +36,7 @@ const upload = multer({
 router.get('/me', authenticateToken, getProfile);
 router.patch('/profile', authenticateToken, updateProfile);
 router.post('/avatar', authenticateToken, upload.single('avatar'), uploadAvatar);
+router.get('/notification-settings', authenticateToken, getNotificationSettings);
+router.patch('/notification-settings', authenticateToken, updateNotificationSettings);
 
 export default router;
