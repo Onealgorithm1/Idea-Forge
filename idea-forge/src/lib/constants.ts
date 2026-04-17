@@ -21,6 +21,7 @@ export const ROUTES = {
   ADMIN_USERS: "/admin/users",
   ADMIN_SETTINGS: "/admin/settings",
   ADMIN_CATEGORIES: "/admin/categories",
+  ACTIVITY: "/activity",
 } as const;
 
 export const getTenantPath = (path: string, slug?: string) => {

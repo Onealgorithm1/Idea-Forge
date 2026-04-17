@@ -1,11 +1,11 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronLeft, MessageSquare, Bookmark, BookmarkCheck, Calendar,
   Target, Loader2, Pencil, Star, X, Check, Trash2, Layers,
   Send, AlertCircle, Hash, ChevronDown, ChevronUp, Reply, MessageCircle,
-  Paperclip, FileText, ExternalLink
+  Paperclip, FileText, ExternalLink, Upload
 } from "lucide-react";
 import Header from "@/components/Header";
 import SidebarNav from "@/components/SidebarNav";
@@ -207,6 +207,9 @@ const IdeaDetail = () => {
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editIdeaSpace, setEditIdeaSpace] = useState("");
+  const [editAttachments, setEditAttachments] = useState<any[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [newComment, setNewComment] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState("");
@@ -373,6 +376,7 @@ const IdeaDetail = () => {
     setEditTitle(idea?.title || "");
     setEditDescription(idea?.description || "");
     setEditIdeaSpace(idea?.idea_space_id || "");
+    setEditAttachments(idea?.attachments || []);
     setIsEditing(true);
   };
 
@@ -385,6 +389,12 @@ const IdeaDetail = () => {
       title: editTitle,
       description: editDescription,
       idea_space_id: editIdeaSpace,
+      attachments: editAttachments.map((a: any) => ({
+        fileName: a.fileName,
+        fileUrl: a.storedUrl || a.fileUrl,
+        mimeType: a.mimeType,
+        fileSize: a.fileSize
+      }))
     });
   };
 
@@ -771,7 +781,118 @@ const IdeaDetail = () => {
                   )}
 
                   {/* Attachments */}
-                  {idea.attachments && idea.attachments.length > 0 && (
+                  {isEditing ? (
+                    <div className="px-6 sm:px-8 pt-2 pb-6 space-y-2">
+                       <div className="flex items-center gap-2 mb-3">
+                         <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+                         <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                           Attachments
+                         </span>
+                       </div>
+                       
+                       {editAttachments.length > 0 && (
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                           {editAttachments.map((file: any, index: number) => (
+                             <div 
+                               key={index} 
+                               className="flex items-center gap-3 bg-muted/50 border border-border rounded-xl p-3 text-sm group"
+                             >
+                               {file.mimeType?.startsWith('image/') ? (
+                                 <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-slate-200 shrink-0">
+                                   <img 
+                                     src={file.fileUrl} 
+                                     alt={file.fileName}
+                                     className="h-full w-full object-cover"
+                                   />
+                                 </div>
+                               ) : (
+                                 <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                   <FileText className="h-6 w-6 text-primary" />
+                                 </div>
+                               )}
+                               <div className="flex-1 min-w-0">
+                                 <p className="text-sm font-medium text-foreground/80 truncate">{file.fileName}</p>
+                                 <p className="text-xs text-muted-foreground">{(file.fileSize / 1024 / 1024).toFixed(2)} MB</p>
+                               </div>
+                               <button
+                                 type="button"
+                                 onClick={() => setEditAttachments(prev => prev.filter((_, i) => i !== index))}
+                                 className="text-muted-foreground border-none bg-transparent hover:text-destructive transition-colors shrink-0 p-1"
+                               >
+                                 <X className="h-4 w-4" />
+                               </button>
+                             </div>
+                           ))}
+                         </div>
+                       )}
+
+                       <input
+                         type="file"
+                         ref={fileInputRef}
+                         className="hidden"
+                         multiple
+                         accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
+                         onChange={async (e) => {
+                           const files = e.target.files;
+                           if (!files || files.length === 0) return;
+
+                           if (editAttachments.length + files.length > 5) {
+                             toast.error("Maximum 5 files allowed");
+                             return;
+                           }
+
+                           setIsUploading(true);
+                           const newAttachments = [...editAttachments];
+
+                           for (const file of Array.from(files)) {
+                             if (file.size > 10 * 1024 * 1024) {
+                               toast.error(`File "${file.name}" exceeds 10MB limit`);
+                               continue;
+                             }
+
+                             try {
+                               const formData = new FormData();
+                               formData.append('file', file);
+                               const response = await api.upload('/upload/single', formData, token || undefined);
+                               newAttachments.push({
+                                 fileName: response.file.originalName,
+                                 fileUrl: response.file.url,
+                                 storedUrl: response.file.storedUrl,
+                                 mimeType: response.file.mimetype,
+                                 fileSize: response.file.size
+                               });
+                             } catch (error: any) {
+                               toast.error(`Failed to upload "${file.name}": ${error.message}`);
+                             }
+                           }
+
+                           setEditAttachments(newAttachments);
+                           setIsUploading(false);
+                           if (fileInputRef.current) fileInputRef.current.value = '';
+                         }}
+                       />
+                       
+                       <Button
+                         type="button"
+                         variant="outline"
+                         onClick={() => fileInputRef.current?.click()}
+                         disabled={isUploading || editAttachments.length >= 5}
+                         className="h-10 px-4 border border-border text-foreground/80 hover:bg-accent rounded-xl w-fit"
+                       >
+                         {isUploading ? (
+                           <>
+                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                             Uploading...
+                           </>
+                         ) : (
+                           <>
+                             <Upload className="mr-2 h-4 w-4" />
+                             {editAttachments.length === 0 ? 'Add Files' : 'Add More Files'}
+                           </>
+                         )}
+                       </Button>
+                    </div>
+                  ) : idea.attachments && idea.attachments.length > 0 && (
                     <div className="px-6 sm:px-8 pt-2 pb-6">
                       <div className="flex items-center gap-2 mb-3">
                         <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />

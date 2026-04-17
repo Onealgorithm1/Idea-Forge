@@ -256,12 +256,54 @@ export const registerWorkspace = async (req: Request, res: Response) => {
       { name: 'General', description: 'General ideas and suggestions' }
     ];
 
+    let generalCategoryId = null;
+    let productDevCategoryId = null;
+    let uiUxCategoryId = null;
+
     for (const cat of defaultCategories) {
       const slug = cat.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      await query(
-        `INSERT INTO categories (name, description, slug, tenant_id, is_default) VALUES ($1, $2, $3, $4, TRUE)`,
+      const catResult = await query(
+        `INSERT INTO categories (name, description, slug, tenant_id, is_default) VALUES ($1, $2, $3, $4, TRUE) RETURNING id`,
         [cat.name, cat.description, slug, tenantId]
       );
+      if (cat.name === 'General') generalCategoryId = catResult.rows[0].id;
+      if (cat.name === 'Product Development') productDevCategoryId = catResult.rows[0].id;
+      if (cat.name === 'UI/UX Design') uiUxCategoryId = catResult.rows[0].id;
+    }
+
+    const demoIdeas = [
+      {
+        title: 'Welcome to IdeaForge! 🚀',
+        description: 'This is a demo idea to get you started! You can interact with this idea by upvoting it, adding comments, or editing its details. It is a great way to explore the features of the platform. Once you feel comfortable, you can delete this idea or keep it as a reference.',
+        categoryId: generalCategoryId
+      },
+      {
+        title: 'Implement Dark Mode Theme 🌙',
+        description: 'A dark mode theme would reduce eye strain for our users working late at night and provide a sleek, modern aesthetic. I suggest we add a toggle in the user profile settings to allow switching between light and dark modes easily.',
+        categoryId: uiUxCategoryId
+      },
+      {
+        title: 'Mobile App for iOS and Android 📱',
+        description: 'Creating a dedicated mobile app will increase user engagement and allow for push notifications on important updates. We should start by developing a React Native MVP to cover both platforms simultaneously.',
+        categoryId: productDevCategoryId
+      }
+    ];
+
+    for (const idea of demoIdeas) {
+      if (idea.categoryId) {
+        await query(
+          `INSERT INTO ideas (title, description, author_id, category_id, tenant_id, idea_space_id, status) 
+           VALUES ($1, $2, $3, $4, $5, $6, 'Pending')`,
+          [
+            idea.title,
+            idea.description,
+            userResult.rows[0].id,
+            idea.categoryId,
+            tenantId,
+            defaultSpaceId
+          ]
+        );
+      }
     }
 
     await query(`INSERT INTO tenant_details (tenant_id) VALUES ($1)`, [tenantId]);

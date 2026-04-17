@@ -22,6 +22,7 @@ import SuperAdminDashboard from "./pages/SuperAdmin/Dashboard";
 import TenantDetail from "./pages/SuperAdmin/TenantDetail";
 import RegisterWorkspace from "./pages/RegisterWorkspace";
 import ForgotPassword from "./pages/ForgotPassword";
+import Activity from "./pages/Activity";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ROUTES } from "./lib/constants";
 import FloatingSubmitIdea from "./components/FloatingSubmitIdea";
@@ -51,6 +52,7 @@ const AppContent = () => (
     <Route path="/saved-ideas" element={<Navigate to="/default/saved-ideas" replace />} />
     <Route path="/submit-idea" element={<Navigate to="/default/submit-idea" replace />} />
     <Route path="/profile" element={<Navigate to="/default/profile" replace />} />
+    <Route path="/activity" element={<Navigate to="/default/activity" replace />} />
     <Route path="/admin/*" element={<Navigate to="/default/admin/dashboard" replace />} />
 
     {/* Tenant specific routes: /:tenantSlug/... */}
@@ -66,6 +68,7 @@ const AppContent = () => (
           <Route path="submit-idea" element={<SubmitIdea />} />
           <Route path="ideas/:id" element={<IdeaDetail />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="activity" element={<Activity />} />
           <Route path="admin/dashboard" element={<AdminDashboard />} />
           <Route path="admin/users" element={<AdminUsers />} />
           <Route path="admin/settings" element={<AdminSettings />} />

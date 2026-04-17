@@ -59,7 +59,7 @@ export const getNotificationSettings = async (req: any, res: Response) => {
   try {
     let result = await query('SELECT * FROM notification_settings WHERE user_id = $1', [user_id]);
     if (result.rows.length === 0) {
-      await query('INSERT INTO notification_settings (user_id) VALUES ($1)', [user_id]);
+      await query('INSERT INTO notification_settings (user_id, notify_on_followed_activity) VALUES ($1, TRUE)', [user_id]);
       result = await query('SELECT * FROM notification_settings WHERE user_id = $1', [user_id]);
     }
     res.json(result.rows[0]);
@@ -71,7 +71,7 @@ export const getNotificationSettings = async (req: any, res: Response) => {
 
 export const updateNotificationSettings = async (req: any, res: Response) => {
   const user_id = req.user.id;
-  const { email_enabled, push_enabled, notify_on_vote, notify_on_comment, notify_on_status_change } = req.body;
+  const { email_enabled, push_enabled, notify_on_vote, notify_on_comment, notify_on_status_change, notify_on_followed_activity } = req.body;
   try {
     const result = await query(
       `UPDATE notification_settings 
@@ -80,16 +80,17 @@ export const updateNotificationSettings = async (req: any, res: Response) => {
            notify_on_vote = COALESCE($3, notify_on_vote), 
            notify_on_comment = COALESCE($4, notify_on_comment), 
            notify_on_status_change = COALESCE($5, notify_on_status_change), 
+           notify_on_followed_activity = COALESCE($6, notify_on_followed_activity),
            updated_at = CURRENT_TIMESTAMP 
-       WHERE user_id = $6 RETURNING *`,
-      [email_enabled, push_enabled, notify_on_vote, notify_on_comment, notify_on_status_change, user_id]
+       WHERE user_id = $7 RETURNING *`,
+      [email_enabled, push_enabled, notify_on_vote, notify_on_comment, notify_on_status_change, notify_on_followed_activity, user_id]
     );
     if (result.rows.length === 0) {
-       const insertResult = await query(
-         `INSERT INTO notification_settings (user_id, email_enabled, push_enabled, notify_on_vote, notify_on_comment, notify_on_status_change)
-          VALUES ($1, COALESCE($2, TRUE), COALESCE($3, TRUE), COALESCE($4, TRUE), COALESCE($5, TRUE), COALESCE($6, TRUE)) RETURNING *`,
-         [user_id, email_enabled, push_enabled, notify_on_vote, notify_on_comment, notify_on_status_change]
-       );
+        const insertResult = await query(
+          `INSERT INTO notification_settings (user_id, email_enabled, push_enabled, notify_on_vote, notify_on_comment, notify_on_status_change, notify_on_followed_activity)
+           VALUES ($1, COALESCE($2, TRUE), COALESCE($3, TRUE), COALESCE($4, TRUE), COALESCE($5, TRUE), COALESCE($6, TRUE), COALESCE($7, TRUE)) RETURNING *`,
+          [user_id, email_enabled, push_enabled, notify_on_vote, notify_on_comment, notify_on_status_change, notify_on_followed_activity]
+        );
        return res.json(insertResult.rows[0]);
     }
     res.json(result.rows[0]);

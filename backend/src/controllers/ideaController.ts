@@ -302,11 +302,16 @@ export const editIdea = async (req: any, res: Response) => {
       // Delete old attachments from database
       await query('DELETE FROM idea_attachments WHERE idea_id = $1 AND tenant_id = $2', [id, tenant_id]);
 
-      // Delete old files from B2 (non-blocking)
+      // Determine which files to delete from B2
+      const newUrls = attachments ? attachments.map((a: any) => a.fileUrl) : [];
+      
+      // Delete old files from B2 (non-blocking) only if they are not kept
       for (const attach of existingAttachments.rows) {
-        deleteFileFromB2(attach.file_url).catch(err => 
-          console.error('Failed to delete old attachment from B2:', err)
-        );
+        if (!newUrls.includes(attach.file_url)) {
+          deleteFileFromB2(attach.file_url).catch(err => 
+            console.error('Failed to delete old attachment from B2:', err)
+          );
+        }
       }
 
       // Add new attachments if provided
@@ -504,17 +509,25 @@ export const voteIdea = async (req: any, res: Response) => {
       .catch(e => console.error('Audit log error:', e));
 
     if (type === 'up') {
-      const idea = ideaCheck.rows[0];
       if (idea.author_id !== user_id) {
-        query('SELECT notify_on_vote FROM notification_settings WHERE user_id = $1', [idea.author_id]).then(settingsRes => {
+        try {
+          // Fetch voter name
+          const voterRes = await query('SELECT name FROM users WHERE id = $1', [user_id]);
+          const voterName = voterRes.rows[0]?.name || 'A user';
+          
+          // Check settings (author)
+          const settingsRes = await query('SELECT notify_on_vote FROM notification_settings WHERE user_id = $1', [idea.author_id]);
           const shouldNotify = settingsRes.rows.length === 0 || settingsRes.rows[0].notify_on_vote;
+          
           if (shouldNotify) {
-            query(
+            await query(
               'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
-              [idea.author_id, 'vote', id, `Someone upvoted your idea: ${idea.title}`, tenant_id]
-            ).catch(e => console.error('Notification error:', e));
+              [idea.author_id, 'vote', id, `${voterName} upvoted your idea: ${idea.title}`, tenant_id]
+            );
           }
-        }).catch(e => console.error('Settings fetch error:', e));
+        } catch (e) {
+          console.error('Vote notification error:', e);
+        }
       }
     }
 
@@ -592,7 +605,7 @@ export const addComment = async (req: any, res: Response) => {
         }
       }
 
-      // 2. Notify bookmarkers
+      // 2. Notify bookmarkers (Followed Ideas)
       const bookmarkers = await query(`
         SELECT u.email, u.id 
         FROM users u 
@@ -601,20 +614,32 @@ export const addComment = async (req: any, res: Response) => {
       `, [id, user_id, idea.author_id]);
 
       for (const b of bookmarkers.rows) {
-        query('SELECT email_enabled FROM notification_settings WHERE user_id = $1', [b.id]).then(settingsRes => {
+        try {
+          const settingsRes = await query('SELECT notify_on_followed_activity, email_enabled FROM notification_settings WHERE user_id = $1', [b.id]);
+          const shouldNotify = settingsRes.rows.length === 0 || settingsRes.rows[0].notify_on_followed_activity;
           const shouldEmail = settingsRes.rows.length === 0 || settingsRes.rows[0].email_enabled;
+
+          if (shouldNotify) {
+            await query(
+              'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
+              [b.id, 'comment', id, `${commenterName} commented on a followed idea: ${idea.title}`, idea.tenant_id]
+            );
+          }
+
           if (shouldEmail && b.email) {
             sendEmail(
               b.email,
-              `Activity on saved idea: ${idea.title}`,
-              `${commenterName} commented on an idea you saved: "${idea.title}"`,
+              `Activity on followed idea: ${idea.title}`,
+              `${commenterName} commented on an idea you follow: "${idea.title}"`,
               `<h3>Discussion Activity</h3>
-               <p><strong>${commenterName}</strong> commented on an idea you bookmarked: "<strong>${idea.title}</strong>":</p>
+               <p><strong>${commenterName}</strong> commented on an idea you follow: "<strong>${idea.title}</strong>":</p>
                <blockquote style="border-left: 4px solid #eee; padding-left: 10px; color: #666 italic;">${content}</blockquote>
                <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View Discussion</a></p>`
             ).catch(e => console.error('Bookmarker email notification failed:', e));
           }
-        }).catch(e => console.error('Settings fetch error:', e));
+        } catch (e) {
+          console.error('Bookmarker notification error:', e);
+        }
       }
 
       // 3. If it's a reply, notify the author of the parent comment
@@ -796,6 +821,18 @@ export const markNotificationRead = async (req: any, res: Response) => {
   }
 };
 
+export const markAllNotificationsRead = async (req: any, res: Response) => {
+  const user_id = req.user.id;
+  const tenant_id = req.tenantId;
+  try {
+    await query('UPDATE notifications SET is_read = TRUE WHERE user_id = $1 AND tenant_id = $2', [user_id, tenant_id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Mark all notifications read error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const getUserIdeas = async (req: any, res: Response) => {
   const user_id = req.user.id;
   const tenant_id = req.tenantId;
@@ -849,40 +886,76 @@ export const updateIdeaStatus = async (req: any, res: Response) => {
     // ── Notify author and bookmarkers about status change ──────────────────
     const actorId = req.user?.id;
     const idea = result.rows[0];
-    const author = await query('SELECT email FROM users WHERE id = $1', [idea.author_id]);
     
+    // Fetch actor name
+    const actorRes = await query('SELECT name FROM users WHERE id = $1', [actorId]);
+    const actorName = actorRes.rows[0]?.name || 'Admin';
+
     // 1. Notify author (if not the person who changed it)
-    if (idea.author_id !== actorId && author.rows[0]?.email) {
-      sendEmail(
-        author.rows[0].email,
-        `Status Updated: ${idea.title}`,
-        `Your idea "${idea.title}" is now "${status}".`,
-        `<h3>Idea Status Update</h3>
-         <p>Great news! Your idea "<strong>${idea.title}</strong>" has been updated to: <span style="font-weight: bold; color: #4f46e5;">${status}</span></p>
-         <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">Track Progress</a></p>`
-      ).catch(e => console.error('Author status update email failed:', e));
+    if (idea.author_id !== actorId) {
+      try {
+        const authorRes = await query('SELECT email FROM users WHERE id = $1', [idea.author_id]);
+        const settingsRes = await query('SELECT notify_on_status_change, email_enabled FROM notification_settings WHERE user_id = $1', [idea.author_id]);
+        const shouldNotify = settingsRes.rows.length === 0 || settingsRes.rows[0].notify_on_status_change;
+        const shouldEmail = settingsRes.rows.length === 0 || settingsRes.rows[0].email_enabled;
+
+        if (shouldNotify) {
+          await query(
+            'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
+            [idea.author_id, 'status_update', id, `Idea status updated to ${status}: ${idea.title}`, tenant_id]
+          );
+        }
+
+        if (shouldEmail && authorRes.rows[0]?.email) {
+          sendEmail(
+            authorRes.rows[0].email,
+            `Status Updated: ${idea.title}`,
+            `Your idea "${idea.title}" is now "${status}".`,
+            `<h3>Idea Status Update</h3>
+             <p>Great news! Your idea "<strong>${idea.title}</strong>" has been updated to: <span style="font-weight: bold; color: #4f46e5;">${status}</span> by ${actorName}</p>
+             <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">Track Progress</a></p>`
+          ).catch(e => console.error('Author status update email failed:', e));
+        }
+      } catch (e) {
+        console.error('Author status notification error:', e);
+      }
     }
 
-    // 2. Notify bookmarkers
+    // 2. Notify bookmarkers (Followed Ideas)
     const bookmarkers = await query(`
-      SELECT u.email 
+      SELECT u.id, u.email 
       FROM users u 
       JOIN bookmarks b ON u.id = b.user_id 
       WHERE b.idea_id = $1 AND b.user_id != $2
     `, [id, actorId]);
 
-    bookmarkers.rows.forEach(b => {
-      if (b.email) {
-        sendEmail(
-          b.email,
-          `Saved Idea Updated: ${idea.title}`,
-          `An idea you saved, "${idea.title}", is now "${status}".`,
-          `<h3>Followed Idea Status Update</h3>
-           <p>An idea you bookmarked, "<strong>${idea.title}</strong>", has progressed to: <span style="font-weight: bold; color: #4f46e5;">${status}</span></p>
-           <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View Idea</a></p>`
-        ).catch(e => console.error('Bookmarker status update email failed:', e));
+    for (const b of bookmarkers.rows) {
+      try {
+        const settingsRes = await query('SELECT notify_on_followed_activity, email_enabled FROM notification_settings WHERE user_id = $1', [b.id]);
+        const shouldNotify = settingsRes.rows.length === 0 || settingsRes.rows[0].notify_on_followed_activity;
+        const shouldEmail = settingsRes.rows.length === 0 || settingsRes.rows[0].email_enabled;
+
+        if (shouldNotify) {
+          await query(
+            'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
+            [b.id, 'status_update', id, `Followed idea status updated to ${status}: ${idea.title}`, tenant_id]
+          );
+        }
+
+        if (shouldEmail && b.email) {
+          sendEmail(
+            b.email,
+            `Update on followed idea: ${idea.title}`,
+            `An idea you follow "${idea.title}" has been updated to "${status}".`,
+            `<h3>Followed Idea Update</h3>
+             <p>An idea you follow "<strong>${idea.title}</strong>" is now: <span style="font-weight: bold; color: #4f46e5;">${status}</span></p>
+             <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View Updates</a></p>`
+          ).catch(e => console.error('Bookmarker status update email failed:', e));
+        }
+      } catch (e) {
+        console.error('Bookmarker status notification error:', e);
       }
-    });
+    }
 
     await logAudit(tenant_id, req.user?.id || null, 'idea', id, 'status_changed', { status: result.rows[0].status }, { status });
   } catch (error) {

@@ -381,7 +381,7 @@ const Header = () => {
                 </div>
               </ScrollArea>
               <div className="p-2 border-t border-white/10 bg-white/5 text-center">
-                 <button className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors py-1 w-full" onClick={() => navigate(getTenantPath(ROUTES.ROOT, currentSlug))}>
+                 <button className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors py-1 w-full" onClick={() => navigate(getTenantPath(ROUTES.ACTIVITY, currentSlug))}>
                     See all Activity
                  </button>
               </div>
@@ -417,7 +417,16 @@ const Header = () => {
                     Quick Actions
                   </DropdownMenuLabel>
                   
-
+                  <DropdownMenuItem 
+                    onClick={() => navigate(getTenantPath(ROUTES.PROFILE, currentSlug))}
+                    className="group cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/90 hover:!text-slate-950 focus:!bg-white/90 focus:!text-slate-950"
+                  >
+                    <UserCircle2 className="mr-3 h-4 w-4 text-primary transition-colors group-hover:text-slate-950" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold leading-tight">My Profile</span>
+                      <span className="text-[10px] leading-tight text-white/50 transition-colors group-hover:text-slate-700">Manage your account & preferences</span>
+                    </div>
+                  </DropdownMenuItem>
 
                   <DropdownMenuItem 
                     onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}

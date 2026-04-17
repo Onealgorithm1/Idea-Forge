@@ -14,6 +14,7 @@ import {
   getTags, 
   getNotifications, 
   markNotificationRead, 
+  markAllNotificationsRead,
   getUserIdeas, 
   updateIdeaStatus, 
   deleteIdea, 
@@ -57,5 +58,6 @@ router.post('/:id/comments', authenticateToken, addComment);
 router.get('/:id/comments', getComments);
 router.post('/:id/bookmark', authenticateToken, bookmarkIdea);
 router.post('/notifications/:id/read', authenticateToken, markNotificationRead);
+router.post('/notifications/read-all', authenticateToken, markAllNotificationsRead);
 
 export default router;

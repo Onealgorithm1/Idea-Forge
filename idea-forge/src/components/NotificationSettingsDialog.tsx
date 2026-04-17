@@ -29,6 +29,7 @@ export function NotificationSettingsDialog({ children, open, onOpenChange }: Not
     notify_on_vote: true,
     notify_on_comment: true,
     notify_on_status_change: true,
+    notify_on_followed_activity: true,
   });
   const [loading, setLoading] = useState(false);
 
@@ -48,6 +49,7 @@ export function NotificationSettingsDialog({ children, open, onOpenChange }: Not
           notify_on_vote: data.notify_on_vote,
           notify_on_comment: data.notify_on_comment,
           notify_on_status_change: data.notify_on_status_change,
+          notify_on_followed_activity: data.notify_on_followed_activity,
         });
       }
     } catch (error) {
@@ -175,6 +177,21 @@ export function NotificationSettingsDialog({ children, open, onOpenChange }: Not
             <Switch 
               checked={settings.notify_on_status_change} 
               onCheckedChange={() => handleToggle('notify_on_status_change')} 
+              disabled={loading}
+              className="data-[state=checked]:bg-primary"
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/5 rounded-lg text-white/70">
+                <Bell className="w-4 h-4" />
+              </div>
+              <Label className="text-white text-sm">Activity on followed ideas</Label>
+            </div>
+            <Switch 
+              checked={settings.notify_on_followed_activity} 
+              onCheckedChange={() => handleToggle('notify_on_followed_activity')} 
               disabled={loading}
               className="data-[state=checked]:bg-primary"
             />
