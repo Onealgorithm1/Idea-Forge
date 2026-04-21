@@ -1229,13 +1229,13 @@ const IdeaDetail = () => {
                 </AnimatePresence>
 
                 {comments.length === 0 && (
-                  <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center gap-3 bg-white/60">
-                    <div className="h-12 w-12 bg-slate-100 rounded-full flex items-center justify-center text-xl">
+                  <div className="text-center py-12 border-2 border-dashed border-border rounded-2xl flex flex-col items-center gap-3 bg-background/60">
+                    <div className="h-12 w-12 bg-muted rounded-full flex items-center justify-center text-xl">
                       💬
                     </div>
                     <div>
-                      <p className="text-sm font-black text-slate-700">No comments yet</p>
-                      <p className="text-xs text-slate-400 font-medium">
+                      <p className="text-sm font-black text-foreground">No comments yet</p>
+                      <p className="text-xs text-muted-foreground font-medium">
                         Be the first to share your thoughts!
                       </p>
                     </div>

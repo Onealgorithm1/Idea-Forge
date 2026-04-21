@@ -43,17 +43,17 @@ const CommentSection: React.FC<CommentSectionProps> = ({ ideaId }) => {
   };
 
   return (
-    <div className="mt-4 border-t border-slate-100/80 bg-slate-50/30 -mx-4 -mb-4 overflow-hidden rounded-b-xl">
+    <div className="mt-4 border-t border-border bg-muted/30 -mx-4 -mb-4 overflow-hidden rounded-b-xl">
       {/* Header (Optional, makes it feel like a section) */}
-      <div className="px-4 py-2 flex items-center gap-2 bg-slate-100/40 border-b border-slate-100/60">
-        <MessageSquare className="h-3 w-3 text-slate-400" />
-        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+      <div className="px-4 py-2 flex items-center gap-2 bg-muted/40 border-b border-border">
+        <MessageSquare className="h-3 w-3 text-muted-foreground" />
+        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
           Discussion ({comments.length})
         </span>
       </div>
 
       {/* Input Area (Top for quick access) */}
-      <div className="p-3 bg-white/50 border-b border-slate-100/60">
+      <div className="p-3 bg-background/50 border-b border-border">
         <div className="relative group">
           <input
             type="text"
@@ -68,7 +68,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ ideaId }) => {
               }
             }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-10 py-2 text-[11px] focus:ring-4 focus:ring-primary/5 focus:border-primary/30 transition-all shadow-sm outline-none placeholder:text-slate-400 font-medium"
+            className="w-full bg-background border border-border rounded-lg pl-3 pr-10 py-2 text-[11px] focus:ring-4 focus:ring-primary/5 focus:border-primary/30 transition-all shadow-sm outline-none placeholder:text-muted-foreground font-medium"
           />
           <button
             onClick={(e) => { e.stopPropagation(); handlePostComment(); }}
@@ -89,11 +89,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ ideaId }) => {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-6 gap-2 opacity-50">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Loading Feed</p>
+            <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Loading Feed</p>
           </div>
         ) : comments.length === 0 ? (
           <div className="text-center py-6 opacity-40">
-            <p className="text-[10px] font-bold text-slate-400">No comments yet</p>
+            <p className="text-[10px] font-bold text-muted-foreground">No comments yet</p>
           </div>
         ) : (
           comments.map((comment: any, idx: number) => (
@@ -104,19 +104,19 @@ const CommentSection: React.FC<CommentSectionProps> = ({ ideaId }) => {
               transition={{ delay: idx * 0.05 }}
               className="flex gap-2.5 group/cmt"
             >
-              <Avatar className="h-7 w-7 ring-2 ring-white shadow-sm border border-slate-100 shrink-0">
-                <AvatarFallback className="text-[10px] font-black bg-slate-100 text-slate-500 uppercase">
+              <Avatar className="h-7 w-7 ring-2 ring-background shadow-sm border border-border shrink-0">
+                <AvatarFallback className="text-[10px] font-black bg-muted text-muted-foreground uppercase">
                   {getInitials(comment.author || 'U')}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[10px] font-black text-slate-800 truncate">{comment.author}</span>
-                  <span className="text-[8px] text-slate-400 font-bold opacity-0 group-hover/cmt:opacity-100 transition-opacity whitespace-nowrap">
+                  <span className="text-[10px] font-black text-foreground truncate">{comment.author}</span>
+                  <span className="text-[8px] text-muted-foreground font-bold opacity-0 group-hover/cmt:opacity-100 transition-opacity whitespace-nowrap">
                     {comment.created_at ? formatDistanceToNow(new Date(comment.created_at), { addSuffix: true }) : ''}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-600 leading-normal break-words">{comment.content}</p>
+                <p className="text-[11px] text-muted-foreground leading-normal break-words">{comment.content}</p>
               </div>
             </motion.div>
           ))
@@ -124,8 +124,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ ideaId }) => {
       </div>
 
       {!token && (
-        <div className="p-2 border-t border-slate-100/60 bg-slate-100/20">
-          <p className="text-[9px] text-slate-400 text-center font-black uppercase tracking-tighter">
+        <div className="p-2 border-t border-border bg-muted/20">
+          <p className="text-[9px] text-muted-foreground text-center font-black uppercase tracking-tighter">
             Join the conversation
           </p>
         </div>

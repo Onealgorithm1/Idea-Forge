@@ -196,7 +196,7 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
     >
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 items-start">
         {/* Left Side: Main Form */}
-        <Card className="border border-slate-200/60 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.05)] rounded-2xl bg-white overflow-hidden relative">
+        <Card className="border border-border/60 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.05)] rounded-2xl bg-card overflow-hidden relative">
           {/* Blue-to-Green gradient top border */}
           <div
             className="absolute top-0 left-0 right-0 h-[4px] z-10"
@@ -501,7 +501,7 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
           {/* Similar ideas FTS panel */}
           <SimilarIdeasPanel query={debouncedTitle} />
 
-          <Card className="border border-slate-200/60 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.05)] rounded-2xl bg-white p-6 relative overflow-hidden">
+          <Card className="border border-border/60 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.05)] rounded-2xl bg-card p-6 relative overflow-hidden">
             {/* Background floating icon decoration */}
             <div className="absolute right-[-10px] top-4 opacity-[0.03] pointer-events-none">
               <svg width="120" height="120" viewBox="0 0 24 24" fill="currentColor">

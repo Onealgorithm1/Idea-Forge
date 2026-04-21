@@ -4,7 +4,7 @@ import SubmitIdeaForm from "@/components/SubmitIdeaForm";
 
 const SubmitIdea = () => {
   return (
-    <div className="min-h-screen w-full bg-[#f4f5f7] flex flex-col relative overflow-x-hidden">
+    <div className="min-h-screen w-full bg-[#f4f5f7] dark:bg-background flex flex-col relative overflow-x-hidden">
       {/* Mesh Gradient Background */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-60 dark:opacity-30">
         <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[120%] h-[400px] bg-gradient-to-b from-primary/30 to-transparent rounded-[100%] blur-[120px]" />
