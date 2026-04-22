@@ -6,6 +6,7 @@ import ideaRoutes from './routes/ideaRoutes.js';
 import scoringRoutes from './routes/scoringRoutes.js';
 import { createServer } from 'http';
 import { initSocket } from './lib/socket.js';
+import { startCronJobs } from './cron.js';
 import adminRoutes from './routes/adminRoutes.js';
 import superAdminRoutes from './routes/superAdminRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
@@ -22,6 +23,9 @@ const PORT = env.PORT;
 
 // Initialize Socket.io
 initSocket(server);
+
+// Start Cron Jobs
+startCronJobs();
 
 // Middleware
 const getAllowedOrigins = () => {

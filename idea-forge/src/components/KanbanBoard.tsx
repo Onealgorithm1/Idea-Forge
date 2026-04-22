@@ -553,7 +553,7 @@ const KanbanBoard = ({ category = "All", spaceId = null, search = "" }: { catego
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 lg:overflow-x-auto pb-6 no-scrollbar lg:-mx-6 lg:px-6">
+      <div className="flex flex-col lg:flex-row gap-6 lg:overflow-x-auto no-scrollbar lg:-mx-6 lg:px-6">
         {/* Idea Pool - Ideation */}
         <Card className={cn(
           "flex flex-col flex-shrink-0 w-full lg:w-[450px] h-auto lg:h-[calc(100vh-10rem)] p-0 overflow-hidden border-none shadow-premium bg-gradient-to-b from-muted/50 to-muted/10 backdrop-blur-sm border-t-4 border-muted/50 transition-all duration-300",

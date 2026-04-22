@@ -446,7 +446,7 @@ const IdeaDetail = () => {
       <div className="flex flex-1 h-[calc(100vh-64px)] overflow-hidden relative z-10">
         <SidebarNav />
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar px-4 py-6 md:px-10 md:py-8 bg-background/50 dark:bg-background/20 pb-safe-nav">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar px-4 pt-6 pb-28 md:px-10 md:pt-8 md:pb-32 bg-background/50 dark:bg-background/20 pb-safe-nav">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

@@ -204,6 +204,28 @@ export const createIdea = async (req: any, res: Response) => {
     // Log Audit (Don't let it crash the response)
     logAudit(tenant_id, author_id, 'idea', idea.id, 'idea_created', null, { title: idea.title }).catch(e => console.error('Delayed audit log error:', e));
 
+    // Send email to author
+    try {
+      const settingsRes = await query('SELECT email_enabled FROM notification_settings WHERE user_id = $1', [author_id]);
+      const shouldEmail = settingsRes.rows.length === 0 || settingsRes.rows[0].email_enabled;
+      if (shouldEmail) {
+        const author = await query('SELECT email, name FROM users WHERE id = $1', [author_id]);
+        if (author.rows[0]?.email) {
+          sendEmail(
+            author.rows[0].email,
+            `Idea Created: ${idea.title}`,
+            `Hi ${author.rows[0].name},\n\nYour idea "${idea.title}" has been successfully created.\n\nView it here: ${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${idea.id}`,
+            `<h3>Idea Created Successfully</h3>
+             <p>Hi ${author.rows[0].name},</p>
+             <p>Your idea "<strong>${idea.title}</strong>" has been successfully created.</p>
+             <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${idea.id}">View your idea on IdeaForge</a></p>`
+          ).catch(e => console.error('Idea creation email failed:', e));
+        }
+      }
+    } catch (e) {
+      console.error('Idea creation email error:', e);
+    }
+
     // Send response AT THE END
     return res.status(201).json(idea);
   } catch (error) {
@@ -625,18 +647,7 @@ export const addComment = async (req: any, res: Response) => {
               [b.id, 'comment', id, `${commenterName} commented on a followed idea: ${idea.title}`, idea.tenant_id]
             );
           }
-
-          if (shouldEmail && b.email) {
-            sendEmail(
-              b.email,
-              `Activity on followed idea: ${idea.title}`,
-              `${commenterName} commented on an idea you follow: "${idea.title}"`,
-              `<h3>Discussion Activity</h3>
-               <p><strong>${commenterName}</strong> commented on an idea you follow: "<strong>${idea.title}</strong>":</p>
-               <blockquote style="border-left: 4px solid #eee; padding-left: 10px; color: #666 italic;">${content}</blockquote>
-               <p><a href="${env.FRONTEND_URL}/${req.tenantSlug || 'default'}/ideas/${id}">View Discussion</a></p>`
-            ).catch(e => console.error('Bookmarker email notification failed:', e));
-          }
+          // Intentionally omitting email to bookmarkers as per requirement "only comments mail to user"
         } catch (e) {
           console.error('Bookmarker notification error:', e);
         }

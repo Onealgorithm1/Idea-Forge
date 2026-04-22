@@ -134,7 +134,7 @@ const Index = () => {
             />
           </div>
 
-          <div className="px-4 py-4 md:px-8 md:py-6 space-y-6">
+          <div className="px-4 pt-4 pb-2 md:px-8 md:pt-6 md:pb-2 space-y-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={`${pathname}-${selectedCategory}-${searchQuery}`}
