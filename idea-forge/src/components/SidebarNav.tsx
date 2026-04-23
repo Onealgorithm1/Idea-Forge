@@ -195,7 +195,7 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
 
   return (
     <aside className="sticky top-0 h-full w-[260px] shrink-0 border-r border-border hidden md:flex flex-col bg-card/40 dark:bg-card/20 backdrop-blur-xl shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 transition-colors duration-300">
-      <div className="flex-1 overflow-y-auto no-scrollbar pt-6 pb-20">
+      <div className="flex-1 overflow-y-auto pt-6 pb-20 custom-scrollbar">
         {/* Search Bar in Sidebar */}
         <div className="px-5 mb-8">
           <BoardSearchBar

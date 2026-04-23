@@ -133,6 +133,20 @@
   .shadow-premium-lg {
     box-shadow: 0 20px 40px -12px rgba(67, 56, 202, 0.25);
   }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--border) / 0.5);
+    border-radius: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--border));
+  }
 }
 
 @layer base {

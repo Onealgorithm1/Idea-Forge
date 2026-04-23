@@ -98,7 +98,7 @@ const Index = () => {
   const subCategories = dbCategories.filter((c: any) => c.parent_id === activeCategory?.id);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden transition-colors duration-300">
+    <div className="h-[100dvh] bg-background flex flex-col relative overflow-hidden transition-colors duration-300">
       {/* Mesh Gradient Background */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         {/* Decorative Dotted Grid */}
