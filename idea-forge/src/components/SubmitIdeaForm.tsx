@@ -168,14 +168,23 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
       setErrors({});
 
       // Invalidate relevant queries to refresh the board immediately
+      // Broadly invalidate all ideas for this tenant to ensure UI sync
       queryClient.invalidateQueries({ queryKey: ["ideas", currentSlug] });
       queryClient.invalidateQueries({ queryKey: ["recent-ideas", currentSlug] });
-      queryClient.invalidateQueries({ queryKey: ["analytics", "summary", currentSlug] });
+      queryClient.invalidateQueries({ queryKey: ["analytics", currentSlug] });
+      
+      // Also invalidate without slug just in case of inconsistency
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
 
       if (onSuccess) {
         onSuccess();
       } else {
-        navigate(`${getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}`);
+        const boardPath = getTenantPath(ROUTES.IDEA_BOARD, currentSlug);
+        // If an idea space was selected, redirect back to that space specifically
+        const redirectPath = ideaSpace 
+          ? `${boardPath}?space=${ideaSpace}` 
+          : boardPath;
+        navigate(redirectPath);
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to post idea");
@@ -282,6 +291,7 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
                     </SelectTrigger>
                     <SelectContent>
                       {categories
+                        .filter((c: any) => c.is_active) // Only show active categories for submission
                         .sort((a: any, b: any) => {
                           const aName = a.parent_name ? `${a.parent_name} > ${a.name}` : a.name;
                           const bName = b.parent_name ? `${b.parent_name} > ${b.name}` : b.name;

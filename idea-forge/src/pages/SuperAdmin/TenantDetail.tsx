@@ -61,6 +61,9 @@ const TenantDetail = () => {
   const [licenseDialogOpen, setLicenseDialogOpen] = useState(false);
   const [newMaxUsers, setNewMaxUsers] = useState(10);
   const [adminForm, setAdminForm] = useState({ name: "", email: "", password: "" });
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
+  const [selectedUserForReset, setSelectedUserForReset] = useState<any>(null);
+  const [resetPasswordForm, setResetPasswordForm] = useState({ newPassword: "" });
 
   const { data: tenant, isLoading } = useQuery({
     queryKey: ["tenant-detail", id],
@@ -108,6 +111,17 @@ const TenantDetail = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ userId, newPassword }: any) => saApi.post(`/super-admin/users/${userId}/reset-password`, { newPassword }),
+    onSuccess: () => {
+      toast.success("User password reset successfully!");
+      setResetPasswordDialogOpen(false);
+      setResetPasswordForm({ newPassword: "" });
+      setSelectedUserForReset(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   if (isLoading) return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -140,8 +154,8 @@ const TenantDetail = () => {
           </div>
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" size="sm" className="text-white/40 hover:text-white hover:bg-white/5 font-bold">
-              <a href={`/${tenant.slug.replace(/^\//, '')}`} target="_blank" rel="noopener noreferrer">
-                <Globe className="mr-2 h-4 w-4" /> View Platform
+              <a href={`/${tenant.slug.replace(/^\//, '')}/login`} target="_blank" rel="noopener noreferrer">
+                <Globe className="mr-2 h-4 w-4" /> Login to Platform
               </a>
             </Button>
             <Badge className={tenant.status === 'active' ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}>
@@ -228,7 +242,7 @@ const TenantDetail = () => {
                         <td className="px-6 py-4 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 text-white/40 hover:text-white">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-white/40 hover:text-white md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -248,6 +262,16 @@ const TenantDetail = () => {
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => changeUserRole.mutate({ userId: user.id, role: 'user' })}>
                                 <Users className="mr-2 h-4 w-4" /> Make User
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator className="bg-white/5" />
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setSelectedUserForReset(user);
+                                  setResetPasswordDialogOpen(true);
+                                }}
+                                className="text-primary font-bold"
+                              >
+                                <Key className="mr-2 h-4 w-4" /> Reset Password
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -319,6 +343,15 @@ const TenantDetail = () => {
                   <Badge variant="outline" className="text-[10px] uppercase font-bold border-primary/20 text-primary">
                     {tenant.plan_type}
                   </Badge>
+                </div>
+                
+                <div className="pt-4 border-t border-white/5">
+                  <Button asChild variant="outline" className="w-full border-white/10 hover:bg-white/5 text-xs font-bold rounded-xl h-10 group">
+                    <a href={`/${tenant.slug.replace(/^\//, '')}/login`} target="_blank" rel="noopener noreferrer">
+                      <Globe className="mr-2 h-3.5 w-3.5 text-primary group-hover:scale-110 transition-transform" /> 
+                      Login to Platform
+                    </a>
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -416,6 +449,47 @@ const TenantDetail = () => {
             >
               {updateLicenseMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Update License
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Reset Password Dialog */}
+      <Dialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
+        <DialogContent className="bg-slate-900 border-white/10 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-primary" /> Reset User Password
+            </DialogTitle>
+            <DialogDescription className="text-white/40">
+              Reset password for {selectedUserForReset?.name} ({selectedUserForReset?.email})
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>New Password</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={resetPasswordForm.newPassword}
+                  onChange={e => setResetPasswordForm({ newPassword: e.target.value })}
+                  className="bg-white/5 border-white/10 text-white"
+                />
+                <Button variant="secondary" onClick={() => setResetPasswordForm({ newPassword: Math.random().toString(36).slice(-8) })}>
+                  Auto
+                </Button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setResetPasswordDialogOpen(false)} className="text-white/40">Cancel</Button>
+            <Button
+              onClick={() => resetPasswordMutation.mutate({ userId: selectedUserForReset?.id, newPassword: resetPasswordForm.newPassword })}
+              disabled={resetPasswordMutation.isPending || !resetPasswordForm.newPassword}
+              className="bg-primary hover:bg-primary/90 font-bold"
+            >
+              {resetPasswordMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Reset Password
             </Button>
           </DialogFooter>
         </DialogContent>

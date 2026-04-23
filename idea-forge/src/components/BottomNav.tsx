@@ -21,20 +21,20 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 const BottomNav = () => {
   const { pathname } = useLocation();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
+  const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
   const currentSlug = tenantSlug || "default";
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Don't show bottom nav on login/auth pages
   if (pathname.includes('/login') || pathname.includes('/forgot-password') || pathname.includes('/register-workspace')) {
     return null;
   }
-
-  const { user, logout } = useAuth();
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const navItems = [
     { icon: Home, label: "Home", path: getTenantPath(ROUTES.IDEA_BOARD, currentSlug) },

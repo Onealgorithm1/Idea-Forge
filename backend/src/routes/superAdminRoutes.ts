@@ -14,7 +14,9 @@ import {
   submitSupportRequest,
   listSupportRequests,
   updateUserStatus,
-  updateUserRole
+  updateUserRole,
+  changeSuperAdminPassword,
+  resetUserPassword
 } from '../controllers/superAdminController.js';
 import { authenticateToken, isSuperAdmin } from '../middleware/auth.js';
 
@@ -45,5 +47,7 @@ router.get('/support', listSupportRequests);
 // User management
 router.patch('/users/:userId/status', updateUserStatus);
 router.patch('/users/:userId/role', updateUserRole);
+router.post('/users/:userId/reset-password', resetUserPassword);
+router.post('/change-password', changeSuperAdminPassword);
 
 export default router;

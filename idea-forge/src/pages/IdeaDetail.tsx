@@ -538,7 +538,7 @@ const IdeaDetail = () => {
                       </div>
                     </div>
                   ) : (
-                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground mb-4 leading-snug">
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground mb-4 leading-snug break-words">
                       {idea.title}
                     </h1>
                   )}
@@ -775,7 +775,7 @@ const IdeaDetail = () => {
                         maxLength={2000}
                       />
                     ) : (
-                      <p className="text-[16px] text-foreground/80 leading-relaxed whitespace-pre-wrap font-medium">
+                      <p className="text-[16px] text-foreground/80 leading-relaxed whitespace-pre-wrap font-medium break-words">
                         {idea.description}
                       </p>
                     )}

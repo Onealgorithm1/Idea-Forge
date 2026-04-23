@@ -346,13 +346,13 @@ const KanbanBoard = ({ category = "All", spaceId = null, search = "" }: { catego
       api.post(`/ideas/${id}/vote`, { type }, token!),
     onMutate: async ({ id, type }) => {
       // Cancel any outgoing refetch so they don't overwrite our optimistic update
-      await queryClient.cancelQueries({ queryKey: ["ideas", tenantSlug] });
+      await queryClient.cancelQueries({ queryKey: ["ideas", tenantSlug, search, spaceId] });
 
       // Snapshot the previous value
-      const previousIdeas = queryClient.getQueryData(["ideas", tenantSlug]);
+      const previousIdeas = queryClient.getQueryData(["ideas", tenantSlug, search, spaceId]);
 
       // Optimistically update to the new value
-      queryClient.setQueryData(["ideas", tenantSlug], (old: any[] | undefined) => {
+      queryClient.setQueryData(["ideas", tenantSlug, search, spaceId], (old: any[] | undefined) => {
         if (!old) return old;
         return old.map(idea => {
           if (idea.id !== id) return idea;
@@ -388,7 +388,7 @@ const KanbanBoard = ({ category = "All", spaceId = null, search = "" }: { catego
     onError: (err: any, variables, context) => {
       // Roll back optimistic update
       if (context?.previousIdeas) {
-        queryClient.setQueryData(["ideas", tenantSlug], context.previousIdeas);
+        queryClient.setQueryData(["ideas", tenantSlug, search, spaceId], context.previousIdeas);
       }
       // Only show toast for non-409 errors (409 means already voted, UI already shows lock)
       if ((err as any)?.status !== 409) {
@@ -397,7 +397,7 @@ const KanbanBoard = ({ category = "All", spaceId = null, search = "" }: { catego
     },
     onSettled: (data) => {
       // Always refetch after error or success to keep server in sync
-      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug] });
+      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug, search, spaceId] });
     },
   });
 

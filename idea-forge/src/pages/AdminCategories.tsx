@@ -218,29 +218,28 @@ const AdminCategories = () => {
         </div>
 
         {/* Actions Overlay */}
-        <div className="flex items-center gap-2 mt-6">
+        <div className="flex flex-wrap items-center gap-2 mt-6">
           {!isInactive ? (
             <>
               <Button 
                 variant="secondary"
                 size="sm"
-                className="flex-1 rounded-xl h-9 font-bold bg-accent/50 hover:bg-accent text-accent-foreground border-none disabled:opacity-50"
+                className="flex-1 rounded-xl h-9 font-bold bg-accent/50 hover:bg-accent text-accent-foreground border-none disabled:opacity-50 min-w-[80px]"
                 onClick={() => handleEdit(category)}
                 disabled={!canEdit}
               >
-                <Edit2 className="h-3 w-3 mr-3" />
+                <Edit2 className="h-3 w-3 mr-2" />
                 Edit
               </Button>
               {!category.is_default && (
                 <Button 
                   variant="ghost"
-                  size="icon"
-                  className="rounded-xl h-9 w-9 ml-4 text-muted-foreground hover:text-amber-600 hover:bg-amber-100 disabled:opacity-30"
+                  size="sm"
+                  className="rounded-xl h-9 px-3 text-muted-foreground hover:text-amber-600 hover:bg-amber-100 disabled:opacity-30 font-bold"
                   onClick={() => setCategoryToDelete(category.id)}
                   disabled={!canEdit}
-                  title="Deactivate this category"
                 >
-                  <Archive className="h-4 w-4 ml-1" /> Archive
+                  <Archive className="h-4 w-4 mr-2" /> Archive
                 </Button>
               )}
             </>
@@ -267,8 +266,8 @@ const AdminCategories = () => {
       <Header />
       <div className="flex flex-1 overflow-hidden relative z-10 w-full max-w-[1600px] mx-auto">
         <SidebarNav />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-32 md:pb-8">
-          <div className="max-w-7xl mx-auto space-y-8">
+        <main className="flex-1 overflow-y-auto px-4 md:px-8 py-8 pb-32">
+          <div className="max-w-7xl mx-auto space-y-10">
             {/* Header section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1">
