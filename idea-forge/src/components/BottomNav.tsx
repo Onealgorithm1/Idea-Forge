@@ -22,6 +22,12 @@ const BottomNav = () => {
   const { pathname } = useLocation();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const currentSlug = tenantSlug || "default";
+
+  // Don't show bottom nav on login/auth pages
+  if (pathname.includes('/login') || pathname.includes('/forgot-password') || pathname.includes('/register-workspace')) {
+    return null;
+  }
+
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);

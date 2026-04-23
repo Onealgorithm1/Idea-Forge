@@ -127,9 +127,9 @@ export default function AuthPage() {
             <Link to={getTenantPath(ROUTES.DASHBOARD, tenantSlug)} className="flex flex-col items-center gap-2 group">
               <div className="relative">
                 <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-150 group-hover:bg-primary/40 transition-all duration-500" />
-                <Logo imageClassName="h-24 w-24 relative z-10 transition-transform duration-500 group-hover:scale-110" />
+                <Logo imageClassName="h-16 w-16 md:h-24 md:w-24 relative z-10 transition-transform duration-500 group-hover:scale-110" />
               </div>
-              <h1 className="text-4xl font-black tracking-tighter text-white mt-4 drop-shadow-2xl">
+              <h1 className="text-3xl md:text-4xl font-black tracking-tighter text-white mt-4 drop-shadow-2xl">
                 Idea<span className="text-primary tracking-[-0.08em]">Forge</span>
               </h1>
             </Link>

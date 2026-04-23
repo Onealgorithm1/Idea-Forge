@@ -133,7 +133,11 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
       }));
   };
 
-  const categoryTree = buildTree(dbCategories);
+  const activeCategories = (Array.isArray(dbCategories) ? dbCategories : []).filter(c => c.is_active);
+  const archivedCategories = (Array.isArray(dbCategories) ? dbCategories : []).filter(c => !c.is_active);
+
+  const categoryTree = buildTree(activeCategories);
+  const archivedTree = buildTree(archivedCategories);
 
   const handleCategoryClick = (label: string) => {
     if (onCategorySelect) {
@@ -190,8 +194,8 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
   };
 
   return (
-    <aside className="sticky top-0 h-screen w-[260px] shrink-0 border-r border-border hidden md:flex flex-col bg-card/40 dark:bg-card/20 backdrop-blur-xl shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 transition-colors duration-300">
-      <div className="flex-1 overflow-y-auto no-scrollbar py-6">
+    <aside className="sticky top-0 h-full w-[260px] shrink-0 border-r border-border hidden md:flex flex-col bg-card/40 dark:bg-card/20 backdrop-blur-xl shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 transition-colors duration-300">
+      <div className="flex-1 overflow-y-auto no-scrollbar pt-6 pb-20">
         {/* Search Bar in Sidebar */}
         <div className="px-5 mb-8">
           <BoardSearchBar
@@ -313,9 +317,27 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
                   ))}
                 </div>
               ) : (
-                categoryTree.map((cat: any) => (
-                  <CategoryItem key={cat.id} item={cat} />
-                ))
+                <>
+                  {categoryTree.map((cat: any) => (
+                    <CategoryItem key={cat.id} item={cat} />
+                  ))}
+                  
+                  {archivedTree.length > 0 && (
+                    <div className="mt-6 pt-4 border-t border-border/50">
+                      <div className="px-5 mb-2">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+                          <Lock className="h-3 w-3" />
+                          Archived
+                        </div>
+                      </div>
+                      <div className="opacity-70 grayscale-[0.5]">
+                        {archivedTree.map((cat: any) => (
+                          <CategoryItem key={cat.id} item={cat} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

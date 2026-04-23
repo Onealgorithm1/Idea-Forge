@@ -267,7 +267,7 @@ const AdminCategories = () => {
       <Header />
       <div className="flex flex-1 overflow-hidden relative z-10 w-full max-w-[1600px] mx-auto">
         <SidebarNav />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-32 md:pb-8">
           <div className="max-w-7xl mx-auto space-y-8">
             {/* Header section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

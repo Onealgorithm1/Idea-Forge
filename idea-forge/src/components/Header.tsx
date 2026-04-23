@@ -14,6 +14,7 @@ import {
   Users,
   Moon,
   Sun,
+  Lock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -89,7 +90,11 @@ const Header = () => {
       }));
   };
 
-  const categoryTree = buildTree(dbCategories);
+  const activeCategories = (Array.isArray(dbCategories) ? dbCategories : []).filter(c => c.is_active);
+  const archivedCategories = (Array.isArray(dbCategories) ? dbCategories : []).filter(c => !c.is_active);
+
+  const categoryTree = buildTree(activeCategories);
+  const archivedTree = buildTree(archivedCategories);
 
   const displayCategories = [
     { label: "All" },
@@ -225,6 +230,36 @@ const Header = () => {
                             return categoryTree.map((cat: any) => renderCategory(cat));
                           })()}
                         </div>
+
+                        {archivedTree.length > 0 && (
+                          <div className="mt-8 space-y-4 pt-6 border-t border-white/5">
+                            <p className="text-[10px] uppercase font-black tracking-widest text-white/30 px-2 flex items-center gap-2">
+                              <Lock className="h-3 w-3" /> Archived Categories
+                            </p>
+                            <div className="flex flex-col gap-1 px-1 opacity-60 grayscale-[0.5]">
+                              {(() => {
+                                const renderCategory = (cat: any, depth = 0) => (
+                                  <div key={cat.id} className="flex flex-col gap-1">
+                                    <Link
+                                      to={`${getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}?category=${encodeURIComponent(cat.name)}`}
+                                      className={cn(
+                                        "px-4 py-2 text-sm font-bold rounded-xl transition-all",
+                                        new URLSearchParams(location.search).get("category") === cat.name 
+                                          ? "bg-white/10 text-white" 
+                                          : "text-white/60 hover:text-white hover:bg-white/5"
+                                      )}
+                                      style={{ paddingLeft: `${(depth + 1) * 1}rem` }}
+                                    >
+                                      {cat.name}
+                                    </Link>
+                                    {cat.children?.map((child: any) => renderCategory(child, depth + 1))}
+                                  </div>
+                                );
+                                return archivedTree.map((cat: any) => renderCategory(cat));
+                              })()}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 

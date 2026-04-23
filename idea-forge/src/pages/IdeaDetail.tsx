@@ -5,7 +5,7 @@ import {
   ChevronLeft, MessageSquare, Bookmark, BookmarkCheck, Calendar,
   Target, Loader2, Pencil, Star, X, Check, Trash2, Layers,
   Send, AlertCircle, Hash, ChevronDown, ChevronUp, Reply, MessageCircle,
-  Paperclip, FileText, ExternalLink, Upload
+  Paperclip, FileText, ExternalLink, Upload, Lock
 } from "lucide-react";
 import Header from "@/components/Header";
 import SidebarNav from "@/components/SidebarNav";
@@ -350,6 +350,7 @@ const IdeaDetail = () => {
   const canEdit = isAuthor || isAdmin;
   const canChangeStatus = MANAGEMENT_ROLES.includes(user?.role ?? "");
 
+  const isArchived = idea?.category_active === false;
   const isInDevelopment = idea?.status === "In Development";
   const isShipped = idea?.status === "Shipped";
   const oneDay = 24 * 60 * 60 * 1000;
@@ -360,7 +361,8 @@ const IdeaDetail = () => {
   // Production Lock: No one can edit shipped ideas
   // Development Lock: Author cannot edit (but admin can)
   // Time Lock: No one except admin can edit after 24h
-  const isEditLocked = isShipped || isInDevelopment || (isOlderThan24h && !isAdmin);
+  // Archive Lock: No one can edit ideas in archived categories
+  const isEditLocked = isShipped || isInDevelopment || (isOlderThan24h && !isAdmin) || isArchived;
 
   const isTenantAdmin = ["tenant_admin", "super_admin", "supportadmin"].includes(user?.role ?? "");
   const canDelete = isShipped ? isTenantAdmin : (isAuthor || isAdmin);
@@ -369,6 +371,7 @@ const IdeaDetail = () => {
     if (isShipped) return "Ideas in Production stage cannot be edited";
     if (isInDevelopment) return "Ideas in Development stage cannot be edited";
     if (isOlderThan24h && !isAdmin) return "Ideas cannot be edited after 24 hours";
+    if (isArchived) return "Ideas in archived categories cannot be edited";
     return "";
   };
 
@@ -583,6 +586,20 @@ const IdeaDetail = () => {
                     </div>
                   )}
 
+                  {isArchived && (
+                    <div className="mb-6 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+                        <Lock className="h-4 w-4 text-amber-600" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-amber-700">Archived Category</span>
+                        <p className="text-xs text-amber-600/80 font-medium">
+                          This category has been archived. Voting, commenting, and editing are disabled.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* ── Action toolbar */}
                   <div className="flex flex-wrap items-center gap-2 py-4 border-t border-b border-border/50 mb-0">
                     {/* Voting */}
@@ -598,9 +615,9 @@ const IdeaDetail = () => {
                         userVote={idea.vote_type}
                         orientation="horizontal"
                         className="border-none bg-transparent shadow-none"
-                        disabled={isShipped}
+                        disabled={isShipped || isArchived}
                       />
-                      {isShipped && (
+                      {(isShipped || isArchived) && (
                         <span className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground opacity-60">
                           Voting is closed
                         </span>
@@ -971,16 +988,16 @@ const IdeaDetail = () => {
                   placeholder={
                     !token
                       ? "Login to leave a comment"
-                      : isShipped
-                      ? "Discussion is closed for production ideas"
+                      : isShipped || isArchived
+                      ? "Discussion is closed for this stage"
                       : "Share your thoughts or feedback…"
                   }
                   value={newComment}
-                  disabled={!token || isShipped}
+                  disabled={!token || isShipped || isArchived}
                   onChange={(e) => setNewComment(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
-                      if (!newComment.trim() || isShipped) return;
+                      if (!newComment.trim() || isShipped || isArchived) return;
                       if (!token) return toast.error("Please login to comment");
                       commentMutation.mutate({ content: newComment });
                     }
@@ -989,12 +1006,12 @@ const IdeaDetail = () => {
                 />
                 <Button
                   onClick={() => {
-                    if (!newComment.trim() || isShipped) return;
+                    if (!newComment.trim() || isShipped || isArchived) return;
                     if (!token) return toast.error("Please login to comment");
                     commentMutation.mutate({ content: newComment });
                   }}
-                  disabled={!newComment.trim() || commentMutation.isPending || !token || isShipped}
-                  className="gap-2 rounded-2xl font-bold shadow-premium-hover px-8 h-auto bg-primary text-white hover:bg-primary/90 transition-all border-none disabled:opacity-50"
+                  disabled={!newComment.trim() || commentMutation.isPending || !token || isShipped || isArchived}
+                  className="gap-2 rounded-2xl font-bold shadow-premium-hover px-4 md:px-8 h-auto bg-primary text-white hover:bg-primary/90 transition-all border-none disabled:opacity-50"
                 >
                   {commentMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin text-white" />
@@ -1052,9 +1069,16 @@ const IdeaDetail = () => {
                                     </span>
                                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
                                       <button
-                                        onClick={() => setReplyToId(replyToId === c.id ? null : c.id)}
-                                        className="p-1.5 rounded-lg hover:bg-primary/10 text-slate-400 hover:text-primary transition-all"
-                                        title="Reply"
+                                        onClick={() => {
+                                          if (isArchived) return toast.error("Discussion is closed for archived categories");
+                                          setReplyToId(replyToId === c.id ? null : c.id);
+                                        }}
+                                        className={cn(
+                                          "p-1.5 rounded-lg transition-all",
+                                          isArchived ? "opacity-30 cursor-not-allowed" : "hover:bg-primary/10 text-slate-400 hover:text-primary"
+                                        )}
+                                        title={isArchived ? "Discussion closed" : "Reply"}
+                                        disabled={isArchived}
                                       >
                                         <Reply className="h-3 w-3" />
                                       </button>

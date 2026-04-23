@@ -193,6 +193,12 @@ const BoardIdeaCard = ({
                       Closed
                     </Badge>
                   )}
+                  {item.category_active === false && (
+                    <Badge variant="outline" className="text-[8px] font-black px-1.5 py-0 leading-none h-4 border-none uppercase bg-amber-500/10 text-amber-600 flex items-center gap-1">
+                      <Lock className="h-2 w-2" />
+                      Archived
+                    </Badge>
+                  )}
                 </div>
               )}
             </div>
@@ -240,7 +246,7 @@ const BoardIdeaCard = ({
                 orientation="horizontal"
                 className="scale-95 origin-left"
                 isLoading={voteMutation.isPending && voteMutation.variables?.id === item.id}
-                disabled={item.status === 'Shipped'}
+                disabled={item.status === 'Shipped' || item.category_active === false}
               />
               <div className="flex items-center gap-2">
                 <Avatar className="h-6 w-6 border-2 border-background ring-1 ring-border shadow-sm">

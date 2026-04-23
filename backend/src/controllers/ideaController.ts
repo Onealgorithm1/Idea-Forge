@@ -40,7 +40,7 @@ export const getIdeas = async (req: any, res: Response) => {
     const isAdmin = ['admin', 'tenant_admin', 'super_admin'].includes(role);
 
     let baseQuery = `
-      SELECT i.*, u.name as author_name, c.name as category, p.name as parent_name, s.name as space_name,
+      SELECT i.*, u.name as author_name, c.name as category, c.is_active as category_active, p.name as parent_name, s.name as space_name,
              (SELECT json_agg(t.name) FROM tags t 
               JOIN idea_tags it ON t.id = it.tag_id 
               WHERE it.idea_id = i.id) as tags,
@@ -90,7 +90,7 @@ export const getIdea = async (req: any, res: Response) => {
 
   try {
     const result = await query(`
-      SELECT i.*, u.name as author_name, c.name as category, p.name as parent_name, s.name as space_name,
+      SELECT i.*, u.name as author_name, c.name as category, c.is_active as category_active, p.name as parent_name, s.name as space_name,
              (SELECT json_agg(t.name) FROM tags t 
               JOIN idea_tags it ON t.id = it.tag_id 
               WHERE it.idea_id = i.id) as tags,
@@ -153,10 +153,13 @@ export const createIdea = async (req: any, res: Response) => {
   }
 
   try {
-    // Check if category exists
-    const categoryCheck = await query('SELECT id FROM categories WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)', [category_id, tenant_id]);
+    // Check if category exists and is active
+    const categoryCheck = await query('SELECT id, is_active FROM categories WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)', [category_id, tenant_id]);
     if (categoryCheck.rows.length === 0) {
       return res.status(400).json({ message: 'Invalid category' });
+    }
+    if (!categoryCheck.rows[0].is_active) {
+      return res.status(403).json({ message: 'Submissions are closed for this archived category.' });
     }
 
     // Start a transaction block conceptually (though we use pool.query normally, we'll keep it simple but safe)
@@ -250,7 +253,7 @@ export const editIdea = async (req: any, res: Response) => {
   try {
     // Verify idea belongs to this user and tenant
     const existing = await query(
-      `SELECT i.*, c.manager_id as category_manager_id 
+      `SELECT i.*, c.manager_id as category_manager_id, c.is_active as category_active
        FROM ideas i 
        LEFT JOIN categories c ON i.category_id = c.id 
        WHERE i.id = $1 AND i.tenant_id = $2`, 
@@ -289,6 +292,11 @@ export const editIdea = async (req: any, res: Response) => {
     const isOlderThan24h = (Date.now() - new Date(idea.created_at).getTime()) > oneDay;
     if (isOlderThan24h && !isAdmin) {
       return res.status(403).json({ message: 'Ideas cannot be edited after 24 hours of creation.' });
+    }
+
+    // 4. Lock if category is archived
+    if (idea.category_active === false) {
+      return res.status(403).json({ message: 'Ideas in archived categories cannot be edited.' });
     }
     // ---------------------
 
@@ -364,7 +372,7 @@ export const getCategories = async (req: any, res: Response) => {
   const tenantId = req.tenantId;
   try {
     const result = await query(
-      'SELECT id, name, description, slug, is_default, tenant_id, manager_id, parent_id FROM categories WHERE (tenant_id = $1 OR tenant_id IS NULL) AND is_active = true ORDER BY name', 
+      'SELECT id, name, description, slug, is_default, tenant_id, manager_id, parent_id, is_active FROM categories WHERE (tenant_id = $1 OR tenant_id IS NULL) ORDER BY name', 
       [tenantId]
     );
     res.json(result.rows);
@@ -466,13 +474,25 @@ export const voteIdea = async (req: any, res: Response) => {
       return res.status(404).json({ message: 'Idea not found.' });
     }
 
-    // ── Guard: Production Lock ────────────────────────────────────────────
+    // ── Guard: Production Lock & Category Archive Lock ───────────────────
     const idea = ideaCheck.rows[0];
-    const statusCheck = await query('SELECT status FROM ideas WHERE id = $1', [id]);
+    const statusCheck = await query(`
+      SELECT i.status, c.is_active as category_active 
+      FROM ideas i 
+      LEFT JOIN categories c ON i.category_id = c.id 
+      WHERE i.id = $1
+    `, [id]);
+    
     if (statusCheck.rows[0]?.status === 'Shipped') {
       await client.query('ROLLBACK');
       client.release();
       return res.status(403).json({ message: 'Voting is closed for ideas in Production.' });
+    }
+    
+    if (statusCheck.rows[0]?.category_active === false) {
+      await client.query('ROLLBACK');
+      client.release();
+      return res.status(403).json({ message: 'Voting is closed for ideas in archived categories.' });
     }
 
     // ── Guard: one vote per user — check existence ──────
@@ -576,9 +596,19 @@ export const addComment = async (req: any, res: Response) => {
   }
 
   try {
-    const statusCheck = await query('SELECT status FROM ideas WHERE id = $1', [id]);
+    const statusCheck = await query(`
+      SELECT i.status, c.is_active as category_active 
+      FROM ideas i 
+      LEFT JOIN categories c ON i.category_id = c.id 
+      WHERE i.id = $1
+    `, [id]);
+    
     if (statusCheck.rows[0]?.status === 'Shipped') {
       return res.status(403).json({ message: 'Discussion is closed for ideas in Production.' });
+    }
+    
+    if (statusCheck.rows[0]?.category_active === false) {
+      return res.status(403).json({ message: 'Discussion is closed for ideas in archived categories.' });
     }
 
     const result = await query(

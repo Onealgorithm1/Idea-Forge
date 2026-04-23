@@ -176,7 +176,7 @@ const RoadmapIdeaCard = ({
               </div>
             </div>
             
-            <div className="flex items-center justify-between pt-3 border-t border-border/50">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border/50">
               <div className="flex items-center gap-2">
                 <Avatar className="h-6 w-6 border border-background shadow-sm ring-1 ring-border">
                   <AvatarFallback className="text-[10px] font-black bg-muted text-muted-foreground uppercase">
@@ -210,7 +210,7 @@ const RoadmapIdeaCard = ({
                   <MessageSquare className="h-3.5 w-3.5" />
                   <span className="text-xs font-black">{idea.comments_count || 0}</span>
                 </button>
-                <div className="flex flex-col items-center pl-3 border-l-2 border-primary/20 bg-primary/5 px-2 py-1 rounded-lg">
+                <div className="flex flex-col items-center pl-3 border-l-2 border-primary/20 bg-primary/5 px-2 py-1 rounded-lg shrink-0">
                   <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">Points</span>
                   <span className="text-sm font-black text-primary">{(idea.votes_count || 0) * 10}</span>
                 </div>

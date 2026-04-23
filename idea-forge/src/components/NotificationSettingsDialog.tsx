@@ -30,6 +30,7 @@ export function NotificationSettingsDialog({ children, open, onOpenChange }: Not
     notify_on_comment: true,
     notify_on_status_change: true,
     notify_on_followed_activity: true,
+    notify_weekly_summary: true,
   });
   const [loading, setLoading] = useState(false);
 
@@ -50,6 +51,7 @@ export function NotificationSettingsDialog({ children, open, onOpenChange }: Not
           notify_on_comment: data.notify_on_comment,
           notify_on_status_change: data.notify_on_status_change,
           notify_on_followed_activity: data.notify_on_followed_activity,
+          notify_weekly_summary: data.notify_weekly_summary,
         });
       }
     } catch (error) {
@@ -192,6 +194,21 @@ export function NotificationSettingsDialog({ children, open, onOpenChange }: Not
             <Switch 
               checked={settings.notify_on_followed_activity} 
               onCheckedChange={() => handleToggle('notify_on_followed_activity')} 
+              disabled={loading}
+              className="data-[state=checked]:bg-primary"
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/5 rounded-lg text-white/70">
+                <Mail className="w-4 h-4" />
+              </div>
+              <Label className="text-white text-sm">Weekly activity summary</Label>
+            </div>
+            <Switch 
+              checked={settings.notify_weekly_summary} 
+              onCheckedChange={() => handleToggle('notify_weekly_summary')} 
               disabled={loading}
               className="data-[state=checked]:bg-primary"
             />
