@@ -7,7 +7,7 @@ import SidebarNav from "@/components/SidebarNav";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit2, Plus, Loader2, Tag, User, Search, Hash, Archive, RotateCcw, ChevronRight, FolderTree } from "lucide-react";
+import { Edit2, Plus, Loader2, Tag, User, Search, Hash, Archive, RotateCcw, ChevronRight, FolderTree, Clock } from "lucide-react";
 import { getInitials, cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -214,6 +214,22 @@ const AdminCategories = () => {
                 </span>
               </div>
             </div>
+
+            {category.ideas_count === 0 && !category.is_default && !isInactive && (
+              <div className="flex items-center gap-2 px-4 py-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/20">
+                <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                  <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-500" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest leading-none mb-1">
+                    Auto-Archive
+                  </span>
+                  <span className="text-sm font-bold text-amber-700 dark:text-amber-400">
+                    {Math.max(0, 30 - Math.floor((Date.now() - new Date(category.created_at).getTime()) / (1000 * 60 * 60 * 24)))} days remaining
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

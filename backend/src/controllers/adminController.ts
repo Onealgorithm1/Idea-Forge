@@ -321,17 +321,35 @@ export const getRecentActivity = async (req: any, res: Response) => {
 
 export const getAdminCategories = async (req: any, res: Response) => {
   try {
+    const tenantId = req.tenantId;
+
+    // Auto-archive eligible categories:
+    // 1. Not a default category
+    // 2. Is currently active
+    // 3. Created more than 30 days ago
+    // 4. Has no ideas (which implies no comments/votes since they cascade or link to ideas)
+    await query(`
+      UPDATE categories 
+      SET is_active = false, updated_at = NOW()
+      WHERE (tenant_id = $1 OR tenant_id IS NULL)
+      AND is_active = true 
+      AND is_default = false
+      AND created_at < NOW() - INTERVAL '30 days'
+      AND NOT EXISTS (SELECT 1 FROM ideas WHERE category_id = categories.id)
+    `, [tenantId]);
+
     const result = await query(
       `SELECT c.id, c.name, c.description, c.slug, c.is_default, c.tenant_id, c.manager_id, 
-              c.parent_id, c.is_active,
+              c.parent_id, c.is_active, c.created_at,
               u.name as manager_name,
-              p.name as parent_name
+              p.name as parent_name,
+              (SELECT COUNT(*) FROM ideas WHERE category_id = c.id)::int as ideas_count
        FROM categories c
        LEFT JOIN users u ON c.manager_id = u.id
        LEFT JOIN categories p ON c.parent_id = p.id
        WHERE c.tenant_id = $1 OR c.tenant_id IS NULL
        ORDER BY c.name`,
-      [req.tenantId]
+      [tenantId]
     );
     res.json(result.rows);
   } catch (error) {

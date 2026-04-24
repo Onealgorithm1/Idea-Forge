@@ -499,7 +499,7 @@ const Header = () => {
 
                   <DropdownMenuSeparator className="my-1.5 bg-white/10" />
                   <DropdownMenuItem
-                    onClick={logout}
+                    onClick={() => logout()}
                     className="group cursor-pointer rounded-xl px-3 py-2.5 text-red-200 transition-all hover:!bg-white/90 hover:!text-slate-950 focus:!bg-white/90 focus:!text-slate-950"
                   >
                     <LogOut className="mr-3 h-4 w-4 transition-colors group-hover:text-slate-950 group-focus:text-slate-950" />

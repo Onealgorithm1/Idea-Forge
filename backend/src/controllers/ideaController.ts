@@ -383,8 +383,23 @@ export const editIdea = async (req: any, res: Response) => {
 export const getCategories = async (req: any, res: Response) => {
   const tenantId = req.tenantId;
   try {
+    // Auto-archive eligible categories (same logic as admin)
+    await query(`
+      UPDATE categories 
+      SET is_active = false, updated_at = NOW()
+      WHERE (tenant_id = $1 OR tenant_id IS NULL)
+      AND is_active = true 
+      AND is_default = false
+      AND created_at < NOW() - INTERVAL '30 days'
+      AND NOT EXISTS (SELECT 1 FROM ideas WHERE category_id = categories.id)
+    `, [tenantId]);
+
     const result = await query(
-      'SELECT id, name, description, slug, is_default, tenant_id, manager_id, parent_id, is_active FROM categories WHERE (tenant_id = $1 OR tenant_id IS NULL) ORDER BY name', 
+      `SELECT id, name, description, slug, is_default, tenant_id, manager_id, parent_id, is_active, created_at,
+              (SELECT COUNT(*) FROM ideas WHERE category_id = categories.id)::int as ideas_count
+       FROM categories 
+       WHERE (tenant_id = $1 OR tenant_id IS NULL) 
+       ORDER BY name`, 
       [tenantId]
     );
     res.json(result.rows);
