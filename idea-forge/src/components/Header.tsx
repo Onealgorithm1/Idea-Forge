@@ -17,7 +17,8 @@ import {
   Lock,
   Search,
   ExternalLink,
-  Plus
+  Plus,
+  Building
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -54,6 +55,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useTheme } from "next-themes";
+
+const getInitials = (name: string) => {
+  if (!name) return "U";
+  return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+};
 
 const Header = () => {
   const { user, logout, token } = useAuth();
@@ -139,353 +145,162 @@ const Header = () => {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-header text-header-foreground border-b border-border/40">
-      <div className="flex items-center h-20 w-full px-4 md:px-8">
-        <div className="flex-1 flex items-center justify-start gap-4">
-          <div className="md:hidden">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <div className="flex items-center justify-between h-16 px-4 md:px-8 w-full">
+        {/* Left: Mobile Menu Trigger */}
+        <div className="md:hidden">
             <Sheet>
               <SheetTrigger asChild>
-                <button className="p-2 rounded-xl hover:bg-white/10 transition-colors">
-                  <Menu className="h-6 w-6" />
-                </button>
+                <Button variant="ghost" size="icon" className="rounded-xl">
+                  <Menu className="h-5 w-5 text-foreground" />
+                </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] bg-header border-white/10 p-0 text-white">
-                <SheetHeader className="p-6 border-b border-white/10 text-left">
-                  <SheetTitle className="text-white flex items-center gap-3">
-                    <Logo imageClassName="h-8 w-8" />
-                    <span>IdeaForge</span>
-                  </SheetTitle>
-                </SheetHeader>
-                <ScrollArea className="h-[calc(100vh-80px)] p-6">
-                  <div className="space-y-8">
-
-                    <div className="space-y-4">
-                      <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2 flex items-center gap-2">
-                        <Briefcase className="h-3 w-3" /> Idea Spaces
-                      </p>
-                      <div className="flex flex-wrap gap-2 px-1">
-                        {Array.isArray(ideaSpaces) && ideaSpaces.map((space: any) => {
-                          const searchParams = new URLSearchParams(location.search);
-                          const isActive = searchParams.get("space") === space.id;
-                          const params = new URLSearchParams(location.search);
-                          params.set("space", space.id);
-                          const path = `${getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}?${params.toString()}`;
-
-                          return (
-                            <Link
-                              key={space.id}
-                              to={path}
-                              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${
-                                isActive ? "bg-primary text-white border-primary" : "bg-white/5 text-white/70 border-white/10 hover:border-white/20"
-                              }`}
-                            >
-                              {space.name}
-                            </Link>
-                          );
-                        })}
+              <SheetContent side="left" className="p-0 w-[280px] border-none bg-background">
+                <ScrollArea className="h-full">
+                   <div className="p-6">
+                      <div className="flex items-center gap-3 mb-8">
+                        <Logo imageClassName="h-8 w-8 text-primary" />
+                        <span className="font-bold text-2xl tracking-tighter text-foreground">forge</span>
                       </div>
-                    </div>
-
-                    {(location.pathname === getTenantPath(ROUTES.IDEA_BOARD, currentSlug)) && (
                       <div className="space-y-4">
-                        <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2 flex items-center gap-2">
-                          <Tag className="h-3 w-3" /> Categories
-                        </p>
-                        <div className="flex flex-col gap-1 px-1">
-                          <Link
-                            to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}
-                            className={cn(
-                              "px-4 py-2 text-sm font-bold rounded-xl transition-all",
-                              !(new URLSearchParams(location.search).get("category")) 
-                                ? "bg-white/10 text-white" 
-                                : "text-white/60 hover:text-white hover:bg-white/5"
-                            )}
-                          >
-                            All Categories
-                          </Link>
-                          {(() => {
-                            const renderCategory = (cat: any, depth = 0) => (
-                              <div key={cat.id} className="flex flex-col gap-1">
-                                <Link
-                                  to={`${getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}?category=${encodeURIComponent(cat.name)}`}
-                                  className={cn(
-                                    "px-4 py-2 text-sm font-bold rounded-xl transition-all",
-                                    new URLSearchParams(location.search).get("category") === cat.name 
-                                      ? "bg-white/10 text-white" 
-                                      : "text-white/60 hover:text-white hover:bg-white/5"
-                                  )}
-                                  style={{ paddingLeft: `${(depth + 1) * 1}rem` }}
-                                >
-                                  {cat.name}
-                                </Link>
-                                {cat.children?.map((child: any) => renderCategory(child, depth + 1))}
-                              </div>
-                            );
-                            return categoryTree.map((cat: any) => renderCategory(cat));
-                          })()}
-                        </div>
-
-                        {archivedTree.length > 0 && (
-                          <div className="mt-8 space-y-4 pt-6 border-t border-white/5">
-                            <p className="text-[10px] uppercase font-black tracking-widest text-white/30 px-2 flex items-center gap-2">
-                              <Lock className="h-3 w-3" /> Archived Categories
-                            </p>
-                            <div className="flex flex-col gap-1 px-1 opacity-60 grayscale-[0.5]">
-                              {(() => {
-                                const renderCategory = (cat: any, depth = 0) => (
-                                  <div key={cat.id} className="flex flex-col gap-1">
-                                    <Link
-                                      to={`${getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}?category=${encodeURIComponent(cat.name)}`}
-                                      className={cn(
-                                        "px-4 py-2 text-sm font-bold rounded-xl transition-all",
-                                        new URLSearchParams(location.search).get("category") === cat.name 
-                                          ? "bg-white/10 text-white" 
-                                          : "text-white/60 hover:text-white hover:bg-white/5"
-                                      )}
-                                      style={{ paddingLeft: `${(depth + 1) * 1}rem` }}
-                                    >
-                                      {cat.name}
-                                    </Link>
-                                    {cat.children?.map((child: any) => renderCategory(child, depth + 1))}
-                                  </div>
-                                );
-                                return archivedTree.map((cat: any) => renderCategory(cat));
-                              })()}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {['admin', 'tenant_admin', 'super_admin'].includes(user?.role || '') && (
-                      <div className="space-y-4">
-                        <p className="text-[10px] uppercase font-black tracking-widest text-white/40 px-2 flex items-center gap-2">
-                          <ShieldCheck className="h-3 w-3" /> Administration
-                        </p>
-                        <div className="space-y-2">
-                          <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, currentSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
-                            Admin Dashboard
-                          </Link>
-                          <Link to={getTenantPath(ROUTES.ADMIN_USERS, currentSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
-                            Manage Users
-                          </Link>
-                          <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, currentSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
-                            Organization Settings
-                          </Link>
-                          <Link to={getTenantPath(ROUTES.ADMIN_CATEGORIES, currentSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all">
-                            Manage Categories
+                        <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground opacity-50 px-2">Navigation</p>
+                        <div className="space-y-1">
+                          <Link to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold bg-primary/5 text-primary">
+                            Overview
                           </Link>
                         </div>
                       </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <SupportDialog>
-                        <button className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-bold bg-white/5 text-white/80 hover:bg-white/10 transition-all border border-white/5">
-                          <HelpCircle className="h-5 w-5 text-primary" />
-                          Help & Support
-                        </button>
-                      </SupportDialog>
-                    </div>
-
-                  </div>
+                   </div>
                 </ScrollArea>
               </SheetContent>
             </Sheet>
-          </div>
+        </div>
 
-          <div className="hidden md:block w-full max-w-[400px] relative">
-             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-             <input
-               type="text"
-               value={new URLSearchParams(location.search).get("search") || ""}
-               onChange={(e) => {
-                 const params = new URLSearchParams(location.search);
-                 if (e.target.value) params.set("search", e.target.value);
-                 else params.delete("search");
-                 navigate(`${location.pathname}?${params.toString()}`, { replace: true });
-               }}
-               placeholder="Search"
-               className="w-full h-11 pl-11 pr-4 bg-muted/40 border border-border/60 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 focus:bg-background focus:border-primary/50 transition-all shadow-sm"
-             />
+        {/* Center: Search Bar */}
+        <div className="flex-1 flex justify-center max-w-2xl mx-auto">
+          <div className="relative w-full group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <input
+              type="text"
+              value={new URLSearchParams(location.search).get("search") || ""}
+              onChange={(e) => {
+                const params = new URLSearchParams(location.search);
+                if (e.target.value) params.set("search", e.target.value);
+                else params.delete("search");
+                navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+              }}
+              placeholder="Search ideas, spaces or people... (⌘K)"
+              className="w-full h-10 pl-11 pr-4 bg-muted/40 border border-transparent rounded-xl text-sm focus:bg-background focus:border-border/60 transition-all outline-none"
+            />
           </div>
         </div>
 
-        <div className="flex-1 flex items-center justify-end gap-3">
-          <Button variant="outline" className="hidden md:flex items-center gap-2 rounded-xl h-10 px-4 border-border/60 text-muted-foreground hover:text-foreground shadow-sm">
-             <ExternalLink className="h-4 w-4" />
-             Public View
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="hidden lg:flex items-center gap-1 border-r border-border/40 pr-4">
+            <Button variant="ghost" size="sm" className="rounded-lg h-9 px-3 gap-2 text-muted-foreground hover:text-foreground">
+              <ExternalLink className="h-4 w-4" />
+              <span className="text-xs font-bold uppercase tracking-wider">Public View</span>
+            </Button>
+          </div>
+
+          <Button 
+            onClick={() => navigate(getTenantPath(ROUTES.SUBMIT_IDEA, currentSlug))}
+            className="h-9 px-4 rounded-lg bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+          >
+             <Plus className="mr-2 h-4 w-4" /> Add
           </Button>
-          <Button className="hidden md:flex items-center gap-2 rounded-xl h-10 px-4 bg-primary/10 text-primary font-semibold hover:bg-primary hover:text-white transition-all duration-300 border border-primary/20 shadow-sm">
-             <Plus className="h-4 w-4" />
-             Add
-          </Button>
+
           <Popover>
             <PopoverTrigger asChild>
-              <button className="relative p-2 rounded-xl hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-0 focus-visible:outline-none transition-all group">
-                <Bell className="h-5 w-5 text-white/70 group-hover:text-white transition-colors" />
+              <button className="relative p-2 rounded-xl hover:bg-muted transition-all group">
+                <Bell className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 h-4 w-4 bg-destructive border-2 border-header rounded-full flex items-center justify-center text-[8px] font-bold text-white">
+                  <span className="absolute top-1.5 right-1.5 h-3.5 w-3.5 bg-primary border-2 border-background rounded-full flex items-center justify-center text-[7px] font-black text-primary-foreground">
                     {unreadCount}
                   </span>
                 )}
-                <span className="sr-only">Notifications</span>
               </button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="bg-header border-white/10 text-white p-0 w-[380px] shadow-2xl rounded-2xl overflow-hidden mt-2 z-50">
-              <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5">
-                <h3 className="font-bold text-lg flex items-center gap-2">
-                  Notifications
-                  {unreadCount > 0 && (
-                    <Badge variant="secondary" className="bg-destructive/20 text-destructive border-destructive/20 ml-2">
-                      {unreadCount} New
-                    </Badge>
-                  )}
-                </h3>
-                <NotificationSettingsDialog>
-                  <button className="p-2 rounded-full hover:bg-white/10 transition-colors" title="Notification Settings">
-                    <Settings className="w-4 h-4 text-white/70" />
-                  </button>
-                </NotificationSettingsDialog>
+            <PopoverContent align="end" className="p-0 w-[380px] shadow-2xl rounded-2xl overflow-hidden mt-2 z-50 border-border/50">
+              <div className="p-4 border-b border-border/40 bg-muted/20">
+                <h3 className="font-bold text-sm uppercase tracking-widest opacity-70">Notifications</h3>
               </div>
-              <ScrollArea className="h-[400px] max-h-[60vh]">
+              <ScrollArea className="h-[400px]">
                 <div className="p-2">
                   {notifications.length > 0 ? (
                     notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        onClick={() => markAsReadAndNavigate(n)}
-                        className={`p-3 rounded-xl mb-1 transition-all cursor-pointer flex gap-4 items-start ${
-                          !n.is_read 
-                            ? "bg-primary/5 hover:bg-primary/10" 
-                            : "hover:bg-white/5"
-                        }`}
-                      >
-                        <div className="relative mt-1">
-                           <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center relative shadow-inner">
-                              <Bell className="w-5 h-5 text-primary/70" />
-                              {!n.is_read && (
-                                <div className="absolute top-0 right-0 w-3 h-3 bg-primary border-2 border-header rounded-full"></div>
-                              )}
-                           </div>
+                      <div key={n.id} className="p-3 rounded-xl hover:bg-muted/50 cursor-pointer flex gap-3 transition-all">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <Bell className="h-4 w-4 text-primary" />
                         </div>
-                        <div className="flex-1 space-y-1 py-1">
-                          <p className={`text-sm leading-snug ${!n.is_read ? 'font-semibold text-white' : 'font-medium text-white/80'}`}>
-                            {n.message}
-                          </p>
-                          <p className={`text-[11px] ${!n.is_read ? 'text-primary/80 font-medium' : 'text-white/40'}`}>
-                            {new Date(n.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold leading-snug">{n.message}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">{new Date(n.created_at).toLocaleDateString()}</p>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-                      <div className="bg-white/5 p-4 rounded-full mb-3">
-                        <Bell className="h-6 w-6 text-white/20" />
-                      </div>
-                      <h3 className="text-base font-bold mb-1">No notifications</h3>
-                      <p className="text-xs text-white/40">You're all caught up!</p>
+                    <div className="py-20 text-center">
+                       <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground opacity-50">All caught up! 🚀</p>
                     </div>
                   )}
                 </div>
               </ScrollArea>
-              <div className="p-2 border-t border-white/10 bg-white/5 text-center">
-                 <button className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors py-1 w-full" onClick={() => navigate(getTenantPath(ROUTES.ACTIVITY, currentSlug))}>
-                    See all Activity
-                 </button>
-              </div>
             </PopoverContent>
           </Popover>
 
-          <div className="hidden md:flex items-center gap-2 ml-1 border-l border-white/10 pl-3">
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-0 focus-visible:outline-none transition-all group">
-                    <div className="relative">
-                      <Avatar className="h-8 w-8 border-2 border-white/10 group-hover:border-primary/50 transition-colors">
-                        <AvatarFallback className="bg-primary text-white text-[10px] font-bold">
-                          {user.name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success border-2 border-header rounded-full" />
-                    </div>
-                    <div className="hidden sm:flex flex-col items-start leading-none gap-1">
-                      <span className="text-sm font-bold tracking-tight">{user.name}</span>
-                      <span className="text-[10px] opacity-50 uppercase font-bold tracking-wider">{user.role}</span>
-                    </div>
-                    <ChevronDown className="hidden sm:block h-4 w-4 text-white/40 group-hover:text-white/70 transition-colors" />
-                  </button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent
-                  align="end"
-                  className="w-72 rounded-2xl border border-white/10 bg-header/95 p-1.5 text-white backdrop-blur-2xl shadow-[0_24px_60px_-24px_rgba(15,23,42,0.7)]"
-                >
-                  <DropdownMenuLabel className="px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/45">
-                    Quick Actions
-                  </DropdownMenuLabel>
-                  
-                  <DropdownMenuItem 
-                    onClick={() => navigate(getTenantPath(ROUTES.PROFILE, currentSlug))}
-                    className="group cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/90 hover:!text-slate-950 focus:!bg-white/90 focus:!text-slate-950"
-                  >
-                    <UserCircle2 className="mr-3 h-4 w-4 text-primary transition-colors group-hover:text-slate-950" />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold leading-tight">My Profile</span>
-                      <span className="text-[10px] leading-tight text-white/50 transition-colors group-hover:text-slate-700">Manage your account & preferences</span>
-                    </div>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem 
-                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                    className="group cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/90 hover:!text-slate-950 focus:!bg-white/90 focus:!text-slate-950"
-                  >
-                    {mounted && (theme === 'dark' ? (
-                      <Sun className="mr-3 h-4 w-4 text-amber-400 fill-amber-400/20 transition-colors group-hover:text-slate-950" />
-                    ) : (
-                      <Moon className="mr-3 h-4 w-4 text-primary transition-colors group-hover:text-slate-950" />
-                    ))}
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold leading-tight">Appearance</span>
-                      <span className="text-[10px] leading-tight text-white/50 transition-colors group-hover:text-slate-700">
-                        {theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                      </span>
-                    </div>
-                  </DropdownMenuItem>
-
-                  <SupportDialog>
-                    <DropdownMenuItem className="group cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/90 hover:!text-slate-950 focus:!bg-white/90 focus:!text-slate-950 w-full">
-                      <HelpCircle className="mr-3 h-4 w-4 text-info transition-colors group-hover:text-slate-950" />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold leading-tight">Contact Support</span>
-                        <span className="text-[10px] leading-tight text-white/50 transition-colors group-hover:text-slate-700">Need help? Get in touch</span>
-                      </div>
-                    </DropdownMenuItem>
-                  </SupportDialog>
-
-                  <DropdownMenuSeparator className="my-1.5 bg-white/10" />
-                  <DropdownMenuItem
-                    onClick={logout}
-                    className="group cursor-pointer rounded-xl px-3 py-2.5 text-red-200 transition-all hover:!bg-white/90 hover:!text-slate-950 focus:!bg-white/90 focus:!text-slate-950"
-                  >
-                    <LogOut className="mr-3 h-4 w-4 transition-colors group-hover:text-slate-950 group-focus:text-slate-950" />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold leading-tight">Logout</span>
-                      <span className="text-[10px] leading-tight text-red-200/70 transition-colors group-hover:text-slate-700 group-focus:text-slate-700">Sign out of this workspace</span>
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <div className="flex items-center gap-2 ml-2">
-                <Button asChild variant="default" size="sm" className="h-8 px-4 rounded-full text-xs font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
-                  <Link to={getTenantPath(ROUTES.LOGIN, currentSlug)}>Login</Link>
-                </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 p-1 rounded-full hover:bg-muted transition-all border border-transparent hover:border-border/50">
+                <Avatar className="h-8 w-8 border border-border/50">
+                   <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-black">
+                     {getInitials(user?.name || "U")}
+                   </AvatarFallback>
+                </Avatar>
+                <ChevronDown className="h-3 w-3 text-muted-foreground mr-1" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72 rounded-2xl p-1.5 shadow-2xl border-border/50">
+              <div className="px-3 py-3 mb-2 bg-muted/30 rounded-xl">
+                 <p className="text-sm font-black truncate">{user?.name || "Account"}</p>
+                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{user?.role || "User"}</p>
               </div>
-            )}
-          </div>
+
+              <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest opacity-50 px-3 py-2">Personal</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.PROFILE, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                <UserCircle2 className="mr-3 h-4 w-4 text-primary" /> My Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                {theme === 'dark' ? <Sun className="mr-3 h-4 w-4 text-amber-500" /> : <Moon className="mr-3 h-4 w-4 text-primary" />}
+                Appearance
+              </DropdownMenuItem>
+              
+              {['admin', 'tenant_admin', 'super_admin'].includes(user?.role || '') && (
+                <>
+                  <DropdownMenuSeparator className="my-1.5 opacity-40" />
+                  <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest opacity-50 px-3 py-2">Administration</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_DASHBOARD, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                    <Activity className="mr-3 h-4 w-4 text-orange-500" /> Admin Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_USERS, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                    <Users className="mr-3 h-4 w-4 text-blue-500" /> Manage Users
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_SETTINGS, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                    <Building className="mr-3 h-4 w-4 text-purple-500" /> Org Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_CATEGORIES, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                    <Tag className="mr-3 h-4 w-4 text-amber-500" /> Manage Categories
+                  </DropdownMenuItem>
+                </>
+              )}
+
+              <DropdownMenuSeparator className="my-1.5 opacity-40" />
+              <DropdownMenuItem onClick={logout} className="rounded-xl px-3 py-2.5 cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive">
+                <LogOut className="mr-3 h-4 w-4" /> Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

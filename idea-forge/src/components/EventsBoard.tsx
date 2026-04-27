@@ -190,7 +190,7 @@ const EventsBoard = () => {
   };
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto px-4 md:px-8 py-8 space-y-10">
+    <div className="w-full px-4 md:px-8 py-8 space-y-10">
       {/* Responsive Hero Section */}
       <div className="relative w-full rounded-[2.5rem] overflow-hidden shadow-2xl min-h-[300px] flex items-end">
         {/* Background Image / Placeholder */}

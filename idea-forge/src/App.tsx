@@ -26,7 +26,6 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Activity from "./pages/Activity";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ROUTES } from "./lib/constants";
-import FloatingSubmitIdea from "./components/FloatingSubmitIdea";
 import BottomNav from "./components/BottomNav";
 
 const queryClient = new QueryClient();
@@ -81,7 +80,6 @@ const AppContent = () => (
         {/* <Route path="signup" element={<AuthPage />} /> */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <FloatingSubmitIdea />
       <BottomNav />
     </TenantProvider>} />
 

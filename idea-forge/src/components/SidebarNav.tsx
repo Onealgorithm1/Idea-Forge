@@ -1,4 +1,4 @@
-import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, ShieldCheck, Activity, Building, ChevronDown, ChevronRight, type LucideIcon } from "lucide-react";
+import { User, TrendingUp, Users, Tag, Briefcase, Package, Palette, Megaphone, Cpu, Settings, LayoutGrid, Lock, Plus, ShieldCheck, Activity, Building, ChevronDown, ChevronRight, type LucideIcon, Compass, Home, UserCircle2, Sparkles } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate, useLocation, useSearchParams, useParams } from "react-router-dom";
@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Logo } from "@/components/Logo";
-
-import BoardSearchBar from "@/components/BoardSearchBar";
+import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   "Sales": Briefcase,
@@ -81,6 +81,11 @@ function SidebarButton({ icon: Icon, label, active, onClick }: SidebarButtonProp
   );
 }
 
+const getInitials = (name: string) => {
+  if (!name) return "U";
+  return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+};
+
 const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQuery = "", onSearch }: SidebarNavProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -91,7 +96,9 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
 
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { tenant } = useTenant();
-  const selectedCategory = propCategory || searchParams.get("category") || "All";
+  const isEventPage = pathname.includes('/events');
+  const isEventsSpace = searchParams.get("space") === "events" || isEventPage;
+  const selectedCategory = propCategory || searchParams.get("category") || (isEventsSpace ? "" : "All");
   const currentSlug = tenant?.slug || tenantSlug || "default";
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -150,6 +157,10 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
       } else {
         params.set("category", label);
       }
+      // If we're in a special space like events, clear it when selecting a category
+      if (params.get("space") === "events") {
+        params.delete("space");
+      }
       const targetPath = getTenantPath(ROUTES.IDEA_BOARD, currentSlug);
       navigate(`${targetPath}${params.toString() ? '?' + params.toString() : ''}`);
     }
@@ -195,45 +206,37 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
   };
 
   return (
-    <aside className="sticky top-0 h-[100dvh] w-[260px] shrink-0 border-r border-border/40 hidden md:flex flex-col bg-sidebar text-sidebar-foreground z-20 transition-colors duration-300">
-      <div className="flex-1 overflow-y-auto pt-8 pb-20 custom-scrollbar">
-        {/* Logo */}
-        <div className="px-6 mb-8 flex items-center gap-3">
-          <Logo imageClassName="h-8 w-8 text-primary" />
-          <span className="font-bold text-2xl tracking-tight text-foreground lowercase">
-            idea<span className="text-primary">forge</span>
-          </span>
-        </div>
+    <aside className="sticky top-0 h-[100dvh] w-[260px] shrink-0 border-r border-border/40 hidden md:flex flex-col bg-background z-20 transition-all duration-300">
+      {/* Sidebar Header */}
+      <div className="p-6 pb-2 flex items-center gap-3">
+        <Logo imageClassName="h-8 w-8 text-primary" />
+        <span className="font-bold text-2xl tracking-tighter text-foreground">
+          forge
+        </span>
+      </div>
 
-
-
-        {/* Main Navigation */}
-        <div className="space-y-1 px-2 mb-8">
-          <Link to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)} className="block w-full">
+      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-8 custom-scrollbar">
+        {/* Main Menu */}
+        <div className="space-y-1">
+          <p className="px-3 mb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-50">Menu</p>
+          <Link to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)} className="block">
             <SidebarButton
-              icon={LayoutGrid}
-              label="Posts"
-              active={pathname === getTenantPath(ROUTES.IDEA_BOARD, currentSlug) && !searchParams.get("category")}
+              icon={Home}
+              label="Overview"
+              active={pathname === getTenantPath(ROUTES.IDEA_BOARD, currentSlug) && !searchParams.get("category") && !searchParams.get("space")}
             />
           </Link>
-          <Link to={getTenantPath(ROUTES.ROADMAP, currentSlug)} className="block w-full">
+          <Link to={getTenantPath(ROUTES.ROADMAP, currentSlug)} className="block">
             <SidebarButton
-              icon={Activity}
+              icon={TrendingUp}
               label="Roadmap"
               active={pathname === getTenantPath(ROUTES.ROADMAP, currentSlug)}
             />
           </Link>
-          <Link to={getTenantPath(ROUTES.MY_IDEAS, currentSlug)} className="block w-full">
-            <SidebarButton
-              icon={User}
-              label="My Ideas"
-              active={pathname === getTenantPath(ROUTES.MY_IDEAS, currentSlug)}
-            />
-          </Link>
           {['admin', 'reviewer', 'super_admin'].includes(user?.role || '') && (
-            <Link to={getTenantPath(ROUTES.ANALYTICS, currentSlug)} className="block w-full">
+            <Link to={getTenantPath(ROUTES.ANALYTICS, currentSlug)} className="block">
               <SidebarButton
-                icon={TrendingUp}
+                icon={Activity}
                 label="Analytics"
                 active={pathname === getTenantPath(ROUTES.ANALYTICS, currentSlug)}
               />
@@ -241,66 +244,46 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
           )}
         </div>
 
-        {['admin', 'tenant_admin', 'super_admin'].includes(user?.role || '') && (
-          <div className="mb-6 space-y-1">
-            <div className="px-5 mb-3">
-              <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
-                <ShieldCheck className="h-3 w-3" />
-                Administration
-              </div>
-            </div>
-            <div className="space-y-0.5 px-2">
-              <Link to={getTenantPath(ROUTES.ADMIN_DASHBOARD, currentSlug)} className="block w-full">
-                <SidebarButton
-                  icon={Activity}
-                  label="Admin Dashboard"
-                  active={pathname === getTenantPath(ROUTES.ADMIN_DASHBOARD, currentSlug)}
-                />
-              </Link>
-              <Link to={getTenantPath(ROUTES.ADMIN_USERS, currentSlug)} className="block w-full">
-                <SidebarButton
-                  icon={Users}
-                  label="Manage Users"
-                  active={pathname === getTenantPath(ROUTES.ADMIN_USERS, currentSlug)}
-                />
-              </Link>
-              <Link to={getTenantPath(ROUTES.ADMIN_SETTINGS, currentSlug)} className="block w-full">
-                <SidebarButton
-                  icon={Building}
-                  label="Organization Settings"
-                  active={pathname === getTenantPath(ROUTES.ADMIN_SETTINGS, currentSlug)}
-                />
-              </Link>
-              <Link to={getTenantPath(ROUTES.ADMIN_CATEGORIES, currentSlug)} className="block w-full">
-                <SidebarButton
-                  icon={Tag}
-                  label="Manage Categories"
-                  active={pathname === getTenantPath(ROUTES.ADMIN_CATEGORIES, currentSlug)}
-                />
-              </Link>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-6">
-          <div className="space-y-1">
-            <button 
-              onClick={() => setIsSpacesExpanded(!isSpacesExpanded)}
-              className="w-full px-5 flex items-center justify-between group transition-colors"
-            >
-              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] group-hover:text-foreground">
-                <LayoutGrid className="h-3 w-3" />
-                Idea Spaces
-              </div>
-              {isSpacesExpanded ? (
-                <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-foreground" />
-              ) : (
-                <ChevronRight className="h-3 w-3 text-slate-400 group-hover:text-foreground" />
-              )}
+        {/* Idea Spaces (Now includes Events) */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between px-3 mb-2">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-50">Idea Spaces</p>
+            <button onClick={() => setIsSpacesExpanded(!isSpacesExpanded)} className="text-muted-foreground hover:text-foreground transition-colors">
+              {isSpacesExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
             </button>
+          </div>
 
+          <AnimatePresence>
             {isSpacesExpanded && (
-              <div className="space-y-0.5 px-2 mt-2">
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="space-y-0.5 overflow-hidden"
+              >
+                {/* SPECIAL SPACE: Events */}
+                <button
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams);
+                    params.set("space", "events");
+                    params.delete("category");
+                    navigate(`${getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}?${params.toString()}`);
+                  }}
+                  className={`flex items-center gap-3 px-3 py-2.5 text-sm w-full text-left rounded-xl transition-all duration-200 group ${
+                    isEventsSpace
+                      ? "bg-primary/10 text-primary shadow-sm"
+                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                  }`}
+                >
+                  <div className={`p-1.5 rounded-lg transition-colors ${isEventsSpace ? "bg-background" : "bg-primary/5"}`}>
+                    <Sparkles className={`h-4 w-4 ${isEventsSpace ? "text-primary" : "text-primary/60"}`} />
+                  </div>
+                  <span className="font-semibold tracking-tight">Events</span>
+                  {isEventsSpace && (
+                     <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                  )}
+                </button>
+
                 {isSpacesLoading ? (
                   <div className="space-y-2 p-2">
                     <div className="h-8 bg-muted/20 animate-pulse rounded-xl w-full" />
@@ -310,94 +293,61 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
                   Array.isArray(ideaSpaces) && ideaSpaces.map((space: any) => (
                     <SidebarButton
                       key={space.id}
-                      icon={Briefcase}
+                      icon={LayoutGrid}
                       label={space.name}
                       active={searchParams.get("space") === space.id}
                       onClick={() => {
                         const params = new URLSearchParams(searchParams);
                         params.set("space", space.id);
+                        params.delete("category"); // Clear category when switching space
                         navigate(`${getTenantPath(ROUTES.IDEA_BOARD, currentSlug)}?${params.toString()}`);
                       }}
                     />
                   ))
                 )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Categories */}
+        <div className="space-y-1">
+          <p className="px-3 mb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-50">Categories</p>
+          <div className="space-y-0.5">
+            <SidebarButton
+              icon={Tag}
+              label="All Categories"
+              active={selectedCategory === "All" && !isEventsSpace}
+              onClick={() => handleCategoryClick("All")}
+            />
+            {isCategoriesLoading ? (
+              <div className="space-y-2 p-2">
+                {[1, 2].map(i => <div key={i} className="h-8 bg-muted/20 animate-pulse rounded-xl w-full" />)}
               </div>
+            ) : (
+              categoryTree.filter(c => c.name !== "Events").map((cat: any) => (
+                <CategoryItem key={cat.id} item={cat} />
+              ))
             )}
           </div>
-
-          <div className="space-y-1">
-            <div className="px-5 mb-3">
-              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-                <Tag className="h-3 w-3" />
-                Categories
-              </div>
-            </div>
-
-            <div className="space-y-0.5 px-2">
-              <div className="mb-2">
-                <button
-                  onClick={() => handleCategoryClick("Events")}
-                  className={`relative flex items-center gap-3 px-4 py-3 text-sm w-full text-left group transition-all duration-300 rounded-r-2xl overflow-hidden ${
-                    selectedCategory === "Events"
-                      ? "text-purple-600 font-semibold bg-gradient-to-r from-purple-500/10 to-pink-500/10"
-                      : "text-muted-foreground font-medium hover:text-foreground hover:bg-accent/40"
-                  }`}
-                >
-                  <div 
-                    className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full bg-gradient-to-b from-purple-500 to-pink-500 transition-all duration-300 ${
-                      selectedCategory === "Events" ? "h-6 opacity-100" : "h-0 opacity-0"
-                    }`} 
-                  />
-                  <div className={`relative flex items-center justify-center p-1.5 rounded-lg transition-colors duration-300 ${
-                    selectedCategory === "Events" ? 'bg-background shadow-sm ring-1 ring-border' : 'bg-purple-500/5 ring-1 ring-purple-500/10'
-                  }`}>
-                    <span className={`text-base transition-all duration-300 ${
-                      selectedCategory === "Events" ? 'scale-110 animate-bounce' : 'group-hover:scale-110 animate-pulse'
-                    }`}>🎉</span>
-                  </div>
-                  <span className="tracking-tight truncate pr-2 font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500">Events</span>
-                </button>
-              </div>
-
-              <SidebarButton
-                icon={LayoutGrid}
-                label="All Categories"
-                active={selectedCategory === "All"}
-                onClick={() => handleCategoryClick("All")}
-              />
-              
-              {isCategoriesLoading ? (
-                <div className="space-y-2 p-2 mt-2">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="h-8 bg-muted/20 animate-pulse rounded-xl w-full" />
-                  ))}
-                </div>
-              ) : (
-                <>
-                  {categoryTree.map((cat: any) => (
-                    <CategoryItem key={cat.id} item={cat} />
-                  ))}
-                  
-                  {archivedTree.length > 0 && (
-                    <div className="mt-6 pt-4 border-t border-border/50">
-                      <div className="px-5 mb-2">
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-                          <Lock className="h-3 w-3" />
-                          Archived
-                        </div>
-                      </div>
-                      <div className="opacity-70 grayscale-[0.5]">
-                        {archivedTree.map((cat: any) => (
-                          <CategoryItem key={cat.id} item={cat} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
         </div>
+      </div>
+
+      {/* Sidebar Footer: Profile */}
+      <div className="p-4 border-t border-border/40 bg-accent/5">
+        <Link to={getTenantPath(ROUTES.MY_IDEAS, currentSlug)} className="block">
+          <Button variant="ghost" className={cn(
+            "w-full justify-start gap-3 h-11 px-3 rounded-xl transition-all",
+            pathname === getTenantPath(ROUTES.MY_IDEAS, currentSlug) ? "bg-background shadow-sm border border-border/50" : "hover:bg-background/50"
+          )}>
+             <Avatar className="h-6 w-6 border border-border/50">
+                <AvatarFallback className="bg-primary/10 text-primary text-[8px] font-black">
+                  {getInitials(user?.name || "U")}
+                </AvatarFallback>
+             </Avatar>
+             <span className="text-sm font-bold truncate">{user?.name || "Account"}</span>
+          </Button>
+        </Link>
       </div>
     </aside>
   );

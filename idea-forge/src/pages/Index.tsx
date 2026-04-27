@@ -86,7 +86,7 @@ const Index = () => {
         }
 
         localStorage.setItem("eventPopupShown", "true");
-        
+
         toast.success("We have an event coming up!", {
           description: "Do share your ideas or participate in the polls.",
           duration: 10000,
@@ -133,7 +133,7 @@ const Index = () => {
 
   const activeSpace = ideaSpaces.find((s: any) => s.id === selectedSpace);
   const activeCategory = dbCategories.find((c: any) => c.name === selectedCategory);
-  
+
   // Build breadcrumb path for category
   const categoryPath = [];
   if (activeCategory) {
@@ -156,7 +156,7 @@ const Index = () => {
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         {/* Decorative Dotted Grid */}
         <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
-        
+
         {/* Top Premium Glow (The "Parabola" alternative) */}
         <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[120%] h-[400px] bg-gradient-to-b from-primary/20 via-primary/5 to-transparent rounded-[100%] blur-[120px] opacity-60 dark:opacity-40" />
 
@@ -174,7 +174,7 @@ const Index = () => {
         onSearch={setSearchQuery}
       />
 
-      <div className="flex flex-col flex-1 overflow-hidden relative z-10 w-full max-w-[1600px] mx-auto">
+      <div className="flex flex-col flex-1 overflow-hidden relative z-10 w-full">
         <Header />
 
         <main className={`flex-1 overflow-y-auto overflow-x-hidden pb-safe-nav flex flex-col`}>
@@ -187,7 +187,10 @@ const Index = () => {
             />
           </div>
 
-          <div className="px-4 pt-4 pb-2 md:px-8 md:pt-6 md:pb-2 space-y-6">
+          <div className="flex flex-row gap-8 px-4 pt-4 pb-2 md:px-8 md:pt-6 md:pb-2 w-full">
+
+            {/* Center Feed */}
+            <div className="flex-1 space-y-6 w-full min-w-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={`${pathname}-${selectedCategory}-${searchQuery}`}
@@ -195,22 +198,24 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
-              className="space-y-10"
+              className="space-y-10 w-full"
             >
 
 
-              {selectedCategory === "Events" && pathname === tenantIdeaBoard && (
+              {/* Events Space */}
+              {searchParams.get("space") === "events" && pathname === tenantIdeaBoard && (
                 <EventsBoard />
               )}
 
-              {selectedCategory !== "Events" && pathname === tenantIdeaBoard && (
+              {/* Standard Idea Board */}
+              {searchParams.get("space") !== "events" && pathname === tenantIdeaBoard && (
                 <div className="space-y-8 relative">
                   <div className="flex flex-col gap-6">
                     {/* Dynamic Breadcrumbs */}
                     <Breadcrumb>
                       <BreadcrumbList>
                         <BreadcrumbItem>
-                          <BreadcrumbLink 
+                          <BreadcrumbLink
                             className="text-xs font-bold uppercase tracking-wider cursor-pointer hover:text-primary transition-colors"
                             onClick={() => {
                               searchParams.delete("space");
@@ -219,15 +224,15 @@ const Index = () => {
                               setSearchParams(searchParams);
                             }}
                           >
-                            Board
+                            Home
                           </BreadcrumbLink>
                         </BreadcrumbItem>
                         {(activeSpace || categoryPath.length > 0) && <BreadcrumbSeparator />}
-                        
+
                         {activeSpace && (
                           <>
                             <BreadcrumbItem>
-                              <BreadcrumbLink 
+                              <BreadcrumbLink
                                 className="text-xs font-bold uppercase tracking-wider cursor-pointer hover:text-primary"
                                 onClick={() => {
                                   searchParams.delete("category");
@@ -249,7 +254,7 @@ const Index = () => {
                                   {cat.name}
                                 </BreadcrumbPage>
                               ) : (
-                                <BreadcrumbLink 
+                                <BreadcrumbLink
                                   className="text-xs font-bold uppercase tracking-wider cursor-pointer hover:text-primary"
                                   onClick={() => setSelectedCategory(cat.name)}
                                 >
@@ -270,10 +275,10 @@ const Index = () => {
                         </div>
                         <div>
                           <h2 className="text-3xl font-black tracking-tight text-foreground transition-colors">
-                            {activeCategory?.name || activeSpace?.name || "Idea Board"}
+                            {activeCategory?.name || activeSpace?.name || "Home Feed"}
                           </h2>
                           <p className="text-muted-foreground font-medium mt-0.5">
-                            {activeCategory?.description || "Browse and filter through the community's brightest ideas."}
+                            {activeCategory?.description || "See what's happening right now."}
                           </p>
                         </div>
                       </div>
@@ -297,9 +302,9 @@ const Index = () => {
                       ))}
                     </div>
                   )}
-                  <KanbanBoard 
-                  category={selectedCategory} 
-                  spaceId={selectedSpace} 
+                  <KanbanBoard
+                  category={selectedCategory}
+                  spaceId={selectedSpace}
                   search={debouncedSearchQuery}
                 />
                 </div>
@@ -316,8 +321,8 @@ const Index = () => {
                       <p className="text-muted-foreground font-medium">Tracking ideas from conception to delivery.</p>
                     </div>
                   </div>
-                  <RoadmapBoard 
-                  spaceId={selectedSpace} 
+                  <RoadmapBoard
+                  spaceId={selectedSpace}
                   search={debouncedSearchQuery}
                 />
                 </div>
@@ -351,6 +356,9 @@ const Index = () => {
               )}
             </motion.div>
           </AnimatePresence>
+          </div>
+
+
           </div>
         </main>
       </div>

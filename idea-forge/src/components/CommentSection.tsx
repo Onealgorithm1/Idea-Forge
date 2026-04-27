@@ -1,13 +1,17 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Send, Loader2, X } from 'lucide-react';
+import { MessageSquare, Send, Loader2, Share2, MoreHorizontal } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { cn, getInitials } from '@/lib/utils';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
+import VotingSystem from './VotingSystem';
+import { Button } from './ui/button';
+
+import CommentNode from './CommentNode';
 
 interface CommentSectionProps {
   ideaId: string;
@@ -17,6 +21,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ ideaId }) => {
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState('');
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   // Fetch comments
   const { data: comments = [], isLoading } = useQuery({
@@ -26,110 +33,77 @@ const CommentSection: React.FC<CommentSectionProps> = ({ ideaId }) => {
 
   // Post comment mutation
   const commentMutation = useMutation({
-    mutationFn: (content: string) => api.post(`/ideas/${ideaId}/comments`, { content }, token!),
+    mutationFn: ({ content, parent_id }: { content: string, parent_id?: string }) => 
+      api.post(`/ideas/${ideaId}/comments`, { content, parent_id }, token!),
     onSuccess: () => {
       setNewComment('');
+      setReplyText('');
+      setReplyTo(null);
       queryClient.invalidateQueries({ queryKey: ['comments', ideaId] });
-      queryClient.invalidateQueries({ queryKey: ['ideas'] }); // Update comment count on board
-      toast.success('Comment added');
+      queryClient.invalidateQueries({ queryKey: ['ideas'] });
+      toast.success('Thought shared! 💬');
     },
     onError: (error: any) => toast.error(error.message || 'Failed to add comment'),
   });
 
-  const handlePostComment = () => {
-    if (!newComment.trim()) return;
-    if (!token) return toast.error('Please login to comment');
-    commentMutation.mutate(newComment);
+  const handlePostComment = (parentId: string | null = null, text?: string) => {
+    const finalContent = text || newComment;
+    if (!finalContent.trim()) return;
+    if (!token) return toast.error('Please login to join the discussion');
+    commentMutation.mutate({ content: finalContent, parent_id: parentId || undefined });
   };
 
   return (
-    <div className="mt-4 border-t border-border bg-muted/30 -mx-4 -mb-4 overflow-hidden rounded-b-xl">
-      {/* Header (Optional, makes it feel like a section) */}
-      <div className="px-4 py-2 flex items-center gap-2 bg-muted/40 border-b border-border">
-        <MessageSquare className="h-3 w-3 text-muted-foreground" />
-        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-          Discussion ({comments.length})
-        </span>
-      </div>
-
-      {/* Input Area (Top for quick access) */}
-      <div className="p-3 bg-background/50 border-b border-border">
-        <div className="relative group">
-          <input
-            type="text"
-            placeholder={token ? "Say something..." : "Login to comment"}
-            value={newComment}
-            disabled={!token || commentMutation.isPending}
-            onChange={(e) => setNewComment(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handlePostComment();
-              }
-            }}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full bg-background border border-border rounded-lg pl-3 pr-10 py-2 text-[11px] focus:ring-4 focus:ring-primary/5 focus:border-primary/30 transition-all shadow-sm outline-none placeholder:text-muted-foreground font-medium"
-          />
-          <button
-            onClick={(e) => { e.stopPropagation(); handlePostComment(); }}
-            disabled={!newComment.trim() || commentMutation.isPending || !token}
-            className="absolute right-1 top-1 h-7 w-7 bg-primary text-white rounded-md flex items-center justify-center shadow-md shadow-primary/10 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all"
-          >
-            {commentMutation.isPending ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Send className="h-3 w-3" />
-            )}
-          </button>
+    <div className="space-y-8">
+      {/* New Comment Input */}
+      <div className="bg-card/40 backdrop-blur-2xl border border-border/50 rounded-[2rem] p-6 space-y-4 shadow-sm">
+        <div className="flex gap-4">
+        <Avatar className="h-10 w-10 rounded-2xl border border-border/50 shrink-0">
+            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Me'}`} />
+            <AvatarFallback className="bg-primary/10 text-primary font-bold">
+              {getInitials(user?.name || 'Me')}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 space-y-4">
+            <textarea 
+              placeholder="What are your thoughts on this? 💡"
+              value={newComment}
+              disabled={!token || commentMutation.isPending}
+              onChange={(e) => setNewComment(e.target.value)}
+              className="w-full min-h-[100px] bg-background/50 border-none rounded-2xl p-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50 resize-none outline-none"
+            />
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Share your feedback with the community</p>
+              <Button 
+                onClick={() => handlePostComment()}
+                disabled={!newComment.trim() || commentMutation.isPending || !token}
+                className="rounded-xl px-8 font-black uppercase tracking-widest h-10 shadow-lg shadow-primary/20"
+              >
+                {commentMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post Thought"}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Comments List */}
-      <div className="max-h-52 overflow-y-auto p-3 space-y-3 no-scrollbar scroll-smooth">
+      <div className="space-y-2">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-6 gap-2 opacity-50">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Loading Feed</p>
+          <div className="py-20 flex flex-col items-center justify-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
+            <p className="text-xs text-muted-foreground font-black uppercase tracking-widest">Loading Conversation</p>
           </div>
         ) : comments.length === 0 ? (
-          <div className="text-center py-6 opacity-40">
-            <p className="text-[10px] font-bold text-muted-foreground">No comments yet</p>
+          <div className="py-20 text-center space-y-4 bg-muted/5 rounded-[2rem] border border-dashed border-border/40">
+            <MessageSquare className="h-12 w-12 text-muted-foreground/20 mx-auto" />
+            <p className="text-sm text-muted-foreground font-black uppercase tracking-widest">No thoughts shared yet. Be the first!</p>
           </div>
         ) : (
-          comments.map((comment: any, idx: number) => (
-            <motion.div 
-              key={comment.id}
-              initial={{ opacity: 0, x: -5 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: idx * 0.05 }}
-              className="flex gap-2.5 group/cmt"
-            >
-              <Avatar className="h-7 w-7 ring-2 ring-background shadow-sm border border-border shrink-0">
-                <AvatarFallback className="text-[10px] font-black bg-muted text-muted-foreground uppercase">
-                  {getInitials(comment.author || 'U')}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[10px] font-black text-foreground truncate">{comment.author}</span>
-                  <span className="text-[8px] text-muted-foreground font-bold opacity-0 group-hover/cmt:opacity-100 transition-opacity whitespace-nowrap">
-                    {comment.created_at ? formatDistanceToNow(new Date(comment.created_at), { addSuffix: true }) : ''}
-                  </span>
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-normal break-words">{comment.content}</p>
-              </div>
-            </motion.div>
+          comments.map((comment: any) => (
+            <CommentNode key={comment.id} comment={comment} depth={0} />
           ))
         )}
       </div>
-
-      {!token && (
-        <div className="p-2 border-t border-border bg-muted/20">
-          <p className="text-[9px] text-muted-foreground text-center font-black uppercase tracking-tighter">
-            Join the conversation
-          </p>
-        </div>
-      )}
     </div>
   );
 };

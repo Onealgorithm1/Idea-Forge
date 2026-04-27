@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams, useParams, useNavigate } from "react-router-dom";
 import {
-  MessageSquare, ChevronDown, Bookmark, Lock, SearchX, Inbox, Hand, Star, Eye, MoreHorizontal, User as UserIcon
+  MessageCircle, Bookmark, Share, MoreHorizontal, Repeat2,
+  Image as ImageIcon, ArrowBigUp, ArrowBigDown
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ROUTES, getTenantPath, ADMIN_ROLES } from "@/lib/constants";
+import { motion } from "framer-motion";
+import { ROUTES, getTenantPath } from "@/lib/constants";
 import {
   Select,
   SelectContent,
@@ -19,80 +20,57 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getInitials, cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import VotingSystem from "./VotingSystem";
 import ConfirmationModal from "./ConfirmationModal";
-import CommentSection from "./CommentSection";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 const BoardSkeleton = () => (
-  <div className="space-y-4">
-    {[1, 2, 3, 4, 5].map((card) => (
-      <div key={card} className="bg-card rounded-2xl p-4 border border-border/50 space-y-5 animate-pulse shadow-sm h-24" />
+  <div className="space-y-6">
+    {[1, 2, 3].map((card) => (
+      <div key={card} className="bg-card rounded-3xl p-5 border border-border/50 space-y-5 animate-pulse shadow-sm">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-3 w-16" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+        </div>
+      </div>
     ))}
   </div>
 );
 
-const STATUS_COLORS: Record<string, { bg: string, text: string, border: string, dot: string }> = {
-  "Open": { bg: "bg-muted/50", text: "text-muted-foreground", border: "border-border", dot: "bg-muted-foreground" },
-  "Under Review": { bg: "bg-blue-500/10", text: "text-blue-600", border: "border-blue-200", dot: "bg-blue-500" },
-  "Planned": { bg: "bg-cyan-500/10", text: "text-cyan-600", border: "border-cyan-200", dot: "bg-cyan-500" },
-  "In Progress": { bg: "bg-yellow-500/10", text: "text-yellow-600", border: "border-yellow-200", dot: "bg-yellow-500" },
-  "Closed": { bg: "bg-red-500/10", text: "text-red-600", border: "border-red-200", dot: "bg-red-500" },
-  "Shipped": { bg: "bg-green-500/10", text: "text-green-600", border: "border-green-200", dot: "bg-green-500" },
-  "Live": { bg: "bg-green-500/10", text: "text-green-600", border: "border-green-200", dot: "bg-green-500" },
-  "Pending": { bg: "bg-muted/50", text: "text-muted-foreground", border: "border-border", dot: "bg-muted-foreground" },
+const timeAgo = (dateStr: string) => {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  return new Date(dateStr).toLocaleDateString();
 };
 
-const getStatusStyle = (status: string) => {
-  return STATUS_COLORS[status] || STATUS_COLORS["Open"];
-};
-
-const StatusDropdown = ({ currentStatus, onChange }: { currentStatus: string, onChange: (s: string) => void }) => {
-  const style = getStatusStyle(currentStatus);
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-bold transition-all", style.bg, style.text, style.border)}>
-        <span className={cn("w-2 h-2 rounded-full", style.dot)} />
-        {currentStatus === "Shipped" ? "Live" : currentStatus}
-        <ChevronDown className="h-3 w-3 ml-1 opacity-50" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-48 rounded-xl p-2 bg-white dark:bg-zinc-900 border-border/50 shadow-xl">
-        {["Open", "Under Review", "Planned", "In Progress", "Closed", "Live"].map((s) => {
-          const st = getStatusStyle(s === "Live" ? "Shipped" : s);
-          return (
-            <DropdownMenuItem key={s} onClick={() => onChange(s === "Live" ? "Shipped" : s)} className={cn("flex items-center gap-2 rounded-lg my-0.5 cursor-pointer", currentStatus === (s === "Live" ? "Shipped" : s) ? st.bg : "hover:bg-muted/50")}>
-              <span className={cn("w-2 h-2 rounded-full", st.dot)} />
-              <span className={cn("font-semibold text-xs", st.text)}>{s}</span>
-            </DropdownMenuItem>
-          );
-        })}
-        <DropdownMenuSeparator className="my-2" />
-        <div className="px-2 pb-1">
-          <label className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-            <input type="checkbox" className="rounded-sm border-border" /> Notify All Voters
-          </label>
-          <button className="w-full bg-primary text-primary-foreground font-bold text-xs py-2 rounded-lg hover:bg-primary/90 transition-colors">
-            CHANGE
-          </button>
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
-
-const KanbanBoard = ({ category = "All", spaceId = null, search = "" }: { category?: string, spaceId?: string | null, search?: string }) => {
+const SocialFeed = ({ category = "All", spaceId = null, search = "" }: { category?: string, spaceId?: string | null, search?: string }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
   const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
+  const [activeStage, setActiveStage] = useState<'ideation' | 'development' | 'production'>('ideation');
 
   const { data: ideas = [], isLoading, isFetching } = useQuery({
     queryKey: ["ideas", tenantSlug, search, spaceId],
@@ -150,29 +128,25 @@ const KanbanBoard = ({ category = "All", spaceId = null, search = "" }: { catego
     },
   });
 
-  const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      api.patch(`/ideas/${id}/status`, { status }, token!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
-      toast.success("Status updated");
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to update status");
-    }
-  });
-
   const handleVote = (id: string, type: 'up' | 'down') => {
-    if (!token) return toast.error("Please login to vote");
+    if (!token) return toast.error("Please login to like");
     if (voteMutation.isPending) return;
     voteMutation.mutate({ id, type });
   };
 
-  const filteredIdeas = ideas.filter((i: any) => {
+  const baseFilteredIdeas = ideas.filter((i: any) => {
     const categoryMatch = category === "All" || i.category === category;
     const spaceMatch = !spaceId || i.idea_space_id === spaceId;
     return categoryMatch && spaceMatch;
   });
+
+  const ideaPoolItems = baseFilteredIdeas.filter((i: any) => i.status === 'Pending' || i.status === 'Open');
+  const votingItems = baseFilteredIdeas.filter((i: any) => i.status === 'Under Review' || i.status === 'In Progress' || i.status === 'In Development' || i.status === 'QA' || i.status === 'Planned');
+  const devItems = baseFilteredIdeas.filter((i: any) => i.status === 'Shipped' || i.status === 'Live' || i.status === 'Closed');
+
+  const filteredIdeas = (activeStage === 'ideation' ? ideaPoolItems 
+                      : activeStage === 'development' ? votingItems 
+                      : devItems).sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0));
 
   if (isLoading || (isFetching && !!search)) {
     return <BoardSkeleton />;
@@ -180,98 +154,156 @@ const KanbanBoard = ({ category = "All", spaceId = null, search = "" }: { catego
 
   return (
     <div className="space-y-6">
-      {/* Filters Row */}
-      <div className="flex flex-wrap items-center gap-3">
-        {["All Posts", "All Priorities", "All Boards", "Newest", "All Assignment", "Status", "Tags", "Assignee"].map((filter) => (
-          <div key={filter} className="flex items-center justify-between px-4 py-2.5 bg-white dark:bg-card border border-border/60 rounded-2xl text-xs font-bold text-muted-foreground shadow-sm hover:shadow transition-shadow cursor-pointer">
-            {filter === "All Priorities" && <Star className="h-3.5 w-3.5 mr-2 text-foreground" />}
-            {filter}
-            <ChevronDown className="h-3.5 w-3.5 ml-3" />
-          </div>
-        ))}
+      {/* Create Post Input (Fake) */}
+      <div className="flex bg-card rounded-3xl p-5 border border-border shadow-sm items-center gap-4 group cursor-pointer hover:border-primary/30 transition-all">
+        <Avatar className="h-12 w-12 border border-border shadow-sm group-hover:scale-105 transition-transform">
+          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Me'}`} />
+          <AvatarFallback className="bg-primary/5 text-primary font-bold">
+            {getInitials(user?.name || "Me")}
+          </AvatarFallback>
+        </Avatar>
+        <button 
+          onClick={() => navigate(getTenantPath(ROUTES.SUBMIT_IDEA, tenantSlug || "default"))}
+          className="flex-1 bg-muted/50 hover:bg-muted text-muted-foreground text-left px-5 py-3 rounded-full text-sm font-medium transition-colors"
+        >
+          What's on your mind? Share an idea...
+        </button>
+        <button className="p-3 text-primary hover:bg-primary/10 rounded-full transition-colors">
+          <ImageIcon className="h-5 w-5" />
+        </button>
       </div>
 
-      {/* List Header */}
-      <div className="hidden md:grid grid-cols-[80px_60px_1fr_120px_120px_160px_100px] gap-4 px-6 py-3 text-[10px] font-black text-muted-foreground uppercase tracking-widest border-b border-border/50">
-        <div className="text-center">VOTE</div>
-        <div className="text-center">PROFILE</div>
-        <div>DETAILS</div>
-        <div className="text-center">PRIORITY</div>
-        <div className="text-center">PUBLICATION</div>
-        <div>STATUS</div>
-        <div className="text-center">ASSIGNEE</div>
+      {/* Stage Filter Tabs */}
+      <div className="flex bg-muted/30 p-1.5 rounded-[1.25rem] border border-border/50">
+        {[
+          { id: 'ideation', label: 'Ideation', count: ideaPoolItems.length },
+          { id: 'development', label: 'In Development', count: votingItems.length },
+          { id: 'production', label: 'In Production', count: devItems.length },
+        ].map((stage) => {
+          const isActive = activeStage === stage.id;
+          return (
+            <button
+              key={stage.id}
+              onClick={() => setActiveStage(stage.id as any)}
+              className={cn(
+                "flex-1 py-2.5 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2",
+                isActive ? "bg-background text-foreground shadow-sm ring-1 ring-border/40" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
+            >
+              {stage.label}
+              <span className={cn(
+                "px-2 py-0.5 rounded-lg text-[10px]",
+                isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+              )}>{stage.count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Feed Divider */}
+      <div className="flex items-center gap-4 py-1">
+        <div className="h-[1px] flex-1 bg-border/50"></div>
+        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Feed</span>
+        <div className="h-[1px] flex-1 bg-border/50"></div>
       </div>
 
       {/* List Items */}
-      <div className="space-y-3 pb-20">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-20">
         {filteredIdeas.length === 0 ? (
-          <div className="text-center py-20 text-muted-foreground">No posts found.</div>
+          <div className="col-span-full text-center py-20 text-muted-foreground">No posts found.</div>
         ) : (
           filteredIdeas.map((item: any) => (
             <motion.div
               key={item.id}
               onClick={() => navigate(getTenantPath(ROUTES.IDEA_DETAIL.replace(':id', item.id), tenantSlug || "default"))}
-              className="group bg-white dark:bg-card rounded-2xl p-3 md:p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-border/60 flex flex-col md:flex-row md:items-center gap-4 cursor-pointer relative"
+              className="group bg-card rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300 border border-border/60 flex flex-col gap-4 cursor-pointer relative"
             >
-              {/* Vote */}
-              <div className="w-[80px] flex justify-center shrink-0">
-                <button 
-                  onClick={(e) => { e.stopPropagation(); handleVote(item.id, item.vote_type === 'up' ? 'down' : 'up'); }}
-                  className={cn("w-12 h-14 rounded-[20px] border-2 flex flex-col items-center justify-center gap-1 transition-all",
-                    item.vote_type === 'up' ? "border-primary text-primary bg-primary/5" : "border-border text-muted-foreground hover:border-primary/50"
-                  )}
-                >
-                  <Hand className={cn("h-4 w-4", item.vote_type === 'up' && "fill-primary/20")} />
-                  <span className="font-bold text-sm">{item.votes_count || 0}</span>
-                </button>
-              </div>
-
-              {/* Profile */}
-              <div className="hidden md:flex w-[60px] justify-center shrink-0">
-                <Avatar className="h-10 w-10 border border-border">
-                  <AvatarFallback className="bg-primary/10 text-primary font-bold">{getInitials(item.author_name || "Un")}</AvatarFallback>
-                </Avatar>
-              </div>
-
-              {/* Details */}
-              <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-foreground text-base group-hover:text-primary transition-colors">{item.title}</h4>
-                <p className="text-muted-foreground text-sm line-clamp-1 mt-0.5">{item.description}</p>
-                <div className="flex items-center gap-3 mt-2 text-xs font-medium text-muted-foreground/80">
-                  <span>{new Date(item.created_at).toLocaleDateString()} in <span className="font-bold text-foreground/70">{item.category}</span></span>
-                  <div className="flex items-center gap-1"><MessageSquare className="h-3.5 w-3.5" /> {item.comments_count || 0}</div>
-                </div>
-              </div>
-
-              {/* Priority */}
-              <div className="hidden md:flex w-[120px] justify-center shrink-0">
-                <button className="flex items-center gap-2 p-2 hover:bg-muted rounded-xl transition-colors">
-                  <Star className={cn("h-4 w-4", item.priority === 'High' ? "text-red-500 fill-red-500" : "text-amber-400 fill-amber-400")} />
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                </button>
-              </div>
-
-              {/* Publication */}
-              <div className="hidden md:flex w-[120px] justify-center shrink-0">
-                <button className="flex items-center gap-2 p-2 hover:bg-muted rounded-xl transition-colors">
-                  <Eye className="h-4 w-4 text-green-500" />
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                </button>
-              </div>
-
-              {/* Status */}
-              <div className="w-[160px] shrink-0" onClick={(e) => e.stopPropagation()}>
-                <StatusDropdown currentStatus={item.status} onChange={(s) => statusMutation.mutate({ id: item.id, status: s })} />
-              </div>
-
-              {/* Assignee */}
-              <div className="hidden md:flex w-[100px] justify-center shrink-0">
-                <button className="flex items-center gap-2 p-1.5 hover:bg-muted rounded-xl transition-colors">
-                  <Avatar className="h-8 w-8 border border-border">
-                    <AvatarFallback className="bg-muted text-muted-foreground"><UserIcon className="h-4 w-4"/></AvatarFallback>
+              {/* Header: User Info & Time */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10 border border-border shadow-sm">
+                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.author_name || 'U'}`} />
+                    <AvatarFallback className="bg-muted text-muted-foreground font-bold">
+                      {getInitials(item.author_name || "Un")}
+                    </AvatarFallback>
                   </Avatar>
-                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                </button>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-[15px] text-foreground leading-tight hover:underline">
+                        {item.author_name || "Anonymous"}
+                      </p>
+                      <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-none h-4 px-1.5 font-black">
+                        {(item.votes_count || 0) * 10} PTS
+                      </Badge>
+                    </div>
+                    <p className="text-[13px] text-muted-foreground font-medium">
+                      {timeAgo(item.created_at)} • <span className="hover:text-primary transition-colors">{item.category}</span>
+                    </p>
+                  </div>
+                </div>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button onClick={(e) => e.stopPropagation()} className="p-2 -mr-2 hover:bg-muted rounded-full transition-colors text-muted-foreground">
+                      <MoreHorizontal className="h-5 w-5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                    <DropdownMenuItem className="cursor-pointer">Report post</DropdownMenuItem>
+                    {['admin', 'super_admin'].includes(user?.role || '') && (
+                      <DropdownMenuItem className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={(e) => { e.stopPropagation(); setIdeaToDelete(item.id); }}>
+                        Delete post
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Content */}
+              <div className="space-y-2 mt-1">
+                <h3 className="text-lg font-bold text-foreground leading-snug">{item.title}</h3>
+                {item.description && (
+                  <p className="text-[15px] text-foreground/80 leading-relaxed whitespace-pre-wrap line-clamp-4">
+                    {item.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Social Action Bar */}
+              <div className="flex items-center justify-between pt-3 mt-2 border-t border-border/40">
+                <div className="flex items-center gap-6 md:gap-8">
+                  {/* Upvote / Downvote */}
+                  <VotingSystem
+                    ideaId={item.id}
+                    initialVotes={item.votes_count}
+                    userVote={item.vote_type}
+                    onVote={(type) => handleVote(item.id, type)}
+                  />
+
+                  {/* Comment */}
+                  <button className="flex items-center gap-2 text-muted-foreground hover:text-blue-500 group transition-colors">
+                    <div className="p-2 -ml-2 rounded-full transition-colors group-hover:bg-blue-500/10">
+                      <MessageCircle className="h-[18px] w-[18px]" />
+                    </div>
+                    <span className="font-semibold text-[13px]">{item.comments_count || 0}</span>
+                  </button>
+
+                  {/* Repost (Fake) */}
+                  <button className="flex items-center gap-2 text-muted-foreground hover:text-green-500 group transition-colors">
+                    <div className="p-2 -ml-2 rounded-full transition-colors group-hover:bg-green-500/10">
+                      <Repeat2 className="h-[18px] w-[18px]" />
+                    </div>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button onClick={(e) => e.stopPropagation()} className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
+                    <Bookmark className="h-[18px] w-[18px]" />
+                  </button>
+                  <button onClick={(e) => e.stopPropagation()} className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
+                    <Share className="h-[18px] w-[18px]" />
+                  </button>
+                </div>
               </div>
             </motion.div>
           ))
@@ -286,13 +318,13 @@ const KanbanBoard = ({ category = "All", spaceId = null, search = "" }: { catego
             setIdeaToDelete(null);
           }
         }}
-        title="Delete Idea?"
-        message="This action will permanently delete this idea. This action cannot be undone."
-        confirmText="Delete Idea"
+        title="Delete Post?"
+        message="This action will permanently delete this post. This action cannot be undone."
+        confirmText="Delete"
         type="danger"
       />
     </div>
   );
 };
 
-export default KanbanBoard;
+export default SocialFeed;
