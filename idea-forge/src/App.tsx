@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/Auth";
 import SubmitIdea from "./pages/SubmitIdea";
 import IdeaDetail from "./pages/IdeaDetail";
+import EventDetail from "./pages/EventDetail";
 import Profile from "./pages/Profile";
 import AdminUsers from "./pages/AdminUsers";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -67,6 +68,7 @@ const AppContent = () => (
           <Route path="saved-ideas" element={<Index />} />
           <Route path="submit-idea" element={<SubmitIdea />} />
           <Route path="ideas/:id" element={<IdeaDetail />} />
+          <Route path="events/:id" element={<EventDetail />} />
           <Route path="profile" element={<Profile />} />
           <Route path="activity" element={<Activity />} />
           <Route path="admin/dashboard" element={<AdminDashboard />} />

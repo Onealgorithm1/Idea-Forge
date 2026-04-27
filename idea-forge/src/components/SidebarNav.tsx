@@ -303,6 +303,31 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
             </div>
 
             <div className="space-y-0.5 px-2">
+              <div className="mb-2">
+                <button
+                  onClick={() => handleCategoryClick("Events")}
+                  className={`relative flex items-center gap-3 px-4 py-3 text-sm w-full text-left group transition-all duration-300 rounded-r-2xl overflow-hidden ${
+                    selectedCategory === "Events"
+                      ? "text-purple-600 font-semibold bg-gradient-to-r from-purple-500/10 to-pink-500/10"
+                      : "text-muted-foreground font-medium hover:text-foreground hover:bg-accent/40"
+                  }`}
+                >
+                  <div 
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full bg-gradient-to-b from-purple-500 to-pink-500 transition-all duration-300 ${
+                      selectedCategory === "Events" ? "h-6 opacity-100" : "h-0 opacity-0"
+                    }`} 
+                  />
+                  <div className={`relative flex items-center justify-center p-1.5 rounded-lg transition-colors duration-300 ${
+                    selectedCategory === "Events" ? 'bg-background shadow-sm ring-1 ring-border' : 'bg-purple-500/5 ring-1 ring-purple-500/10'
+                  }`}>
+                    <span className={`text-base transition-all duration-300 ${
+                      selectedCategory === "Events" ? 'scale-110 animate-bounce' : 'group-hover:scale-110 animate-pulse'
+                    }`}>🎉</span>
+                  </div>
+                  <span className="tracking-tight truncate pr-2 font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500">Events</span>
+                </button>
+              </div>
+
               <SidebarButton
                 icon={LayoutGrid}
                 label="All Categories"

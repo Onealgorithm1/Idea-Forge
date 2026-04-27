@@ -16,6 +16,7 @@ export const ROUTES = {
   SIGNUP: "/signup",
   FORGOT_PASSWORD: "/forgot-password",
   IDEA_DETAIL: "/ideas/:id",
+  EVENT_DETAIL: "/events/:id",
   PROFILE: "/profile",
   ADMIN_DASHBOARD: "/admin/dashboard",
   ADMIN_USERS: "/admin/users",

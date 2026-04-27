@@ -6,6 +6,8 @@ import RoadmapBoard from "@/components/RoadmapBoard";
 import AnalyticsView from "@/components/AnalyticsView";
 import MyIdeasView from "@/components/MyIdeasView";
 import SavedIdeasView from "@/components/SavedIdeasView";
+import EventsBoard from "@/components/EventsBoard";
+import { toast } from "sonner";
 import { useLocation, useSearchParams, useParams } from "react-router-dom";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import { LayoutGrid, Activity, BarChart, ChevronRight, FolderTree } from "lucide-react";
@@ -42,6 +44,57 @@ const Index = () => {
   const searchQuery = searchParams.get("search") || "";
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  useEffect(() => {
+    const activeEvent = localStorage.getItem("activeEvent");
+    const popupShown = localStorage.getItem("eventPopupShown");
+    if (activeEvent && !popupShown) {
+      setTimeout(() => {
+        // Custom lightweight confetti implementation
+        const colors = ['#a864fd', '#29cdff', '#78ff44', '#ff718d', '#fdff6a'];
+        for (let i = 0; i < 100; i++) {
+          const confettiEl = document.createElement('div');
+          confettiEl.style.position = 'fixed';
+          confettiEl.style.width = '10px';
+          confettiEl.style.height = '10px';
+          confettiEl.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          confettiEl.style.left = Math.random() * 100 + 'vw';
+          confettiEl.style.top = '-10px';
+          confettiEl.style.zIndex = '9999';
+          confettiEl.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+          document.body.appendChild(confettiEl);
+
+          const angle = Math.random() * Math.PI * 2;
+          const velocity = 10 + Math.random() * 20;
+          let x = parseFloat(confettiEl.style.left);
+          let y = -10;
+
+          const animate = () => {
+            y += velocity * 0.5;
+            x += Math.sin(angle) * 5;
+            confettiEl.style.top = y + 'px';
+            confettiEl.style.left = x + 'px';
+            confettiEl.style.transform = `rotate(${y * 2}deg)`;
+
+            if (y < window.innerHeight) {
+              requestAnimationFrame(animate);
+            } else {
+              confettiEl.remove();
+            }
+          };
+          requestAnimationFrame(animate);
+        }
+
+        localStorage.setItem("eventPopupShown", "true");
+        
+        toast.success("We have an event coming up!", {
+          description: "Do share your ideas or participate in the polls.",
+          duration: 10000,
+          icon: "🎉",
+        });
+      }, 1000);
+    }
+  }, []);
 
   // Pre-calculate tenant paths for comparison
   const tenantIdeaBoard = getTenantPath(ROUTES.IDEA_BOARD, tenantSlug);
@@ -146,7 +199,11 @@ const Index = () => {
             >
 
 
-              {pathname === tenantIdeaBoard && (
+              {selectedCategory === "Events" && pathname === tenantIdeaBoard && (
+                <EventsBoard />
+              )}
+
+              {selectedCategory !== "Events" && pathname === tenantIdeaBoard && (
                 <div className="space-y-8 relative">
                   <div className="flex flex-col gap-6">
                     {/* Dynamic Breadcrumbs */}
