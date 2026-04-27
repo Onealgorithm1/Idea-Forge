@@ -6,38 +6,38 @@
 
 @layer base {
   :root {
-    --background: 220 33% 98%;
-    --foreground: 0 0% 0%;
+    --background: 220 14% 96%; /* #f1f3f5 for a soft light gray background */
+    --foreground: 224 71% 15%; /* darker text */
 
     --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card-foreground: 224 71% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --popover-foreground: 224 71% 20%;
 
-    --primary: 242 82% 58%;
+    --primary: 28 94% 53%; /* Brand Orange #F98F26 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 33% 96%;
-    --secondary-foreground: 224 71% 4%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 224 71% 20%;
 
-    --muted: 220 33% 96%;
-    --muted-foreground: 220 14% 37%;
+    --muted: 220 13% 91%;
+    --muted-foreground: 220 8% 46%;
 
-    --accent: 242 82% 97%;
-    --accent-foreground: 242 82% 58%;
+    --accent: 28 94% 96%; /* Very light orange for backgrounds */
+    --accent-foreground: 28 94% 53%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 242 82% 58%;
+    --ring: 28 94% 53%;
 
-    --radius: 0.75rem;
+    --radius: 1rem; /* Softer rounded corners */
 
-    --header-bg: 234 28% 14%;
-    --header-foreground: 0 0% 100%;
+    --header-bg: 0 0% 100%;
+    --header-foreground: 224 71% 15%;
 
     --success: 142 76% 45%;
     --success-foreground: 0 0% 100%;
@@ -47,30 +47,38 @@
     --info-foreground: 0 0% 100%;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 14% 37%;
-    --sidebar-primary: 242 82% 58%;
+    --sidebar-foreground: 224 71% 25%;
+    --sidebar-primary: 28 94% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 242 82% 97%;
-    --sidebar-accent-foreground: 242 82% 58%;
+    --sidebar-accent: 28 94% 96%;
+    --sidebar-accent-foreground: 28 94% 53%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 242 82% 58%;
+    --sidebar-ring: 28 94% 53%;
 
     --glass-bg: 0 0% 100% / 0.75;
     --glass-border: 0 0% 100% / 0.2;
+    
+    /* Status Colors */
+    --status-live: 142 70% 50%;
+    --status-open: 220 8% 46%;
+    --status-review: 217 91% 60%;
+    --status-planned: 188 78% 41%;
+    --status-progress: 43 96% 56%;
+    --status-closed: 354 70% 54%;
   }
 
   .dark {
     --background: 224 71% 4%;
     --foreground: 0 0% 100%;
 
-    --card: 224 71% 4%;
+    --card: 224 71% 8%;
     --card-foreground: 213 31% 91%;
 
-    --popover: 224 71% 4%;
+    --popover: 224 71% 8%;
     --popover-foreground: 213 31% 91%;
 
-    --primary: 242 82% 65%;
-    --primary-foreground: 224 71% 4%;
+    --primary: 28 94% 53%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 222 47% 12%;
     --secondary-foreground: 213 31% 91%;
@@ -78,30 +86,37 @@
     --muted: 222 47% 12%;
     --muted-foreground: 215.4 16.3% 56.9%;
 
-    --accent: 222 47% 12%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 28 90% 15%;
+    --accent-foreground: 28 94% 60%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 242 82% 65%;
+    --ring: 28 94% 53%;
 
     --header-bg: 224 71% 2%;
     --header-foreground: 213 31% 91%;
 
     --sidebar-background: 224 71% 3%;
     --sidebar-foreground: 215.4 16.3% 56.9%;
-    --sidebar-primary: 242 82% 65%;
-    --sidebar-primary-foreground: 224 71% 4%;
-    --sidebar-accent: 222 47% 12%;
-    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-primary: 28 94% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 28 90% 15%;
+    --sidebar-accent-foreground: 28 94% 60%;
     --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 242 82% 65%;
+    --sidebar-ring: 28 94% 53%;
 
     --glass-bg: 224 71% 4% / 0.8;
     --glass-border: 0 0% 100% / 0.1;
+    
+    --status-live: 142 70% 50%;
+    --status-open: 220 8% 46%;
+    --status-review: 217 91% 60%;
+    --status-planned: 188 78% 41%;
+    --status-progress: 43 96% 56%;
+    --status-closed: 354 70% 54%;
   }
 }
 

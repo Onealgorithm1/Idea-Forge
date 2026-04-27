@@ -8,6 +8,7 @@ import { useTenant } from "@/contexts/TenantContext";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { Logo } from "@/components/Logo";
 
 import BoardSearchBar from "@/components/BoardSearchBar";
 
@@ -194,20 +195,50 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
   };
 
   return (
-    <aside className="sticky top-0 h-full w-[260px] shrink-0 border-r border-border hidden md:flex flex-col bg-card/40 dark:bg-card/20 backdrop-blur-xl shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 transition-colors duration-300">
-      <div className="flex-1 overflow-y-auto pt-6 pb-20 custom-scrollbar">
-        {/* Search Bar in Sidebar */}
-        <div className="px-5 mb-8">
-          <BoardSearchBar
-            ref={searchInputRef}
-            value={localSearch}
-            onChange={(val) => {
-              setLocalSearch(val);
-              if (onSearch) onSearch(val);
-            }}
-            placeholder="Search ideas..."
-            showKbdHint
-          />
+    <aside className="sticky top-0 h-[100dvh] w-[260px] shrink-0 border-r border-border/40 hidden md:flex flex-col bg-sidebar text-sidebar-foreground z-20 transition-colors duration-300">
+      <div className="flex-1 overflow-y-auto pt-8 pb-20 custom-scrollbar">
+        {/* Logo */}
+        <div className="px-6 mb-8 flex items-center gap-3">
+          <Logo imageClassName="h-8 w-8 text-primary" />
+          <span className="font-bold text-2xl tracking-tight text-foreground lowercase">
+            idea<span className="text-primary">forge</span>
+          </span>
+        </div>
+
+
+
+        {/* Main Navigation */}
+        <div className="space-y-1 px-2 mb-8">
+          <Link to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)} className="block w-full">
+            <SidebarButton
+              icon={LayoutGrid}
+              label="Posts"
+              active={pathname === getTenantPath(ROUTES.IDEA_BOARD, currentSlug) && !searchParams.get("category")}
+            />
+          </Link>
+          <Link to={getTenantPath(ROUTES.ROADMAP, currentSlug)} className="block w-full">
+            <SidebarButton
+              icon={Activity}
+              label="Roadmap"
+              active={pathname === getTenantPath(ROUTES.ROADMAP, currentSlug)}
+            />
+          </Link>
+          <Link to={getTenantPath(ROUTES.MY_IDEAS, currentSlug)} className="block w-full">
+            <SidebarButton
+              icon={User}
+              label="My Ideas"
+              active={pathname === getTenantPath(ROUTES.MY_IDEAS, currentSlug)}
+            />
+          </Link>
+          {['admin', 'reviewer', 'super_admin'].includes(user?.role || '') && (
+            <Link to={getTenantPath(ROUTES.ANALYTICS, currentSlug)} className="block w-full">
+              <SidebarButton
+                icon={TrendingUp}
+                label="Analytics"
+                active={pathname === getTenantPath(ROUTES.ANALYTICS, currentSlug)}
+              />
+            </Link>
+          )}
         </div>
 
         {['admin', 'tenant_admin', 'super_admin'].includes(user?.role || '') && (

@@ -15,11 +15,14 @@ import {
   Moon,
   Sun,
   Lock,
+  Search,
+  ExternalLink,
+  Plus
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
+import { Link, useLocation, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import { ROUTES, getTenantPath } from "@/lib/constants";
@@ -101,16 +104,7 @@ const Header = () => {
     ...(Array.isArray(dbCategories) ? dbCategories.map((cat: any) => ({ label: cat.name })) : [])
   ];
 
-  const tabs = [
-    { name: "Idea Board", path: getTenantPath(ROUTES.IDEA_BOARD, currentSlug) },
-    { name: "Roadmap", path: getTenantPath(ROUTES.ROADMAP, currentSlug) },
-    { name: "My Ideas", path: getTenantPath(ROUTES.MY_IDEAS, currentSlug) },
-    { name: "Followed Ideas", path: getTenantPath(ROUTES.SAVED_IDEAS, currentSlug) },
-  ];
-  
-  if (user?.role === "admin" || user?.role === "reviewer" || user?.role === "super_admin") {
-    tabs.splice(2, 0, { name: "Analytics", path: getTenantPath(ROUTES.ANALYTICS, currentSlug) });
-  }
+
 
   const fetchNotifications = async () => {
     if (!token) return;
@@ -145,8 +139,8 @@ const Header = () => {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-header text-header-foreground border-b border-white/5 shadow-lg">
-      <div className="flex items-center h-16 max-w-[1600px] mx-auto w-full px-4 md:px-6">
+    <header className="sticky top-0 z-40 w-full bg-header text-header-foreground border-b border-border/40">
+      <div className="flex items-center h-20 w-full px-4 md:px-8">
         <div className="flex-1 flex items-center justify-start gap-4">
           <div className="md:hidden">
             <Sheet>
@@ -300,51 +294,32 @@ const Header = () => {
             </Sheet>
           </div>
 
-          <Link to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)} className="flex items-center gap-3 md:gap-3.5 hover:opacity-90 transition-all group">
-            <div className="bg-primary/20 p-2 md:p-2.5 rounded-xl group-hover:bg-primary/30 transition-colors">
-              <Logo imageClassName="h-7 w-7 md:h-10 md:w-10" />
-            </div>
-            <div className="flex flex-col -gap-1">
-              <span 
-                className="block font-black text-lg md:text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 truncate max-w-[150px] md:max-w-none"
-                style={{ WebkitTextFillColor: 'transparent' }}
-              >
-                {tenant?.name || "IdeaForge"}
-              </span>
-              {tenant?.name && (
-                <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-[0.2em] text-primary/80 ml-0.5">
-                  IdeaForge
-                </span>
-              )}
-            </div>
-          </Link>
+          <div className="hidden md:block w-full max-w-[400px] relative">
+             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+             <input
+               type="text"
+               value={new URLSearchParams(location.search).get("search") || ""}
+               onChange={(e) => {
+                 const params = new URLSearchParams(location.search);
+                 if (e.target.value) params.set("search", e.target.value);
+                 else params.delete("search");
+                 navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+               }}
+               placeholder="Search"
+               className="w-full h-11 pl-11 pr-4 bg-muted/40 border border-border/60 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 focus:bg-background focus:border-primary/50 transition-all shadow-sm"
+             />
+          </div>
         </div>
 
-        <nav className="hidden md:flex flex-none items-center gap-8 h-full justify-center">
-          {tabs.map((tab) => {
-            const isActive = location.pathname === tab.path;
-            return (
-              <Link
-                key={tab.name}
-                to={tab.path}
-                className={`text-sm font-bold transition-all relative h-full flex items-center group ${
-                  isActive ? "text-white" : "text-white/50 hover:text-white/90"
-                }`}
-              >
-                {tab.name}
-                {isActive && (
-                  <motion.div
-                    layoutId="nav-underline"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-
         <div className="flex-1 flex items-center justify-end gap-3">
+          <Button variant="outline" className="hidden md:flex items-center gap-2 rounded-xl h-10 px-4 border-border/60 text-muted-foreground hover:text-foreground shadow-sm">
+             <ExternalLink className="h-4 w-4" />
+             Public View
+          </Button>
+          <Button className="hidden md:flex items-center gap-2 rounded-xl h-10 px-4 bg-primary/10 text-primary font-semibold hover:bg-primary hover:text-white transition-all duration-300 border border-primary/20 shadow-sm">
+             <Plus className="h-4 w-4" />
+             Add
+          </Button>
           <Popover>
             <PopoverTrigger asChild>
               <button className="relative p-2 rounded-xl hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-0 focus-visible:outline-none transition-all group">

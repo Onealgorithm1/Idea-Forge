@@ -151,7 +151,7 @@ const Index = () => {
   const subCategories = dbCategories.filter((c: any) => c.parent_id === activeCategory?.id);
 
   return (
-    <div className="h-[100dvh] bg-background flex flex-col relative overflow-hidden transition-colors duration-300">
+    <div className="h-[100dvh] bg-background flex relative overflow-hidden transition-colors duration-300">
       {/* Mesh Gradient Background */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         {/* Decorative Dotted Grid */}
@@ -167,15 +167,15 @@ const Index = () => {
         <div className="absolute top-[50%] left-[-5%] w-[30%] h-[30%] rounded-full bg-primary/10 blur-[80px]" />
       </div>
 
-      <Header />
+      <SidebarNav
+        selectedCategory={selectedCategory}
+        onCategorySelect={setSelectedCategory}
+        searchQuery={searchQuery}
+        onSearch={setSearchQuery}
+      />
 
-      <div className="flex flex-1 overflow-hidden relative z-10 w-full max-w-[1600px] mx-auto">
-        <SidebarNav
-          selectedCategory={selectedCategory}
-          onCategorySelect={setSelectedCategory}
-          searchQuery={searchQuery}
-          onSearch={setSearchQuery}
-        />
+      <div className="flex flex-col flex-1 overflow-hidden relative z-10 w-full max-w-[1600px] mx-auto">
+        <Header />
 
         <main className={`flex-1 overflow-y-auto overflow-x-hidden pb-safe-nav flex flex-col`}>
           {/* Mobile Search Bar */}
