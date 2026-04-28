@@ -7,8 +7,8 @@ export const updateProfile = async (req: any, res: Response) => {
 
   try {
     const result = await query(
-      'UPDATE users SET name = $1, bio = $2, avatar_url = COALESCE($3, avatar_url), updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, name, email, role, avatar_url, bio',
-      [name, bio, avatar_url, user_id]
+      'UPDATE users SET name = COALESCE($1, name), bio = COALESCE($2, bio), avatar_url = COALESCE($3, avatar_url), updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, name, email, role, avatar_url, bio',
+      [name || null, bio || null, avatar_url || null, user_id]
     );
 
     if (result.rows.length === 0) {
