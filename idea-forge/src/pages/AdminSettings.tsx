@@ -1,8 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import Header from "@/components/Header";
-import SidebarNav from "@/components/SidebarNav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -139,9 +137,9 @@ const AdminSettings = () => {
         <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] rounded-full bg-success/10 blur-[100px]" />
       </div>
 
-      <Header />
+      
       <div className="flex flex-1 overflow-hidden relative z-10 w-full max-w-[1600px] mx-auto">
-        <SidebarNav />
+        
         <main className="flex-1 overflow-y-auto p-6 md:p-10">
           <div className="max-w-5xl mx-auto space-y-10">
             {/* Header */}

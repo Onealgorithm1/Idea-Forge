@@ -2,8 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import Header from "@/components/Header";
-import SidebarNav from "@/components/SidebarNav";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -279,9 +277,9 @@ const AdminCategories = () => {
 
   return (
     <div className="h-screen bg-background flex flex-col relative overflow-hidden transition-colors duration-300">
-      <Header />
+      
       <div className="flex flex-1 overflow-hidden relative z-10 w-full max-w-[1600px] mx-auto">
-        <SidebarNav />
+        
         <main className="flex-1 overflow-y-auto px-4 md:px-8 py-8 pb-32">
           <div className="max-w-7xl mx-auto space-y-10">
             {/* Header section */}

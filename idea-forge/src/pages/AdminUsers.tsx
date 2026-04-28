@@ -2,8 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import Header from "@/components/Header";
-import SidebarNav from "@/components/SidebarNav";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -227,9 +225,9 @@ const AdminUsers = () => {
         <div className="absolute top-[40%] left-[60%] w-[25%] h-[25%] rounded-full bg-success/5 blur-[80px]" />
       </div>
 
-      <Header />
+      
       <div className="flex flex-1 overflow-hidden relative z-10 w-full max-w-[1600px] mx-auto">
-        <SidebarNav />
+        
         <main className="flex-1 overflow-y-auto p-6 md:p-10">
           <div className="max-w-5xl mx-auto">
             <motion.div 
