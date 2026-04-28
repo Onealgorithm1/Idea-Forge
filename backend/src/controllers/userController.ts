@@ -2,13 +2,13 @@ import { Response } from 'express';
 import { query } from '../config/db.js';
 
 export const updateProfile = async (req: any, res: Response) => {
-  const { name, bio } = req.body;
+  const { name, bio, avatar_url } = req.body;
   const user_id = req.user.id;
 
   try {
     const result = await query(
-      'UPDATE users SET name = $1, bio = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING id, name, email, role, avatar_url, bio',
-      [name, bio, user_id]
+      'UPDATE users SET name = $1, bio = $2, avatar_url = COALESCE($3, avatar_url), updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, name, email, role, avatar_url, bio',
+      [name, bio, avatar_url, user_id]
     );
 
     if (result.rows.length === 0) {
