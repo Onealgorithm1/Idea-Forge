@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSearchParams, useParams, useNavigate } from "react-router-dom";
 import {
   MessageCircle, Bookmark, Share, MoreHorizontal, Repeat2,
-  Image as ImageIcon, ArrowBigUp, ArrowBigDown
+  Image as ImageIcon, ArrowBigUp, ArrowBigDown, SendHorizontal
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { ROUTES, getTenantPath } from "@/lib/constants";
@@ -29,6 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 
 const BoardSkeleton = () => (
   <div className="space-y-6">
@@ -148,28 +149,42 @@ const SocialFeed = ({ category = "All", spaceId = null, search = "" }: { categor
                       : activeStage === 'development' ? votingItems 
                       : devItems).sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0));
 
+  const [quickTitle, setQuickTitle] = useState("");
+
   if (isLoading || (isFetching && !!search)) {
     return <BoardSkeleton />;
   }
 
+  const handleQuickSubmit = () => {
+    if (!quickTitle.trim()) return;
+    navigate(`${getTenantPath(ROUTES.SUBMIT_IDEA, tenantSlug || "default")}?title=${encodeURIComponent(quickTitle.trim())}`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Create Post Input (Fake) */}
-      <div className="flex bg-card rounded-3xl p-5 border border-border shadow-sm items-center gap-4 group cursor-pointer hover:border-primary/30 transition-all">
+      <div className="flex bg-card rounded-3xl p-5 border border-border shadow-sm items-center gap-4 group hover:border-primary/30 transition-all">
         <Avatar className="h-12 w-12 border border-border shadow-sm group-hover:scale-105 transition-transform">
           <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Me'}`} />
           <AvatarFallback className="bg-primary/5 text-primary font-bold">
             {getInitials(user?.name || "Me")}
           </AvatarFallback>
         </Avatar>
+        <div className="flex-1 relative">
+          <Input 
+            value={quickTitle}
+            onChange={(e) => setQuickTitle(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleQuickSubmit()}
+            placeholder="What's on your mind? Share an idea..."
+            className="flex-1 bg-muted/50 hover:bg-muted text-foreground border-none px-5 py-6 rounded-full text-sm font-medium transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/20"
+          />
+        </div>
         <button 
-          onClick={() => navigate(getTenantPath(ROUTES.SUBMIT_IDEA, tenantSlug || "default"))}
-          className="flex-1 bg-muted/50 hover:bg-muted text-muted-foreground text-left px-5 py-3 rounded-full text-sm font-medium transition-colors"
+          onClick={handleQuickSubmit}
+          disabled={!quickTitle.trim()}
+          className="p-3 bg-primary text-primary-foreground rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:grayscale shadow-lg shadow-primary/20"
         >
-          What's on your mind? Share an idea...
-        </button>
-        <button className="p-3 text-primary hover:bg-primary/10 rounded-full transition-colors">
-          <ImageIcon className="h-5 w-5" />
+          <SendHorizontal className="h-5 w-5" />
         </button>
       </div>
 

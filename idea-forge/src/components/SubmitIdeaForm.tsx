@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import SimilarIdeasPanel from "@/components/SimilarIdeasPanel";
 import { ROUTES, getTenantPath } from "@/lib/constants";
 import {
@@ -58,8 +58,11 @@ function RichTextToolbar() {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
-  const [title, setTitle] = useState("");
-  const [debouncedTitle, setDebouncedTitle] = useState("");
+  const [searchParams] = useSearchParams();
+  const initialTitle = searchParams.get("title") || "";
+  
+  const [title, setTitle] = useState(initialTitle);
+  const [debouncedTitle, setDebouncedTitle] = useState(initialTitle);
   const [category, setCategory] = useState<string>("");
   const [ideaSpace, setIdeaSpace] = useState<string>("");
   const [description, setDescription] = useState("");
