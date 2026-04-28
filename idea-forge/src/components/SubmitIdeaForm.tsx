@@ -212,7 +212,6 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
       </div>
 
       <form onSubmit={handleSubmit}>
-      <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
 
           {/* ── Left: Main content ── */}

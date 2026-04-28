@@ -157,19 +157,11 @@ const Header = () => {
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-  const isAuthPage = location.pathname.includes('/login') || 
-                    location.pathname.includes('/auth') || 
-                    location.pathname.includes('/register-workspace') ||
-                    location.pathname.includes('/forgot-password');
-
-  if (isAuthPage) return null;
-
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="flex items-center justify-between h-16 px-4 md:px-8 w-full">
-        {/* Left: Mobile Menu & Logo */}
-        <div className="flex items-center gap-3 md:gap-4">
-          <div className="md:hidden">
+        {/* Left: Mobile Menu Trigger */}
+        <div className="md:hidden">
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-xl">
@@ -224,26 +216,6 @@ const Header = () => {
                 </ScrollArea>
               </SheetContent>
             </Sheet>
-          </div>
-
-          <Link to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)} className="flex items-center gap-2 md:gap-3.5 hover:opacity-90 transition-all group shrink-0">
-            <div className="bg-primary/20 p-1.5 md:p-2.5 rounded-xl group-hover:bg-primary/30 transition-colors">
-              <Logo imageClassName="h-6 w-6 md:h-10 md:w-10" />
-            </div>
-            <div className="flex flex-col -gap-1 overflow-hidden">
-              <span 
-                className="block font-black text-base md:text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 truncate max-w-[120px] xs:max-w-[180px] md:max-w-none"
-                style={{ WebkitTextFillColor: 'transparent' }}
-              >
-                {tenant?.name || "IdeaForge"}
-              </span>
-              {tenant?.name && (
-                <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-[0.2em] text-primary/80 ml-0.5">
-                  IdeaForge
-                </span>
-              )}
-            </div>
-          </Link>
         </div>
 
         {/* Center: Search & Breadcrumbs */}
@@ -375,139 +347,83 @@ const Header = () => {
             </PopoverContent>
           </Popover>
 
-          <div className="hidden md:flex items-center gap-2 ml-1 border-l border-border/20 pl-3">
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-0 focus-visible:outline-none transition-all group">
-                    <div className="relative">
-                      <Avatar className="h-8 w-8 border-2 border-border/40 group-hover:border-primary/50 transition-colors">
-                        <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
-                          {getInitials(user.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success border-2 border-background rounded-full" />
-                    </div>
-                    <div className="hidden sm:flex flex-col items-start leading-none gap-1">
-                      <span className="text-sm font-bold tracking-tight">{user.name}</span>
-                      <span className="text-[10px] opacity-50 uppercase font-bold tracking-wider">{user.role}</span>
-                    </div>
-                    <ChevronDown className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                  </button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent
-                  align="end"
-                  className="w-72 rounded-2xl border border-border/50 bg-card p-1.5 shadow-2xl"
-                >
-                  <DropdownMenuLabel className="px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-                    Quick Actions
-                  </DropdownMenuLabel>
-                  
-                  <DropdownMenuItem 
-                    onClick={() => navigate(getTenantPath(ROUTES.PROFILE, currentSlug))}
-                    className="group cursor-pointer rounded-xl px-3 py-2.5 transition-all"
-                  >
-                    <UserCircle2 className="mr-3 h-4 w-4 text-primary" />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold leading-tight">My Profile</span>
-                      <span className="text-[10px] leading-tight text-muted-foreground">Manage your account & preferences</span>
-                    </div>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem 
-                    onClick={() => navigate(getTenantPath(ROUTES.MY_IDEAS, currentSlug))}
-                    className="group cursor-pointer rounded-xl px-3 py-2.5 transition-all"
-                  >
-                    <Sparkles className="mr-3 h-4 w-4 text-amber-500" />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold leading-tight">My Ideas</span>
-                      <span className="text-[10px] leading-tight text-muted-foreground">View your submitted ideas</span>
-                    </div>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem 
-                    onClick={() => navigate(getTenantPath(ROUTES.SAVED_IDEAS, currentSlug))}
-                    className="group cursor-pointer rounded-xl px-3 py-2.5 transition-all"
-                  >
-                    <Bookmark className="mr-3 h-4 w-4 text-primary" />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold leading-tight">Saved Ideas</span>
-                      <span className="text-[10px] leading-tight text-muted-foreground">Your bookmarked ideas</span>
-                    </div>
-                  </DropdownMenuItem>
-
-                  <SupportDialog>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer rounded-xl px-3 py-2.5">
-                      <HelpCircle className="mr-3 h-4 w-4 text-blue-500" />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold leading-tight">Contact Support</span>
-                        <span className="text-[10px] leading-tight text-muted-foreground">Need help? Get in touch</span>
-                      </div>
-                    </DropdownMenuItem>
-                  </SupportDialog>
-
-                  <DropdownMenuItem 
-                    onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-                    className="cursor-pointer rounded-xl px-3 py-2.5"
-                  >
-                    {mounted ? (
-                      resolvedTheme === 'dark' ? (
-                        <Sun className="mr-3 h-4 w-4 text-amber-500" />
-                      ) : (
-                        <Moon className="mr-3 h-4 w-4 text-primary" />
-                      )
-                    ) : (
-                      <div className="mr-3 h-4 w-4" />
-                    )}
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold leading-tight">Appearance</span>
-                      <span className="text-[10px] leading-tight text-muted-foreground">
-                        {mounted ? (resolvedTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode') : 'Switch Theme'}
-                      </span>
-                    </div>
-                  </DropdownMenuItem>
-
-                  {['admin', 'tenant_admin', 'super_admin'].includes(user?.role || '') && (
-                    <>
-                      <DropdownMenuSeparator className="my-1.5 opacity-40" />
-                      <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest opacity-50 px-3 py-2">Administration</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_DASHBOARD, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
-                        <Activity className="mr-3 h-4 w-4 text-orange-500" /> Admin Dashboard
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_USERS, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
-                        <Users className="mr-3 h-4 w-4 text-blue-500" /> Manage Users
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_SETTINGS, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
-                        <Building className="mr-3 h-4 w-4 text-purple-500" /> Org Settings
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_CATEGORIES, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
-                        <Tag className="mr-3 h-4 w-4 text-amber-500" /> Manage Categories
-                      </DropdownMenuItem>
-                    </>
-                  )}
-
-                  <DropdownMenuSeparator className="my-1.5 opacity-40" />
-                  <DropdownMenuItem
-                    onClick={() => logout()}
-                    className="cursor-pointer rounded-xl px-3 py-2.5 text-destructive focus:bg-destructive/10 focus:text-destructive"
-                  >
-                    <LogOut className="mr-3 h-4 w-4" />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold leading-tight">Logout</span>
-                      <span className="text-[10px] leading-tight text-destructive/70">Sign out of this workspace</span>
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <div className="flex items-center gap-2 ml-2">
-                <Button asChild variant="default" size="sm" className="h-8 px-4 rounded-full text-xs font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
-                  <Link to={getTenantPath(ROUTES.LOGIN, currentSlug)}>Login</Link>
-                </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 p-1 rounded-full hover:bg-muted transition-all border border-transparent hover:border-border/50">
+                <Avatar className="h-8 w-8 border border-border/50">
+                   <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-black">
+                     {getInitials(user?.name || "U")}
+                   </AvatarFallback>
+                </Avatar>
+                <ChevronDown className="h-3 w-3 text-muted-foreground mr-1" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72 rounded-2xl p-1.5 shadow-2xl border-border/50">
+              <div className="px-3 py-3 mb-2 bg-muted/30 rounded-xl">
+                 <p className="text-sm font-black truncate">{user?.name || "Account"}</p>
+                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{user?.role || "User"}</p>
               </div>
-            )}
-          </div>
+
+              <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest opacity-50 px-3 py-2">Personal</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.PROFILE, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                <UserCircle2 className="mr-3 h-4 w-4 text-primary" /> My Profile
+              </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.MY_IDEAS, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                <Sparkles className="mr-3 h-4 w-4 text-amber-500" /> My Ideas
+              </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.SAVED_IDEAS, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                <Bookmark className="mr-3 h-4 w-4 text-primary" /> Saved Ideas
+              </DropdownMenuItem>
+              
+              <SupportDialog>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                  <HelpCircle className="mr-3 h-4 w-4 text-blue-500" /> Help & Support
+                </DropdownMenuItem>
+              </SupportDialog>
+
+              <DropdownMenuItem 
+                onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')} 
+                className="rounded-xl px-3 py-2.5 cursor-pointer"
+              >
+                {mounted ? (
+                  resolvedTheme === 'dark' ? (
+                    <Sun className="mr-3 h-4 w-4 text-amber-500" />
+                  ) : (
+                    <Moon className="mr-3 h-4 w-4 text-primary" />
+                  )
+                ) : (
+                  <div className="mr-3 h-4 w-4" />
+                )}
+                Appearance
+              </DropdownMenuItem>
+              
+              {['admin', 'tenant_admin', 'super_admin'].includes(user?.role || '') && (
+                <>
+                  <DropdownMenuSeparator className="my-1.5 opacity-40" />
+                  <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest opacity-50 px-3 py-2">Administration</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_DASHBOARD, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                    <Activity className="mr-3 h-4 w-4 text-orange-500" /> Admin Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_USERS, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                    <Users className="mr-3 h-4 w-4 text-blue-500" /> Manage Users
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_SETTINGS, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                    <Building className="mr-3 h-4 w-4 text-purple-500" /> Org Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_CATEGORIES, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                    <Tag className="mr-3 h-4 w-4 text-amber-500" /> Manage Categories
+                  </DropdownMenuItem>
+                </>
+              )}
+
+              <DropdownMenuSeparator className="my-1.5 opacity-40" />
+              <DropdownMenuItem onClick={() => logout()} className="rounded-xl px-3 py-2.5 cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive">
+                <LogOut className="mr-3 h-4 w-4" /> Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
