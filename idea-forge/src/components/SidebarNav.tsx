@@ -210,8 +210,8 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
       {/* Sidebar Header */}
       <div className="p-6 pb-2 flex items-center gap-3">
         <Logo imageClassName="h-8 w-8 text-primary" />
-        <span className="font-bold text-2xl tracking-tighter text-foreground">
-          forge
+        <span className="font-black text-xl tracking-tighter text-foreground">
+          Idea-Forge
         </span>
       </div>
 

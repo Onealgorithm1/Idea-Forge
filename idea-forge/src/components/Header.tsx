@@ -174,7 +174,7 @@ const Header = () => {
                       <div className="flex items-center gap-3 mb-8">
                         <Logo imageClassName="h-8 w-8 text-primary" />
                         <div className="flex flex-col">
-                          <span className="font-black text-xl tracking-tighter text-foreground leading-none">forge</span>
+                          <span className="font-black text-xl tracking-tighter text-foreground leading-none">Idea-Forge</span>
                           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tenant?.name || 'Workspace'}</span>
                         </div>
                       </div>
@@ -227,7 +227,7 @@ const Header = () => {
                   <BreadcrumbLink asChild>
                     <Link to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)} className="flex items-center gap-2 hover:text-primary transition-colors">
                       <HomeIcon className="h-3.5 w-3.5" />
-                      <span className="hidden xl:inline text-xs font-black uppercase tracking-widest">forge</span>
+                      <span className="hidden xl:inline text-xs font-black uppercase tracking-widest">Idea-Forge</span>
                     </Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
