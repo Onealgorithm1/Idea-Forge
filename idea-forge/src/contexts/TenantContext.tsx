@@ -29,20 +29,22 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     const fetchTenant = async () => {
-      // Skip tenant fetching for super-admin routes
+      // 1. Skip if already loaded for this slug
+      if (tenant && tenant.slug === tenantSlug) {
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Handle super-admin routes
       if (location.pathname.startsWith('/super-admin')) {
         document.title = 'Super Admin | IdeaForge';
         setIsLoading(false);
         return;
       }
 
+      // 3. Handle landing/auth pages without slugs
       if (!tenantSlug) {
-        // If no slug, we might be at root. 
-        // We could redirect to a default tenant or show a landing page.
-        // For now, let's assume we need a slug for the app to function.
-        if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/signup') {
-           // Maybe fallback to 'default' if nothing else
-           // setTenant({ id: '00000000-0000-0000-0000-000000000001', name: 'Default Organization', slug: 'default', status: 'active' });
+        if (['/', '/login', '/signup'].includes(location.pathname)) {
            setIsLoading(false);
            return;
         }
@@ -50,21 +52,22 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return;
       }
 
+      // 4. Fetch if needed
       try {
-        setIsLoading(true);
-        console.log(`[TenantContext] Fetching tenant for slug: ${tenantSlug}`);
+        // Only show loading if we don't have a tenant at all or it's a different one
+        if (!tenant || tenant.slug !== tenantSlug) {
+          setIsLoading(true);
+        }
+
         const data = await api.get(`/tenants/by-slug/${tenantSlug}`);
-        console.log(`[TenantContext] Tenant data received:`, data);
         setTenant(data);
         setError(null);
         document.title = `${data.name} | IdeaForge`;
         
-        // Store in localStorage for api.ts to pick up
         localStorage.setItem('tenantId', data.id);
         localStorage.setItem('lastTenantId', data.id);
         localStorage.setItem('lastTenantSlug', data.slug);
       } catch (err: any) {
-        console.error('[TenantContext] Failed to fetch tenant:', err);
         setError(err.message || 'Tenant not found');
         setTenant(null);
       } finally {
@@ -73,7 +76,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     fetchTenant();
-  }, [tenantSlug, location.pathname]);
+  }, [tenantSlug]); // Removed location.pathname to avoid re-fetching on every internal navigation
 
   if (isLoading) {
     return (
