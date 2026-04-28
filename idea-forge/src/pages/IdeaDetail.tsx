@@ -152,13 +152,13 @@ const IdeaDetail = () => {
                   </Card>
               </div>
 
-              {/* Sidebar - Right Side */}
-              <div className="space-y-4 w-full shrink-0">
+              {/* Sidebar - Right Side (Spans 2 rows to prevent gap) */}
+              <div className="lg:row-span-2 space-y-4 w-full shrink-0">
                 <h3 className="text-xl font-black flex items-center gap-2 px-2">
                     <Trophy className="h-5 w-5 text-yellow-500" />
                     Originator
                 </h3>
-                <Card className="p-8 border-none bg-card/40 backdrop-blur-2xl rounded-[2.5rem] space-y-6 border border-border/50 shadow-sm">
+                <Card className="p-8 border-none bg-card/40 backdrop-blur-2xl rounded-[2.5rem] space-y-6 border border-border/50 shadow-sm sticky top-8">
                     <div className="flex items-center gap-4 p-4 bg-muted/10 rounded-3xl border border-border/20">
                         <Avatar className="h-14 w-14 rounded-2xl border border-border/50 shadow-sm">
                             <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${idea.author_name || 'U'}`} />
@@ -202,8 +202,8 @@ const IdeaDetail = () => {
                 </Card>
               </div>
 
-              {/* Discussions - SPANS FULL WIDTH */}
-              <div className="col-span-full space-y-8 pt-12 mt-4 border-t border-dashed border-border/40">
+              {/* Discussions - Moves up if description is short */}
+              <div className="space-y-8 pt-6 mt-4 border-t border-dashed border-border/40 min-w-0">
                   <div className="flex items-center justify-between">
                       <div className="space-y-1">
                           <h3 className="text-3xl font-black tracking-tighter">Community Discussion</h3>
