@@ -29,7 +29,7 @@ const BottomNav = () => {
   }
 
   const { user, logout } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -123,10 +123,10 @@ const BottomNav = () => {
                   )}
 
                   <DropdownMenuItem 
-                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                    onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
                     className="group cursor-pointer rounded-xl px-3 py-2.5 text-white/82 transition-all hover:!bg-white/90 hover:!text-slate-950 focus:!bg-white/90 focus:!text-slate-950"
                   >
-                    {mounted && (theme === 'dark' ? (
+                    {mounted && (resolvedTheme === 'dark' ? (
                       <Sun className="mr-3 h-4 w-4 text-amber-400 fill-amber-400/20 transition-colors group-hover:text-slate-950" />
                     ) : (
                       <Moon className="mr-3 h-4 w-4 text-primary transition-colors group-hover:text-slate-950" />
@@ -134,7 +134,7 @@ const BottomNav = () => {
                     <div className="flex flex-col">
                       <span className="text-sm font-semibold leading-tight">Appearance</span>
                       <span className="text-[10px] leading-tight text-white/50 transition-colors group-hover:text-slate-700">
-                        {theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                        {mounted ? (resolvedTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode') : 'Switch Theme'}
                       </span>
                     </div>
                   </DropdownMenuItem>

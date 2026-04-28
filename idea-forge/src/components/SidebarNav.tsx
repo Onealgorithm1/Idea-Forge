@@ -333,21 +333,17 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
         </div>
       </div>
 
-      {/* Sidebar Footer: Profile */}
-      <div className="p-4 border-t border-border/40 bg-accent/5">
-        <Link to={getTenantPath(ROUTES.MY_IDEAS, currentSlug)} className="block">
-          <Button variant="ghost" className={cn(
-            "w-full justify-start gap-3 h-11 px-3 rounded-xl transition-all",
-            pathname === getTenantPath(ROUTES.MY_IDEAS, currentSlug) ? "bg-background shadow-sm border border-border/50" : "hover:bg-background/50"
-          )}>
-             <Avatar className="h-6 w-6 border border-border/50">
-                <AvatarFallback className="bg-primary/10 text-primary text-[8px] font-black">
-                  {getInitials(user?.name || "U")}
-                </AvatarFallback>
-             </Avatar>
-             <span className="text-sm font-bold truncate">{user?.name || "Account"}</span>
-          </Button>
-        </Link>
+      {/* Sidebar Footer: Organization */}
+      <div className="p-4 border-t border-border/40 bg-accent/5 mt-auto">
+        <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-background shadow-sm border border-border/50">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
+            <Building className="h-4 w-4" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60 leading-none mb-1">Workspace</span>
+            <span className="text-sm font-black truncate text-foreground">{tenant?.name || "IdeaForge"}</span>
+          </div>
+        </div>
       </div>
     </aside>
   );

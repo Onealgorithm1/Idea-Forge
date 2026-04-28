@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const ThemeToggle = () => {
-  const { theme, setTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   // Avoid hydration mismatch
@@ -15,7 +15,7 @@ const ThemeToggle = () => {
 
   if (!mounted) return <div className="p-2 h-9 w-9" />;
 
-  const isDark = theme === "dark";
+  const isDark = resolvedTheme === "dark";
 
   return (
     <Button
@@ -27,7 +27,7 @@ const ThemeToggle = () => {
     >
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
-          key={theme}
+          key={resolvedTheme}
           initial={{ y: 20, opacity: 0, rotate: 45 }}
           animate={{ y: 0, opacity: 1, rotate: 0 }}
           exit={{ y: -20, opacity: 0, rotate: -45 }}

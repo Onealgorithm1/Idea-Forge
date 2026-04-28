@@ -18,7 +18,11 @@ import {
   Search,
   ExternalLink,
   Plus,
-  Building
+  Building,
+  TrendingUp,
+  LayoutGrid,
+  Bookmark,
+  Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -55,6 +59,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useTheme } from "next-themes";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { ChevronRight, HomeIcon } from "lucide-react";
 
 const getInitials = (name: string) => {
   if (!name) return "U";
@@ -64,7 +77,7 @@ const getInitials = (name: string) => {
 const Header = () => {
   const { user, logout, token } = useAuth();
   const { tenant } = useTenant();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const location = useLocation();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
@@ -160,14 +173,43 @@ const Header = () => {
                    <div className="p-6">
                       <div className="flex items-center gap-3 mb-8">
                         <Logo imageClassName="h-8 w-8 text-primary" />
-                        <span className="font-bold text-2xl tracking-tighter text-foreground">forge</span>
+                        <div className="flex flex-col">
+                          <span className="font-black text-xl tracking-tighter text-foreground leading-none">forge</span>
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tenant?.name || 'Workspace'}</span>
+                        </div>
                       </div>
                       <div className="space-y-4">
                         <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground opacity-50 px-2">Navigation</p>
                         <div className="space-y-1">
-                          <Link to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold bg-primary/5 text-primary">
-                            Overview
+                          <Link 
+                            to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)} 
+                            className={cn(
+                              "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all",
+                              location.pathname.includes('idea-board') ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"
+                            )}
+                          >
+                            <LayoutGrid className="h-4 w-4" /> Feed
                           </Link>
+                          <Link 
+                            to={getTenantPath(ROUTES.ROADMAP, currentSlug)} 
+                            className={cn(
+                              "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all",
+                              location.pathname.includes('roadmap') ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"
+                            )}
+                          >
+                            <TrendingUp className="h-4 w-4" /> Roadmap
+                          </Link>
+                          {['admin', 'reviewer', 'super_admin'].includes(user?.role || '') && (
+                            <Link 
+                              to={getTenantPath(ROUTES.ANALYTICS, currentSlug)} 
+                              className={cn(
+                                "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all",
+                                location.pathname.includes('analytics') ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"
+                              )}
+                            >
+                              <Activity className="h-4 w-4" /> Analytics
+                            </Link>
+                          )}
                         </div>
                       </div>
                    </div>
@@ -176,9 +218,69 @@ const Header = () => {
             </Sheet>
         </div>
 
-        {/* Center: Search Bar */}
-        <div className="flex-1 flex justify-center max-w-2xl mx-auto">
-          <div className="relative w-full group">
+        {/* Center: Search & Breadcrumbs */}
+        <div className="flex-1 flex items-center justify-between max-w-5xl mx-auto gap-8 px-4">
+          <div className="hidden lg:flex items-center min-w-0">
+             <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)} className="flex items-center gap-2 hover:text-primary transition-colors">
+                      <HomeIcon className="h-3.5 w-3.5" />
+                      <span className="hidden xl:inline text-xs font-black uppercase tracking-widest">forge</span>
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator>
+                  <ChevronRight className="h-3 w-3 opacity-50" />
+                </BreadcrumbSeparator>
+                
+                {location.pathname.includes('/ideas/') && (
+                  <>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild>
+                        <Link to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)} className="text-xs font-bold text-muted-foreground hover:text-foreground">Ideas</Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator>
+                      <ChevronRight className="h-3 w-3 opacity-50" />
+                    </BreadcrumbSeparator>
+                    <BreadcrumbItem>
+                      <BreadcrumbPage className="text-xs font-black text-primary uppercase tracking-wider truncate max-w-[120px]">
+                        Detail
+                      </BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </>
+                )}
+
+                {location.pathname.includes('/roadmap') && (
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="text-xs font-black text-primary uppercase tracking-wider">Roadmap</BreadcrumbPage>
+                  </BreadcrumbItem>
+                )}
+
+                {location.pathname.includes('/analytics') && (
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="text-xs font-black text-primary uppercase tracking-wider">Analytics</BreadcrumbPage>
+                  </BreadcrumbItem>
+                )}
+
+                {location.pathname.includes('/profile') && (
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="text-xs font-black text-primary uppercase tracking-wider">Profile</BreadcrumbPage>
+                  </BreadcrumbItem>
+                )}
+
+                {location.pathname.includes('/idea-board') && !location.pathname.includes('/ideas/') && (
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="text-xs font-black text-primary uppercase tracking-wider">Idea Board</BreadcrumbPage>
+                  </BreadcrumbItem>
+                )}
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+
+          <div className="relative w-full max-w-md group flex items-center">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
             <input
               type="text"
@@ -189,7 +291,7 @@ const Header = () => {
                 else params.delete("search");
                 navigate(`${location.pathname}?${params.toString()}`, { replace: true });
               }}
-              placeholder="Search ideas, spaces or people... (⌘K)"
+              placeholder="Search everything... (⌘K)"
               className="w-full h-10 pl-11 pr-4 bg-muted/40 border border-transparent rounded-xl text-sm focus:bg-background focus:border-border/60 transition-all outline-none"
             />
           </div>
@@ -197,18 +299,13 @@ const Header = () => {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2 md:gap-4">
-          <div className="hidden lg:flex items-center gap-1 border-r border-border/40 pr-4">
-            <Button variant="ghost" size="sm" className="rounded-lg h-9 px-3 gap-2 text-muted-foreground hover:text-foreground">
-              <ExternalLink className="h-4 w-4" />
-              <span className="text-xs font-bold uppercase tracking-wider">Public View</span>
-            </Button>
-          </div>
-
           <Button 
             onClick={() => navigate(getTenantPath(ROUTES.SUBMIT_IDEA, currentSlug))}
-            className="h-9 px-4 rounded-lg bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+            className="h-9 px-4 rounded-xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all group"
           >
-             <Plus className="mr-2 h-4 w-4" /> Add
+             <Plus className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform duration-300" /> 
+             <span className="hidden sm:inline">New Idea</span>
+             <span className="sm:hidden">Add</span>
           </Button>
 
           <Popover>
@@ -271,8 +368,34 @@ const Header = () => {
               <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.PROFILE, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
                 <UserCircle2 className="mr-3 h-4 w-4 text-primary" /> My Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="rounded-xl px-3 py-2.5 cursor-pointer">
-                {theme === 'dark' ? <Sun className="mr-3 h-4 w-4 text-amber-500" /> : <Moon className="mr-3 h-4 w-4 text-primary" />}
+
+              <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.MY_IDEAS, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                <Sparkles className="mr-3 h-4 w-4 text-amber-500" /> My Ideas
+              </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.SAVED_IDEAS, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                <Bookmark className="mr-3 h-4 w-4 text-primary" /> Saved Ideas
+              </DropdownMenuItem>
+              
+              <SupportDialog>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                  <HelpCircle className="mr-3 h-4 w-4 text-blue-500" /> Help & Support
+                </DropdownMenuItem>
+              </SupportDialog>
+
+              <DropdownMenuItem 
+                onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')} 
+                className="rounded-xl px-3 py-2.5 cursor-pointer"
+              >
+                {mounted ? (
+                  resolvedTheme === 'dark' ? (
+                    <Sun className="mr-3 h-4 w-4 text-amber-500" />
+                  ) : (
+                    <Moon className="mr-3 h-4 w-4 text-primary" />
+                  )
+                ) : (
+                  <div className="mr-3 h-4 w-4" />
+                )}
                 Appearance
               </DropdownMenuItem>
               
