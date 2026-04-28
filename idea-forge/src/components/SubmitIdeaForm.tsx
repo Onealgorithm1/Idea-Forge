@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { cn, getInitials } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card } from "./ui/card";
 
 // ─── Toolbar ─────────────────────────────────────────────────────────────────
 
@@ -60,7 +61,7 @@ function RichTextToolbar() {
 const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
   const [searchParams] = useSearchParams();
   const initialTitle = searchParams.get("title") || "";
-  
+
   const [title, setTitle] = useState(initialTitle);
   const [debouncedTitle, setDebouncedTitle] = useState(initialTitle);
   const [category, setCategory] = useState<string>("");
@@ -137,12 +138,26 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
 
       toast.success("Idea posted successfully!");
       setTitle(""); setDescription(""); setTags(""); setAttachments([]); setErrors({});
+
+      // Invalidate relevant queries to refresh the board immediately
+
       queryClient.invalidateQueries({ queryKey: ["ideas", currentSlug] });
       queryClient.invalidateQueries({ queryKey: ["recent-ideas", currentSlug] });
-      queryClient.invalidateQueries({ queryKey: ["analytics", "summary", currentSlug] });
+      queryClient.invalidateQueries({ queryKey: ["analytics", currentSlug] });
 
-      if (onSuccess) onSuccess();
-      else navigate(getTenantPath(ROUTES.IDEA_BOARD, currentSlug));
+      // Also invalidate without slug just in case of inconsistency
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        const boardPath = getTenantPath(ROUTES.IDEA_BOARD, currentSlug);
+        // If an idea space was selected, redirect back to that space specifically
+        const redirectPath = ideaSpace
+          ? `${boardPath}?space=${ideaSpace}`
+          : boardPath;
+        navigate(redirectPath);
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to post idea");
       if (error.message?.toLowerCase().includes("category")) {
@@ -196,6 +211,7 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
         </div>
       </div>
 
+      <form onSubmit={handleSubmit}>
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
 

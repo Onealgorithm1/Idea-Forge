@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, setUnauthorizedHandler } from "@/lib/api";
 
 interface User {
   id: string;
@@ -16,7 +16,7 @@ interface AuthContextType {
   token: string | null;
   login: (email: string, password: string, tenantSlug?: string) => Promise<void>;
   register: (name: string, email: string, password: string, tenantSlug?: string) => Promise<void>;
-  logout: () => void;
+  logout: (message?: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,7 +37,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem("token");
       }
     }
+
+    // Set up global unauthorized handler
+    setUnauthorizedHandler(() => {
+      logout("Your session has expired. Please login again.");
+    });
   }, []);
+
+  // Inactivity timer
+  useEffect(() => {
+    if (!token) return;
+
+    let timeoutId: any;
+    const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes
+
+    const resetTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        logout("You have been logged out due to inactivity. Please login again.");
+      }, INACTIVITY_LIMIT);
+    };
+
+    const events = ["mousemove", "keydown", "mousedown", "touchstart", "scroll"];
+    
+    // Initial start
+    resetTimer();
+
+    // Listen for activity
+    events.forEach(event => window.addEventListener(event, resetTimer));
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [token]);
 
   const login = async (email: string, password: string, tenantSlug: string = 'default') => {
     try {
@@ -77,7 +110,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = () => {
+  const logout = (message?: string) => {
     setUser(null);
     setToken(null);
     localStorage.removeItem("token");
@@ -85,7 +118,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("tenantId");
     // Clear all cached queries on logout
     queryClient.clear();
-    toast.info("You have been logged out");
+    
+    if (message) {
+      toast.info(message, { duration: 5000 });
+    } else {
+      toast.info("You have been logged out");
+    }
   };
 
   return (

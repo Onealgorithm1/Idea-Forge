@@ -127,11 +127,11 @@ const RoadmapIdeaCard = ({
                     </Badge>
                   )}
                 </div>
-                <h4 className="font-black text-base text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors pr-6">
+                <h4 className="font-black text-base text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors pr-6 break-words">
                   {idea.title}
                 </h4>
                 {idea.description && (
-                  <p className="text-xs text-muted-foreground line-clamp-1 mt-1 font-medium leading-relaxed italic">
+                  <p className="text-xs text-muted-foreground line-clamp-1 mt-1 font-medium leading-relaxed italic break-words">
                     {idea.description}
                   </p>
                 )}

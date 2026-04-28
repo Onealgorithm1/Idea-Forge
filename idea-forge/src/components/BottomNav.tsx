@@ -21,20 +21,21 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 const BottomNav = () => {
   const { pathname } = useLocation();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
+  const { user, logout } = useAuth();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
   const currentSlug = tenantSlug || "default";
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Don't show bottom nav on login/auth pages
   if (pathname.includes('/login') || pathname.includes('/forgot-password') || pathname.includes('/register-workspace')) {
     return null;
   }
 
-  const { user, logout } = useAuth();
-  const { theme, setTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const navItems = [
     { icon: Home, label: "Home", path: getTenantPath(ROUTES.IDEA_BOARD, currentSlug) },
@@ -153,7 +154,7 @@ const BottomNav = () => {
                     <>
                       <DropdownMenuSeparator className="my-1.5 bg-white/10" />
                       <DropdownMenuItem
-                        onClick={logout}
+                        onClick={() => logout()}
                         className="group cursor-pointer rounded-xl px-3 py-2.5 text-red-200 transition-all hover:!bg-white/90 hover:!text-slate-950 focus:!bg-white/90 focus:!text-slate-950"
                       >
                         <LogOut className="mr-3 h-4 w-4 transition-colors group-hover:text-slate-950" />

@@ -111,8 +111,11 @@ const SuperAdminLogin = () => {
             </Button>
           </form>
 
-          <p className="text-center text-white/20 text-xs mt-8">
-            This portal is for authorized platform administrators only.
+          <p className="text-center text-white/20 text-xs mt-8 flex flex-col gap-4">
+            <span>This portal is for authorized platform administrators only.</span>
+            <Button asChild variant="link" className="text-primary hover:text-primary/80 font-bold p-0 h-auto">
+              <a href="/">Go back to platform</a>
+            </Button>
           </p>
         </div>
       </motion.div>

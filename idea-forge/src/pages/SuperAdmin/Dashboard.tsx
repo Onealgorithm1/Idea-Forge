@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   Building2, Users, Lightbulb, TrendingUp, Plus, Search,
-  ShieldCheck, MoreHorizontal, ExternalLink, Loader2, Power, Trash2, Settings, MessageSquare
+  ShieldCheck, MoreHorizontal, ExternalLink, Loader2, Power, Trash2, Settings, MessageSquare, Key
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -57,7 +57,9 @@ const SuperAdminDashboard = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const [form, setForm] = useState({ name: "", slug: "", plan_type: "free" });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "" });
 
   const user = JSON.parse(localStorage.getItem("super_admin_user") || "{}");
 
@@ -78,6 +80,16 @@ const SuperAdminDashboard = () => {
       toast.success("Tenant created successfully!");
       setCreateOpen(false);
       setForm({ name: "", slug: "", plan_type: "free" });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+  
+  const changePasswordMutation = useMutation({
+    mutationFn: (data: any) => saApi.post("/super-admin/change-password", data),
+    onSuccess: () => {
+      toast.success("Password updated successfully!");
+      setPasswordOpen(false);
+      setPasswordForm({ currentPassword: "", newPassword: "" });
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -147,6 +159,9 @@ const SuperAdminDashboard = () => {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-white/50 font-medium">{user.name}</span>
+            <Button onClick={() => setPasswordOpen(true)} variant="ghost" size="sm" className="text-white/50 hover:text-white hover:bg-white/5 text-xs font-bold">
+              Change Password
+            </Button>
             <Button onClick={handleLogout} variant="ghost" size="sm" className="text-white/50 hover:text-white hover:bg-white/5 text-xs font-bold">
               Sign Out
             </Button>
@@ -384,6 +399,48 @@ const SuperAdminDashboard = () => {
               className="bg-primary hover:bg-primary/90 font-bold rounded-xl">
               {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create Tenant
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Change Password Dialog */}
+      <Dialog open={passwordOpen} onOpenChange={setPasswordOpen}>
+        <DialogContent className="bg-slate-900 border-white/10 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white font-black">
+              <Key className="h-5 w-5 text-primary" /> Change Password
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-white/50 text-xs uppercase font-bold tracking-wider">Current Password</Label>
+              <Input 
+                type="password"
+                value={passwordForm.currentPassword} 
+                onChange={(e) => setPasswordForm(f => ({ ...f, currentPassword: e.target.value }))}
+                className="bg-white/5 border-white/10 text-white rounded-xl" 
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-white/50 text-xs uppercase font-bold tracking-wider">New Password</Label>
+              <Input 
+                type="password"
+                value={passwordForm.newPassword} 
+                onChange={(e) => setPasswordForm(f => ({ ...f, newPassword: e.target.value }))}
+                className="bg-white/5 border-white/10 text-white rounded-xl" 
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPasswordOpen(false)} className="text-white/50 hover:text-white hover:bg-white/5">Cancel</Button>
+            <Button 
+              onClick={() => changePasswordMutation.mutate(passwordForm)} 
+              disabled={changePasswordMutation.isPending || !passwordForm.currentPassword || !passwordForm.newPassword}
+              className="bg-primary hover:bg-primary/90 font-bold rounded-xl"
+            >
+              {changePasswordMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Update Password
             </Button>
           </DialogFooter>
         </DialogContent>

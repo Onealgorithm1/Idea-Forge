@@ -1,5 +1,11 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+let onUnauthorized: (() => void) | null = null;
+
+export const setUnauthorizedHandler = (handler: () => void) => {
+  onUnauthorized = handler;
+};
+
 // Auto-inject tenant context from auth state or TenantProvider
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem('token');
@@ -31,6 +37,12 @@ export const api = {
     const url = `${API_URL}${endpoint}`;
     console.log(`[API] GET ${url}`);
     const response = await fetch(url, { headers });
+    
+    if (response.status === 401) {
+      onUnauthorized?.();
+      throw new Error('Session expired. Please login again.');
+    }
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Something went wrong');
@@ -51,6 +63,12 @@ export const api = {
       headers,
       body: JSON.stringify(data),
     });
+
+    if (response.status === 401) {
+      onUnauthorized?.();
+      throw new Error('Session expired. Please login again.');
+    }
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Something went wrong');
@@ -71,6 +89,12 @@ export const api = {
       headers,
       body: JSON.stringify(data),
     });
+
+    if (response.status === 401) {
+      onUnauthorized?.();
+      throw new Error('Session expired. Please login again.');
+    }
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Something went wrong');
@@ -91,6 +115,12 @@ export const api = {
       headers,
       body: JSON.stringify(data),
     });
+
+    if (response.status === 401) {
+      onUnauthorized?.();
+      throw new Error('Session expired. Please login again.');
+    }
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Something went wrong');
@@ -110,6 +140,12 @@ export const api = {
       method: 'DELETE',
       headers,
     });
+
+    if (response.status === 401) {
+      onUnauthorized?.();
+      throw new Error('Session expired. Please login again.');
+    }
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Something went wrong');
@@ -129,6 +165,12 @@ export const api = {
       headers,
       body: formData,
     });
+
+    if (response.status === 401) {
+      onUnauthorized?.();
+      throw new Error('Session expired. Please login again.');
+    }
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Something went wrong');

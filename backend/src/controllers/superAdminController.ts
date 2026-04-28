@@ -200,3 +200,50 @@ export const updateUserRole = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const changeSuperAdminPassword = async (req: Request, res: Response) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = (req as any).user.id;
+
+  try {
+    const userResult = await query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+    const user = userResult.rows[0];
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isMatch) return res.status(400).json({ message: 'Invalid current password' });
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedPassword, userId]);
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Change super admin password error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const resetUserPassword = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const { newPassword } = req.body;
+
+  if (!newPassword) return res.status(400).json({ message: 'New password is required' });
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    const result = await query(
+      'UPDATE users SET password_hash = $1 WHERE id = $2 RETURNING id',
+      [hashedPassword, userId]
+    );
+
+    if (result.rows.length === 0) return res.status(404).json({ message: 'User not found' });
+
+    res.json({ message: 'User password reset successfully' });
+  } catch (error) {
+    console.error('Reset user password error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

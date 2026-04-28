@@ -39,6 +39,8 @@ export const getIdeas = async (req: any, res: Response) => {
     const { role } = (req as any).user || { role: 'user' };
     const isAdmin = ['admin', 'tenant_admin', 'super_admin'].includes(role);
 
+    const { space_id, category } = req.query;
+
     let baseQuery = `
       SELECT i.*, u.name as author_name, c.name as category, c.is_active as category_active, p.name as parent_name, s.name as space_name,
              (SELECT json_agg(t.name) FROM tags t 
@@ -56,9 +58,19 @@ export const getIdeas = async (req: any, res: Response) => {
 
     const queryParams: any[] = [tenantId, userId || '00000000-0000-0000-0000-000000000000'];
 
+    if (space_id && space_id.trim() !== "" && space_id !== 'undefined') {
+      baseQuery += ` AND i.idea_space_id = $${queryParams.length + 1}`;
+      queryParams.push(space_id);
+    }
+
+    if (category && category !== "All") {
+      baseQuery += ` AND c.name = $${queryParams.length + 1}`;
+      queryParams.push(category);
+    }
+
     if (!isAdmin && userId) {
-      baseQuery += ` AND (i.idea_space_id IS NULL OR i.idea_space_id IN (SELECT idea_space_id FROM user_idea_spaces WHERE user_id = $${queryParams.length + 1}))`;
-      queryParams.push(userId);
+      // Authors should always be able to see their own ideas, even if not explicitly assigned to the space
+      baseQuery += ` AND (i.idea_space_id IS NULL OR i.author_id = $2 OR i.idea_space_id IN (SELECT idea_space_id FROM user_idea_spaces WHERE user_id = $2))`;
     }
 
     baseQuery += ` ORDER BY i.created_at DESC`;
@@ -371,8 +383,23 @@ export const editIdea = async (req: any, res: Response) => {
 export const getCategories = async (req: any, res: Response) => {
   const tenantId = req.tenantId;
   try {
+    // Auto-archive eligible categories (same logic as admin)
+    await query(`
+      UPDATE categories 
+      SET is_active = false, updated_at = NOW()
+      WHERE (tenant_id = $1 OR tenant_id IS NULL)
+      AND is_active = true 
+      AND is_default = false
+      AND created_at < NOW() - INTERVAL '30 days'
+      AND NOT EXISTS (SELECT 1 FROM ideas WHERE category_id = categories.id)
+    `, [tenantId]);
+
     const result = await query(
-      'SELECT id, name, description, slug, is_default, tenant_id, manager_id, parent_id, is_active FROM categories WHERE (tenant_id = $1 OR tenant_id IS NULL) ORDER BY name', 
+      `SELECT id, name, description, slug, is_default, tenant_id, manager_id, parent_id, is_active, created_at,
+              (SELECT COUNT(*) FROM ideas WHERE category_id = categories.id)::int as ideas_count
+       FROM categories 
+       WHERE (tenant_id = $1 OR tenant_id IS NULL) 
+       ORDER BY name`, 
       [tenantId]
     );
     res.json(result.rows);
