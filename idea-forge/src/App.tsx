@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SocketProvider } from "./contexts/SocketContext";
 import { ThemeProvider } from "next-themes";
@@ -27,6 +27,7 @@ import Activity from "./pages/Activity";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ROUTES } from "./lib/constants";
 import BottomNav from "./components/BottomNav";
+import MainLayout from "./components/MainLayout";
 
 const queryClient = new QueryClient();
 
@@ -59,25 +60,26 @@ const AppContent = () => (
     <Route path="/:tenantSlug/*" element={<TenantProvider>
       <Routes>
         <Route element={<ProtectedRoute />}>
-          <Route index element={<Navigate to="idea-board" replace />} />
-          <Route path="idea-board" element={<Index />} />
-          <Route path="roadmap" element={<Index />} />
-          <Route path="analytics" element={<Index />} />
-          <Route path="my-ideas" element={<Index />} />
-          <Route path="saved-ideas" element={<Index />} />
-          <Route path="submit-idea" element={<SubmitIdea />} />
-          <Route path="ideas/:id" element={<IdeaDetail />} />
-          <Route path="events/:id" element={<EventDetail />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="activity" element={<Activity />} />
-          <Route path="admin/dashboard" element={<AdminDashboard />} />
-          <Route path="admin/users" element={<AdminUsers />} />
-          <Route path="admin/settings" element={<AdminSettings />} />
-          <Route path="admin/categories" element={<AdminCategories />} />
+          <Route element={<MainLayout><Outlet /></MainLayout>}>
+            <Route index element={<Navigate to="idea-board" replace />} />
+            <Route path="idea-board" element={<Index />} />
+            <Route path="roadmap" element={<Index />} />
+            <Route path="analytics" element={<Index />} />
+            <Route path="my-ideas" element={<Index />} />
+            <Route path="saved-ideas" element={<Index />} />
+            <Route path="submit-idea" element={<SubmitIdea />} />
+            <Route path="ideas/:id" element={<IdeaDetail />} />
+            <Route path="events/:id" element={<EventDetail />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="activity" element={<Activity />} />
+            <Route path="admin/dashboard" element={<AdminDashboard />} />
+            <Route path="admin/users" element={<AdminUsers />} />
+            <Route path="admin/settings" element={<AdminSettings />} />
+            <Route path="admin/categories" element={<AdminCategories />} />
+          </Route>
         </Route>
         <Route path="login" element={<AuthPage />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
-        {/* <Route path="signup" element={<AuthPage />} /> */}
         <Route path="*" element={<NotFound />} />
       </Routes>
       <BottomNav />

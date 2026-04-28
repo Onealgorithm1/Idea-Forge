@@ -151,46 +151,19 @@ const Index = () => {
   const subCategories = dbCategories.filter((c: any) => c.parent_id === activeCategory?.id);
 
   return (
-    <div className="h-[100dvh] bg-background flex relative overflow-hidden transition-colors duration-300">
-      {/* Mesh Gradient Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        {/* Decorative Dotted Grid */}
-        <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
-
-        {/* Top Premium Glow (The "Parabola" alternative) */}
-        <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[120%] h-[400px] bg-gradient-to-b from-primary/20 via-primary/5 to-transparent rounded-[100%] blur-[120px] opacity-60 dark:opacity-40" />
-
-        {/* Larger, more vibrant mesh gradients for the periphery */}
-        <div className="absolute top-[-10%] left-[-10%] w-[45%] h-[45%] rounded-full bg-primary/20 dark:bg-primary/15 blur-[120px] animate-pulse-slow" />
-        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full bg-info/15 blur-[100px]" />
-        <div className="absolute top-[20%] right-[-10%] w-[30%] h-[30%] rounded-full bg-success/10 blur-[80px]" />
-        <div className="absolute top-[50%] left-[-5%] w-[30%] h-[30%] rounded-full bg-primary/10 blur-[80px]" />
+    <div className="flex-1 w-full space-y-6">
+      {/* Mobile Search Bar */}
+      <div className="md:hidden px-4 py-3 bg-background/50 backdrop-blur-md border-b border-border/10 sticky top-0 z-30 ring-1 ring-black/5">
+        <BoardSearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search ideas, tags..."
+        />
       </div>
 
-      <SidebarNav
-        selectedCategory={selectedCategory}
-        onCategorySelect={setSelectedCategory}
-        searchQuery={searchQuery}
-        onSearch={setSearchQuery}
-      />
-
-      <div className="flex flex-col flex-1 overflow-hidden relative z-10 w-full">
-        <Header />
-
-        <main className={`flex-1 overflow-y-auto overflow-x-hidden pb-safe-nav flex flex-col`}>
-          {/* Mobile Search Bar */}
-          <div className="md:hidden px-4 py-3 bg-background/50 backdrop-blur-md border-b border-border/10 sticky top-0 z-30 ring-1 ring-black/5">
-            <BoardSearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search ideas, tags..."
-            />
-          </div>
-
-          <div className="flex flex-row gap-8 px-4 pt-4 pb-2 md:px-8 md:pt-6 md:pb-2 w-full">
-
-            {/* Center Feed */}
-            <div className="flex-1 space-y-6 w-full min-w-0">
+      <div className="flex flex-row gap-8 px-4 pt-4 pb-2 md:px-8 md:pt-6 md:pb-2 w-full">
+        {/* Center Feed */}
+        <div className="flex-1 space-y-6 w-full min-w-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={`${pathname}-${selectedCategory}-${searchQuery}`}
@@ -356,11 +329,7 @@ const Index = () => {
               )}
             </motion.div>
           </AnimatePresence>
-          </div>
-
-
-          </div>
-        </main>
+        </div>
       </div>
     </div>
   );

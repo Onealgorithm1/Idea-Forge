@@ -95,15 +95,9 @@ const EventDetail = () => {
   if (!event) return <div className="h-screen flex items-center justify-center">Event not found</div>;
 
   return (
-    <div className="h-[100dvh] bg-background flex relative overflow-hidden transition-colors duration-300">
-      <SidebarNav />
-
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative z-10 w-full">
-        <Header />
-
-        <main className="flex-1 min-w-0 overflow-y-auto w-full">
-          {/* Hero Section */}
-          <div className="relative w-full min-h-[350px] flex items-end overflow-hidden">
+    <div className="flex-1 w-full">
+      {/* Hero Section */}
+      <div className="relative w-full min-h-[350px] flex items-end overflow-hidden">
             <div className="absolute inset-0 bg-slate-900">
                 <div className="absolute inset-0 opacity-40">
                     <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary/30 blur-[100px]" />
@@ -303,8 +297,6 @@ const EventDetail = () => {
 
             </div>
           </div>
-        </main>
-      </div>
     </div>
   );
 };

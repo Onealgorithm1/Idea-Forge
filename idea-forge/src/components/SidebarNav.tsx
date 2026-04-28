@@ -208,11 +208,16 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
   return (
     <aside className="sticky top-0 h-[100dvh] w-[260px] shrink-0 border-r border-border/40 hidden md:flex flex-col bg-background z-20 transition-all duration-300">
       {/* Sidebar Header */}
-      <div className="p-6 pb-2 flex items-center gap-3">
-        <Logo imageClassName="h-8 w-8 text-primary" />
-        <span className="font-black text-xl tracking-tighter text-foreground">
-          Idea-Forge
-        </span>
+      <div className="h-16 px-7 flex items-center border-b border-border/40">
+        <Link to={getTenantPath(ROUTES.IDEA_BOARD, currentSlug)} className="flex items-center gap-3 group">
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Logo imageClassName="h-8 w-8 relative z-10 transition-transform duration-500 group-hover:scale-110" />
+          </div>
+          <span className="font-bold text-xl tracking-tighter text-foreground transition-colors group-hover:text-primary/90">
+            Idea<span className="text-primary">Forge</span>
+          </span>
+        </Link>
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-8 custom-scrollbar">

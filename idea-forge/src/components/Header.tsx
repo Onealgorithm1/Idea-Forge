@@ -171,11 +171,11 @@ const Header = () => {
               <SheetContent side="left" className="p-0 w-[280px] border-none bg-background">
                 <ScrollArea className="h-full">
                    <div className="p-6">
-                      <div className="flex items-center gap-3 mb-8">
-                        <Logo imageClassName="h-8 w-8 text-primary" />
+                       <div className="flex items-center gap-3.5 mb-8">
+                        <Logo imageClassName="h-10 w-10 text-primary" />
                         <div className="flex flex-col">
-                          <span className="font-black text-xl tracking-tighter text-foreground leading-none">Idea-Forge</span>
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{tenant?.name || 'Workspace'}</span>
+                          <span className="font-bold text-2xl tracking-tighter text-foreground leading-none">Idea<span className="text-primary">Forge</span></span>
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">{tenant?.name || 'Workspace'}</span>
                         </div>
                       </div>
                       <div className="space-y-4">

@@ -55,40 +55,34 @@ const IdeaDetail = () => {
 
   if (isIdeaLoading) {
     return (
-      <div className="h-screen w-screen bg-background flex flex-col overflow-hidden">
-        <Header />
-        <div className="flex flex-col items-center justify-center flex-1 space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="text-muted-foreground font-medium">Loading details...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center flex-1 min-h-[60vh] space-y-4">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="text-muted-foreground font-medium animate-pulse">Loading details...</p>
       </div>
     );
   }
 
   if (!idea) {
     return (
-      <div className="h-screen w-screen bg-background flex flex-col overflow-hidden">
-        <Header />
-        <div className="flex flex-1 items-center justify-center flex-col gap-4">
-          <h2 className="text-2xl font-black">Idea not found</h2>
-          <Button asChild variant="outline" className="rounded-2xl">
-            <Link to={getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)}>Back to Feed</Link>
-          </Button>
+      <div className="flex flex-1 items-center justify-center flex-col gap-6 min-h-[60vh]">
+        <div className="p-6 bg-muted/20 rounded-full">
+          <Loader2 className="h-12 w-12 text-muted-foreground/30" />
         </div>
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-black">Idea not found</h2>
+          <p className="text-muted-foreground">The idea you are looking for doesn't exist or has been removed.</p>
+        </div>
+        <Button asChild variant="outline" className="rounded-2xl font-bold px-8">
+          <Link to={getTenantPath(ROUTES.IDEA_BOARD, tenantSlug)}>Back to Feed</Link>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="h-[100dvh] bg-background flex relative overflow-hidden transition-colors duration-300">
-      <SidebarNav />
-
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative z-10 w-full">
-        <Header />
-
-        <main className="flex-1 min-w-0 overflow-y-auto no-scrollbar pb-20 w-full">
-          {/* Hero Section - Matching EventDetail */}
-          <div className="relative w-full min-h-[400px] flex items-end overflow-hidden">
+    <div className="flex-1 w-full">
+      {/* Hero Section - Matching EventDetail */}
+      <div className="relative w-full min-h-[400px] flex items-end overflow-hidden">
             <div className="absolute inset-0 bg-slate-900">
                 <div className="absolute inset-0 opacity-40">
                     <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary/30 blur-[100px]" />
@@ -221,8 +215,6 @@ const IdeaDetail = () => {
 
             </div>
           </div>
-        </main>
-      </div>
     </div>
   );
 };

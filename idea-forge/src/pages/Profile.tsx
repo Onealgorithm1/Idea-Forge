@@ -39,7 +39,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
+import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -49,9 +52,6 @@ import { getInitials, cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTenant } from "@/contexts/TenantContext";
-import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
-import { Textarea } from "@/components/ui/textarea";
 import ProfileIdeaCard from "@/components/ProfileIdeaCard";
 
 /* ─── Constants ────────────────────────────────────────────────────────── */
@@ -157,12 +157,12 @@ const Profile = () => {
 
   if (loadingProfile || loadingIdeas || loadingBookmarks) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <Header />
-        <div className="flex flex-col items-center justify-center flex-1 space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
-          <p className="text-muted-foreground font-medium animate-pulse">Loading your profile...</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] flex-1 space-y-4">
+        <div className="relative">
+          <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary relative z-10" />
         </div>
+        <p className="text-muted-foreground font-medium animate-pulse">Loading your profile...</p>
       </div>
     );
   }
@@ -188,55 +188,41 @@ const Profile = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-background flex flex-col overflow-hidden relative">
-      {/* Mesh Gradient Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-40">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[100px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/10 blur-[100px]" />
-      </div>
+    <>
+      <div className="flex-1 w-full space-y-6">
+        <div className="px-4 pt-4 pb-2 md:px-8 md:pt-6 md:pb-2 w-full">
+          {/* Horizontal Profile Navigation */}
+        <div className="border-b border-border/40 mb-10 overflow-x-auto no-scrollbar flex justify-center">
+          <div className="flex items-center justify-center gap-1 min-w-max">
+            {sections.map((section) => {
+              const Icon = section.icon;
+              const isActive = activeSection === section.id;
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => setSection(section.id)}
+                  className={cn(
+                    "flex items-center gap-2.5 px-6 py-4 rounded-t-2xl text-sm font-bold transition-all relative group",
+                    isActive 
+                      ? "text-primary" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                  )}
+                >
+                  <Icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                  {section.label}
+                  {isActive && (
+                    <motion.div 
+                      layoutId="profileActiveTab"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-      <Header />
-
-      <div className="flex flex-1 overflow-hidden relative z-10">
-        <SidebarNav />
-
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-6xl mx-auto px-4 py-8 md:px-8">
-            <div className="flex flex-col lg:flex-row gap-8">
-
-              {/* Left Sidebar Navigation */}
-              <aside className="w-full lg:w-64 shrink-0">
-                <div className="flex flex-col gap-1.5">
-                  <h2 className="px-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Settings</h2>
-                  {sections.map((section) => (
-                    <button
-                      key={section.id}
-                      onClick={() => setSection(section.id)}
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all text-left",
-                        activeSection === section.id
-                          ? "bg-primary/10 text-primary shadow-sm"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                    >
-                      <section.icon className="h-4 w-4" />
-                      {section.label}
-                    </button>
-                  ))}
-                  <div className="mt-8 pt-6 border-t border-border/50">
-                     <button
-                        onClick={logout}
-                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-destructive hover:bg-destructive/10 transition-all w-full text-left"
-                     >
-                        <Lock className="h-4 w-4" />
-                        Sign Out
-                     </button>
-                  </div>
-                </div>
-              </aside>
-
-              {/* Main Content Area */}
-              <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeSection}
@@ -503,8 +489,6 @@ const Profile = () => {
               </div>
             </div>
           </div>
-        </main>
-      </div>
 
       {/* Avatar Picker Modal */}
       <AnimatePresence>
@@ -588,8 +572,7 @@ const Profile = () => {
           </div>
         )}
       </AnimatePresence>
-
-    </div>
+    </>
   );
 };
 
