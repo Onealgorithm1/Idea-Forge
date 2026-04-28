@@ -88,14 +88,14 @@ const Activity = () => {
           <Button 
             variant="outline" 
             size="icon" 
-            className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10"
+            className="rounded-xl border-border bg-muted/50 hover:bg-muted"
             onClick={() => navigate(-1)}
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white leading-tight">Activity Log</h1>
-            <p className="text-sm text-white/50">Keep track of updates and interactions</p>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground leading-tight">Activity Log</h1>
+            <p className="text-sm text-muted-foreground">Keep track of updates and interactions</p>
           </div>
         </div>
 
@@ -112,14 +112,14 @@ const Activity = () => {
         )}
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-xl">
+      <div className="bg-card/50 border border-border rounded-3xl overflow-hidden backdrop-blur-xl">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-            <p className="text-white/40 font-medium">Loading activity...</p>
+            <p className="text-muted-foreground font-medium">Loading activity...</p>
           </div>
         ) : notifications.length > 0 ? (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-border/50">
             {notifications.map((n, idx) => (
               <motion.div
                 key={n.id}
@@ -128,12 +128,12 @@ const Activity = () => {
                 transition={{ delay: idx * 0.03 }}
                 onClick={() => markAsReadAndNavigate(n)}
                 className={cn(
-                  "flex items-start gap-4 p-5 cursor-pointer transition-all hover:bg-white/[0.07]",
+                  "flex items-start gap-4 p-5 cursor-pointer transition-all hover:bg-muted/50",
                   !n.is_read ? "bg-primary/[0.03] border-l-4 border-l-primary" : "border-l-4 border-l-transparent"
                 )}
               >
                 <div className="relative mt-1">
-                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center relative shadow-inner border border-white/5">
+                  <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center relative shadow-inner border border-border">
                     {getIcon(n.type)}
                     {!n.is_read && (
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary border-2 border-[#1a1c23] rounded-full shadow-lg"></div>
@@ -143,19 +143,19 @@ const Activity = () => {
                 <div className="flex-1 space-y-1">
                   <p className={cn(
                     "text-sm leading-relaxed",
-                    !n.is_read ? "text-white font-bold" : "text-white/70 font-medium"
+                    !n.is_read ? "text-foreground font-bold" : "text-foreground/70 font-medium"
                   )}>
                     {n.message}
                   </p>
                   <div className="flex items-center gap-3">
                     <span className={cn(
                       "text-[11px] font-semibold uppercase tracking-wider",
-                      !n.is_read ? "text-primary" : "text-white/30"
+                      !n.is_read ? "text-primary" : "text-muted-foreground/60"
                     )}>
                       {n.type?.replace('_', ' ')}
                     </span>
-                    <span className="text-[11px] text-white/30">•</span>
-                    <span className="text-[11px] text-white/30">
+                    <span className="text-[11px] text-muted-foreground/30">•</span>
+                    <span className="text-[11px] text-muted-foreground/60">
                       {new Date(n.created_at).toLocaleString(undefined, { 
                         month: 'short', 
                         day: 'numeric', 
@@ -171,11 +171,11 @@ const Activity = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
-            <div className="bg-white/5 p-6 rounded-full mb-6">
-              <Bell className="h-10 w-10 text-white/10" />
+            <div className="bg-muted p-6 rounded-full mb-6">
+              <Bell className="h-10 w-10 text-muted-foreground/20" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Clean slate!</h3>
-            <p className="text-sm text-white/40 max-w-xs">
+            <h3 className="text-xl font-bold text-foreground mb-2">Clean slate!</h3>
+            <p className="text-sm text-muted-foreground max-w-xs">
               You don't have any notifications or activity logs to show right now.
             </p>
             <Button 

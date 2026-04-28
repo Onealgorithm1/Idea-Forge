@@ -276,7 +276,7 @@ const AdminCategories = () => {
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col relative overflow-hidden transition-colors duration-300">
+    <>
       
       <div className="flex flex-1 overflow-hidden relative z-10 w-full max-w-[1600px] mx-auto">
         
@@ -585,7 +585,7 @@ const AdminCategories = () => {
         type="warning"
         confirmText="Yes, deactivate"
       />
-    </div>
+    </>
   );
 };
 

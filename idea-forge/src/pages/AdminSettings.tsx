@@ -131,11 +131,7 @@ const AdminSettings = () => {
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col relative overflow-hidden text-foreground transition-colors duration-300">
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[120px]" />
-        <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] rounded-full bg-success/10 blur-[100px]" />
-      </div>
+    <>
 
       
       <div className="flex flex-1 overflow-hidden relative z-10 w-full max-w-[1600px] mx-auto">
@@ -389,7 +385,7 @@ const AdminSettings = () => {
           </div>
         </main>
       </div>
-    </div>
+    </>
   );
 };
 

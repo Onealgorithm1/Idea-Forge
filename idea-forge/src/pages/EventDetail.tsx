@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import Header from "@/components/Header";
-import SidebarNav from "@/components/SidebarNav";
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -91,8 +90,8 @@ const EventDetail = () => {
     }
   };
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center">Loading event...</div>;
-  if (!event) return <div className="h-screen flex items-center justify-center">Event not found</div>;
+  if (isLoading) return <div className="min-h-[60vh] flex items-center justify-center">Loading event...</div>;
+  if (!event) return <div className="min-h-[60vh] flex items-center justify-center text-muted-foreground font-bold">Event not found</div>;
 
   return (
     <div className="flex-1 w-full">

@@ -33,8 +33,7 @@ import {
   Trash2,
   Image as ImageIcon
 } from "lucide-react";
-import Header from "@/components/Header";
-import SidebarNav from "@/components/SidebarNav";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
