@@ -202,7 +202,7 @@ const Header = () => {
                         <Logo imageClassName="h-10 w-10 text-primary" />
                         <div className="flex flex-col">
                           <span className="font-bold text-2xl tracking-tighter text-foreground leading-none">Idea<span className="text-primary">Forge</span></span>
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">{tenant?.name || 'Workspace'}</span>
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">{tenant?.name || 'Organisation'}</span>
                         </div>
                       </div>
                       <div className="space-y-4">
@@ -460,7 +460,7 @@ const Header = () => {
                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{user?.role || "User"}</p>
               </div>
 
-              <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest opacity-50 px-3 py-2">Personal</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest opacity-50 px-3 py-2">Account</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.PROFILE, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
                 <UserCircle2 className="mr-3 h-4 w-4 text-primary" /> My Profile
               </DropdownMenuItem>
@@ -472,13 +472,10 @@ const Header = () => {
               <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.SAVED_IDEAS, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
                 <Bookmark className="mr-3 h-4 w-4 text-primary" /> Saved Ideas
               </DropdownMenuItem>
-              
-              <SupportDialog>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="rounded-xl px-3 py-2.5 cursor-pointer">
-                  <HelpCircle className="mr-3 h-4 w-4 text-blue-500" /> Help & Support
-                </DropdownMenuItem>
-              </SupportDialog>
 
+              <DropdownMenuSeparator className="my-1.5 opacity-40" />
+              <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest opacity-50 px-3 py-2">Preferences</DropdownMenuLabel>
+              
               <DropdownMenuItem 
                 onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')} 
                 className="rounded-xl px-3 py-2.5 cursor-pointer"
@@ -494,6 +491,12 @@ const Header = () => {
                 )}
                 Appearance
               </DropdownMenuItem>
+
+              <SupportDialog>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="rounded-xl px-3 py-2.5 cursor-pointer">
+                  <HelpCircle className="mr-3 h-4 w-4 text-blue-500" /> Help & Support
+                </DropdownMenuItem>
+              </SupportDialog>
               
               {['admin', 'tenant_admin', 'super_admin'].includes(user?.role || '') && (
                 <>
@@ -506,7 +509,7 @@ const Header = () => {
                     <Users className="mr-3 h-4 w-4 text-blue-500" /> Manage Users
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_SETTINGS, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
-                    <Building className="mr-3 h-4 w-4 text-purple-500" /> Org Settings
+                    <Building className="mr-3 h-4 w-4 text-purple-500" /> Organisation Settings
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_CATEGORIES, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
                     <Tag className="mr-3 h-4 w-4 text-amber-500" /> Manage Categories

@@ -345,7 +345,7 @@ const SidebarNav = ({ onCategorySelect, selectedCategory: propCategory, searchQu
             <Building className="h-4 w-4" />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60 leading-none mb-1">Workspace</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60 leading-none mb-1">Organisation</span>
             <span className="text-sm font-black truncate text-foreground">{tenant?.name || "IdeaForge"}</span>
           </div>
         </div>
