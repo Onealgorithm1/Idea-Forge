@@ -901,6 +901,19 @@ export const markAllNotificationsRead = async (req: any, res: Response) => {
   }
 };
 
+export const clearReadNotifications = async (req: any, res: Response) => {
+  const user_id = req.user.id;
+  const tenant_id = req.tenantId;
+  try {
+    await query('DELETE FROM notifications WHERE user_id = $1 AND tenant_id = $2 AND is_read = TRUE', [user_id, tenant_id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Clear read notifications error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
 export const getUserIdeas = async (req: any, res: Response) => {
   const user_id = req.user.id;
   const tenant_id = req.tenantId;

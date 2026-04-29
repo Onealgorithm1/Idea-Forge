@@ -82,29 +82,29 @@ export function NotificationSettingsDialog({ children, open, onOpenChange }: Not
   };
 
   const content = (
-    <DialogContent className="sm:max-w-[425px] bg-header border-white/10 text-white">
+    <DialogContent className="sm:max-w-[425px] bg-background border-border text-foreground">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <Bell className="w-5 h-5 text-primary" />
           Notification Settings
         </DialogTitle>
-        <DialogDescription className="text-white/60">
+        <DialogDescription className="text-muted-foreground">
           Manage how and when you want to be notified.
         </DialogDescription>
       </DialogHeader>
 
       <div className="py-4 space-y-6">
         <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-white/80 uppercase tracking-wider">Delivery Methods</h4>
+          <h4 className="text-sm font-semibold text-foreground/80 uppercase tracking-wider">Delivery Methods</h4>
           
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/5 rounded-lg text-white/70">
+              <div className="p-2 bg-muted rounded-lg text-muted-foreground">
                 <Mail className="w-4 h-4" />
               </div>
               <div>
-                <Label className="text-white font-medium text-sm">Email Notifications</Label>
-                <p className="text-[12px] text-white/50">Receive daily summaries and alerts</p>
+                <Label className="text-foreground font-medium text-sm">Email Notifications</Label>
+                <p className="text-[12px] text-muted-foreground">Receive daily summaries and alerts</p>
               </div>
             </div>
             <Switch 
@@ -117,12 +117,12 @@ export function NotificationSettingsDialog({ children, open, onOpenChange }: Not
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/5 rounded-lg text-white/70">
+              <div className="p-2 bg-muted rounded-lg text-muted-foreground">
                 <Bell className="w-4 h-4" />
               </div>
               <div>
-                <Label className="text-white font-medium text-sm">Push Notifications</Label>
-                <p className="text-[12px] text-white/50">Alerts delivered directly to your device</p>
+                <Label className="text-foreground font-medium text-sm">Push Notifications</Label>
+                <p className="text-[12px] text-muted-foreground">Alerts delivered directly to your device</p>
               </div>
             </div>
             <Switch 
@@ -134,17 +134,17 @@ export function NotificationSettingsDialog({ children, open, onOpenChange }: Not
           </div>
         </div>
 
-        <div className="h-px bg-white/10" />
+        <div className="h-px bg-border" />
 
         <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-white/80 uppercase tracking-wider">Events</h4>
+          <h4 className="text-sm font-semibold text-foreground/80 uppercase tracking-wider">Events</h4>
           
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/5 rounded-lg text-white/70">
+              <div className="p-2 bg-muted rounded-lg text-muted-foreground">
                 <ThumbsUp className="w-4 h-4" />
               </div>
-              <Label className="text-white text-sm">Votes on my ideas</Label>
+              <Label className="text-foreground text-sm">Votes on my ideas</Label>
             </div>
             <Switch 
               checked={settings.notify_on_vote} 
@@ -156,10 +156,10 @@ export function NotificationSettingsDialog({ children, open, onOpenChange }: Not
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/5 rounded-lg text-white/70">
+              <div className="p-2 bg-muted rounded-lg text-muted-foreground">
                 <MessageSquare className="w-4 h-4" />
               </div>
-              <Label className="text-white text-sm">Comments on my ideas</Label>
+              <Label className="text-foreground text-sm">Comments on my ideas</Label>
             </div>
             <Switch 
               checked={settings.notify_on_comment} 
@@ -171,10 +171,10 @@ export function NotificationSettingsDialog({ children, open, onOpenChange }: Not
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/5 rounded-lg text-white/70">
+              <div className="p-2 bg-muted rounded-lg text-muted-foreground">
                 <Activity className="w-4 h-4" />
               </div>
-              <Label className="text-white text-sm">Idea status changes</Label>
+              <Label className="text-foreground text-sm">Idea status changes</Label>
             </div>
             <Switch 
               checked={settings.notify_on_status_change} 
@@ -186,10 +186,10 @@ export function NotificationSettingsDialog({ children, open, onOpenChange }: Not
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/5 rounded-lg text-white/70">
+              <div className="p-2 bg-muted rounded-lg text-muted-foreground">
                 <Bell className="w-4 h-4" />
               </div>
-              <Label className="text-white text-sm">Activity on followed ideas</Label>
+              <Label className="text-foreground text-sm">Activity on followed ideas</Label>
             </div>
             <Switch 
               checked={settings.notify_on_followed_activity} 
@@ -201,10 +201,10 @@ export function NotificationSettingsDialog({ children, open, onOpenChange }: Not
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/5 rounded-lg text-white/70">
+              <div className="p-2 bg-muted rounded-lg text-muted-foreground">
                 <Mail className="w-4 h-4" />
               </div>
-              <Label className="text-white text-sm">Weekly activity summary</Label>
+              <Label className="text-foreground text-sm">Weekly activity summary</Label>
             </div>
             <Switch 
               checked={settings.notify_weekly_summary} 

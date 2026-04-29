@@ -17,9 +17,7 @@ import {
   Trash2,
   Loader2,
   Building,
-  Layers,
-  Calendar,
-  Sparkles
+  Layers
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTenant } from "@/contexts/TenantContext";
@@ -80,55 +78,7 @@ const AdminSettings = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  // Events
-  const [newEventName, setNewEventName] = useState("");
-  const [newEventType, setNewEventType] = useState("poll");
-  const handleCreateEvent = () => {
-    if (!newEventName.trim()) {
-      toast.error("Event name is required");
-      return;
-    }
-    
-    const newEvent = {
-      id: Date.now().toString(),
-      name: newEventName.trim(),
-      type: newEventType,
-      date: 'Just Created',
-      description: 'A new event created from settings.',
-      participants: 0,
-      status: 'active'
-    };
-    
-    const existing = JSON.parse(localStorage.getItem("platformEvents") || "[]");
-    if (existing.length === 0) {
-      existing.push(
-        {
-          id: '1',
-          name: 'Q3 Innovation Hackathon',
-          type: 'hackathon',
-          date: 'Coming up in 2 weeks',
-          description: 'Join our company-wide hackathon to build the next big feature.',
-          participants: 24,
-          status: 'upcoming'
-        },
-        {
-          id: '2',
-          name: 'New Roadmap Poll',
-          type: 'poll',
-          date: 'Active',
-          description: 'Vote on which feature we should tackle next quarter.',
-          participants: 156,
-          status: 'active'
-        }
-      );
-    }
-    localStorage.setItem("platformEvents", JSON.stringify([newEvent, ...existing]));
-    localStorage.setItem("activeEvent", newEvent.id);
-    localStorage.removeItem("eventPopupShown"); // reset popup state so it shows on next render
-    
-    setNewEventName("");
-    toast.success("Event created! Users will see a popup on their next visit.", { icon: "🎉" });
-  };
+
 
   return (
     <>
@@ -325,48 +275,7 @@ const AdminSettings = () => {
                   </div>
                 </Card>
                 
-                {/* Events Management */}
-                <Card className="p-8 border-none shadow-[0_0_40px_rgba(168,85,247,0.15)] bg-card/80 backdrop-blur-md rounded-[2rem] space-y-6 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-[30px]" />
-                  <div className="flex items-center gap-3 relative z-10">
-                    <div className="p-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl text-purple-500 border border-purple-500/30">
-                      <Sparkles className="h-5 w-5 animate-pulse" />
-                    </div>
-                    <h2 className="text-xl font-black tracking-tight text-foreground bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-500">Events & Polls</h2>
-                  </div>
 
-                  <p className="text-sm text-muted-foreground relative z-10">
-                    Create a new platform-wide event. A celebratory popup will be shown to all users!
-                  </p>
-
-                  <div className="space-y-4 relative z-10">
-                    <div className="flex flex-col gap-3">
-                      <Input
-                        placeholder="Event Name (e.g., Summer Hackathon)"
-                        value={newEventName}
-                        onChange={(e) => setNewEventName(e.target.value)}
-                        className="rounded-xl h-11 border-purple-500/20 focus-visible:ring-purple-500"
-                      />
-                      <div className="flex gap-2">
-                        <select 
-                          className="flex h-11 w-full items-center justify-between rounded-xl border border-purple-500/20 bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                          value={newEventType}
-                          onChange={(e) => setNewEventType(e.target.value)}
-                        >
-                          <option value="poll">Poll</option>
-                          <option value="hackathon">Hackathon</option>
-                          <option value="ama">AMA Session</option>
-                        </select>
-                        <Button
-                          onClick={handleCreateEvent}
-                          className="rounded-xl h-11 px-8 bg-gradient-to-r from-purple-600 to-pink-500 hover:opacity-90 text-white font-bold whitespace-nowrap shadow-lg shadow-purple-500/25 border-0"
-                        >
-                          Create Event 🎉
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
 
                 <Card className="p-8 border-none shadow-premium bg-slate-900 text-white rounded-[2rem] space-y-4 dark:bg-slate-900/50 dark:border dark:border-white/5">
                   <div className="flex items-center gap-3">

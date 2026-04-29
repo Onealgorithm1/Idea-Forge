@@ -15,6 +15,7 @@ import {
   getNotifications, 
   markNotificationRead, 
   markAllNotificationsRead,
+  clearReadNotifications,
   getUserIdeas, 
   updateIdeaStatus, 
   deleteIdea, 
@@ -59,5 +60,6 @@ router.get('/:id/comments', getComments);
 router.post('/:id/bookmark', authenticateToken, bookmarkIdea);
 router.post('/notifications/:id/read', authenticateToken, markNotificationRead);
 router.post('/notifications/read-all', authenticateToken, markAllNotificationsRead);
+router.post('/notifications/clear-read', authenticateToken, clearReadNotifications);
 
 export default router;
