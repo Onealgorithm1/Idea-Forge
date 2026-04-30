@@ -152,14 +152,7 @@ const Index = () => {
 
   return (
     <div className="flex-1 w-full space-y-6">
-      {/* Mobile Search Bar */}
-      <div className="md:hidden px-4 py-3 bg-background/50 backdrop-blur-md border-b border-border/10 sticky top-0 z-30 ring-1 ring-black/5">
-        <BoardSearchBar
-          value={searchQuery}
-          onChange={setSearchQuery}
-          placeholder="Search ideas, tags..."
-        />
-      </div>
+
 
       <div className="flex flex-row gap-8 px-4 pt-4 pb-2 md:px-8 md:pt-6 md:pb-2 w-full">
         {/* Center Feed */}
