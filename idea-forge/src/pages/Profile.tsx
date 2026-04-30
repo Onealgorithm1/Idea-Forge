@@ -31,7 +31,8 @@ import {
   Mail,
   Fingerprint,
   Trash2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Upload
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,7 @@ import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { getTenantPath, ROUTES, PLATFORM_STATUS_LABELS } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
-import { getInitials, cn } from "@/lib/utils";
+import { getInitials, cn, getAvatarUrl } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTenant } from "@/contexts/TenantContext";
@@ -75,7 +76,7 @@ const ROLE_STYLES: Record<string, string> = {
 
 /* ─── Main Component ────────────────────────────────────────────────────── */
 const Profile = () => {
-  const { user, token, logout } = useAuth();
+  const { user, token, logout, updateUser } = useAuth();
   const { tenant } = useTenant();
   const tenantSlug = tenant?.slug || "default";
   const [searchParams, setSearchParams] = useSearchParams();
@@ -85,6 +86,7 @@ const Profile = () => {
   const [editName, setEditName] = useState("");
   const [editBio, setEditBio] = useState("");
   const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const queryClient = useQueryClient();
 
@@ -129,13 +131,39 @@ const Profile = () => {
   const updateProfileMutation = useMutation({
     mutationFn: (data: { name?: string; bio?: string; avatar_url?: string }) =>
       api.patch("/users/profile", data, token!),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["profile", user?.id] });
+      updateUser({ name: data.name, bio: data.bio, avatar_url: data.avatar_url });
       toast.success("Profile updated successfully");
       setIsAvatarPickerOpen(false);
     },
     onError: (e: any) => toast.error(e.message || "Failed to update profile"),
   });
+
+  const uploadAvatarMutation = useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData();
+      formData.append("avatar", file);
+      return api.upload("/users/avatar", formData, token!);
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["profile", user?.id] });
+      updateUser({ avatar_url: data.avatar_url });
+      toast.success("Profile picture updated successfully");
+      setIsAvatarPickerOpen(false);
+    },
+    onError: (e: any) => toast.error(e.message || "Failed to upload profile picture"),
+  });
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+    uploadAvatarMutation.mutate(file);
+  };
 
   const changePasswordMutation = useMutation({
     mutationFn: (data: any) => api.patch("/users/change-password", data, token!),
@@ -167,11 +195,7 @@ const Profile = () => {
   }
 
   const VITE_API_URL = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api$/, "") : "http://localhost:5000";
-  const avatarUrl = profile?.avatar_url
-    ? (profile.avatar_url.startsWith("http") || profile.avatar_url.startsWith("/avatars"))
-      ? profile.avatar_url
-      : `${VITE_API_URL}${profile.avatar_url}`
-    : `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.name || 'U'}`;
+  const avatarUrl = getAvatarUrl(profile?.avatar_url, profile?.name);
 
   const filteredIdeas = ideas.filter((idea: any) =>
     idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -513,7 +537,7 @@ const Profile = () => {
                     </div>
                     <div>
                        <h2 className="text-2xl font-black tracking-tight">Choose Your Avatar</h2>
-                       <p className="text-sm text-muted-foreground">Select a pre-configured character for your profile.</p>
+                       <p className="text-sm text-muted-foreground">Select a pre-configured character or upload your own.</p>
                     </div>
                  </div>
                  <button onClick={() => setIsAvatarPickerOpen(false)} className="p-2 rounded-full hover:bg-muted transition-colors">
@@ -522,6 +546,31 @@ const Profile = () => {
               </div>
 
               <div className="p-8">
+                 <div className="mb-8 flex flex-col items-center justify-center">
+                   <input 
+                     type="file" 
+                     ref={fileInputRef} 
+                     className="hidden" 
+                     accept="image/*" 
+                     onChange={handleFileUpload} 
+                   />
+                   <Button 
+                     onClick={() => fileInputRef.current?.click()} 
+                     disabled={uploadAvatarMutation.isPending}
+                     variant="outline" 
+                     className="w-full h-14 rounded-2xl border-dashed border-2 bg-muted/30 hover:bg-muted/50 font-bold gap-2 text-muted-foreground hover:text-foreground transition-all"
+                   >
+                     {uploadAvatarMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Upload className="h-5 w-5 text-primary" />}
+                     {uploadAvatarMutation.isPending ? "Uploading..." : "Upload Custom Picture (Max 5MB)"}
+                   </Button>
+                 </div>
+
+                 <div className="flex items-center gap-4 mb-6">
+                   <div className="h-px bg-border flex-1" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Or choose from gallery</span>
+                   <div className="h-px bg-border flex-1" />
+                 </div>
+
                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-x-6 gap-y-10">
                     {PRECONFIGURED_AVATARS.map((avatar) => {
                        const url = avatar.url;
@@ -540,7 +589,7 @@ const Profile = () => {
                                 isSelected ? "ring-4 ring-primary ring-offset-4 ring-offset-background" : "hover:scale-110"
                              )}>
                                 <Avatar className="h-20 w-20 shadow-lg border-2 border-border/10 bg-muted/30">
-                                   <AvatarImage src={url} />
+                                   <AvatarImage src={getAvatarUrl(url, avatar.name)} />
                                    <AvatarFallback className="text-xs font-bold">{avatar.name[0]}</AvatarFallback>
                                 </Avatar>
                              </div>

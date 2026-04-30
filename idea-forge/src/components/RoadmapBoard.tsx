@@ -11,10 +11,10 @@ import { ROUTES, getTenantPath, ADMIN_ROLES, MANAGEMENT_ROLES } from "@/lib/cons
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { cn, getInitials } from "@/lib/utils";
+import { cn, getInitials, getAvatarUrl } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import ConfirmationModal from "./ConfirmationModal";
@@ -179,6 +179,7 @@ const RoadmapIdeaCard = ({
             <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border/50">
               <div className="flex items-center gap-2">
                 <Avatar className="h-6 w-6 border border-background shadow-sm ring-1 ring-border">
+                  <AvatarImage src={getAvatarUrl(idea.author_avatar, idea.author_name || idea.author)} />
                   <AvatarFallback className="text-[10px] font-black bg-muted text-muted-foreground uppercase">
                     {getInitials(idea.author_name || idea.author || 'Un')}
                   </AvatarFallback>

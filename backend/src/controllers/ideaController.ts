@@ -5,6 +5,22 @@ import { sendEmail } from '../config/mail.js';
 import { env } from '../config/env.js';
 import { deleteFileFromB2, generateViewUrl } from './uploadController.js';
 
+// Helper to sign author avatars in a list of items
+const signAuthorAvatars = async (rows: any[]) => {
+  return Promise.all(rows.map(async (row) => {
+    const avatarUrl = row.author_avatar || row.author_url || row.author?.avatar_url;
+    if (avatarUrl && avatarUrl.includes('backblazeb2.com')) {
+      const signedUrl = await generateViewUrl(avatarUrl);
+      if (signedUrl) {
+        if (row.author_avatar) row.author_avatar = signedUrl;
+        if (row.avatar_url) row.avatar_url = signedUrl;
+        if (row.author && typeof row.author === 'object') row.author.avatar_url = signedUrl;
+      }
+    }
+    return row;
+  }));
+};
+
 // ─── Audit log helper ─────────────────────────────────────────────────────────
 async function logAudit(tenantId: string, actorUserId: string | null, entityType: string, entityId: string, action: string, oldValues?: any, newValues?: any) {
   try {
@@ -42,7 +58,7 @@ export const getIdeas = async (req: any, res: Response) => {
     const { space_id, category } = req.query;
 
     let baseQuery = `
-      SELECT i.*, u.name as author_name, c.name as category, c.is_active as category_active, p.name as parent_name, s.name as space_name,
+      SELECT i.*, u.name as author_name, u.avatar_url as author_avatar, c.name as category, c.is_active as category_active, p.name as parent_name, s.name as space_name,
              (SELECT json_agg(t.name) FROM tags t 
               JOIN idea_tags it ON t.id = it.tag_id 
               WHERE it.idea_id = i.id) as tags,
@@ -76,7 +92,8 @@ export const getIdeas = async (req: any, res: Response) => {
     baseQuery += ` ORDER BY i.created_at DESC`;
 
     const result = await query(baseQuery, queryParams);
-    res.json(result.rows);
+    const signedIdeas = await signAuthorAvatars(result.rows);
+    res.json(signedIdeas);
   } catch (error) {
     console.error('Get ideas error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -102,7 +119,7 @@ export const getIdea = async (req: any, res: Response) => {
 
   try {
     const result = await query(`
-      SELECT i.*, u.name as author_name, c.name as category, c.is_active as category_active, p.name as parent_name, s.name as space_name,
+      SELECT i.*, u.name as author_name, u.avatar_url as author_avatar, c.name as category, c.is_active as category_active, p.name as parent_name, s.name as space_name,
              (SELECT json_agg(t.name) FROM tags t 
               JOIN idea_tags it ON t.id = it.tag_id 
               WHERE it.idea_id = i.id) as tags,
@@ -129,6 +146,11 @@ export const getIdea = async (req: any, res: Response) => {
     }
 
     const idea = result.rows[0];
+
+    // Sign author avatar
+    if (idea.author_avatar && idea.author_avatar.includes('backblazeb2.com')) {
+      idea.author_avatar = await generateViewUrl(idea.author_avatar) || idea.author_avatar;
+    }
 
     // Generate pre-signed URLs for attachments
     if (idea.attachments && Array.isArray(idea.attachments) && idea.attachments.length > 0) {
@@ -389,7 +411,6 @@ export const getCategories = async (req: any, res: Response) => {
       SET is_active = false, updated_at = NOW()
       WHERE (tenant_id = $1 OR tenant_id IS NULL)
       AND is_active = true 
-      AND is_default = false
       AND created_at < NOW() - INTERVAL '30 days'
       AND NOT EXISTS (SELECT 1 FROM ideas WHERE category_id = categories.id)
     `, [tenantId]);
@@ -589,10 +610,24 @@ export const voteIdea = async (req: any, res: Response) => {
           const shouldNotify = settingsRes.rows.length === 0 || settingsRes.rows[0].notify_on_vote;
           
           if (shouldNotify) {
-            await query(
-              'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
-              [idea.author_id, 'vote', id, `${voterName} upvoted your idea: ${idea.title}`, tenant_id]
+            // Check if there's already an unread vote notification for this idea
+            const existingNotif = await query(
+              "SELECT id, message FROM notifications WHERE user_id = $1 AND type = 'vote' AND reference_id = $2 AND is_read = FALSE AND tenant_id = $3",
+              [idea.author_id, id, tenant_id]
             );
+
+            if (existingNotif.rows.length > 0) {
+              const newCount = (existingNotif.rows[0].count || 1) + 1;
+              await query(
+                "UPDATE notifications SET count = $1, message = $2, created_at = CURRENT_TIMESTAMP WHERE id = $3",
+                [newCount, `${newCount} people upvoted your idea: ${idea.title}`, existingNotif.rows[0].id]
+              );
+            } else {
+              await query(
+                'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id, count) VALUES ($1, $2, $3, $4, $5, 1)',
+                [idea.author_id, 'vote', id, `${voterName} upvoted your idea: ${idea.title}`, tenant_id]
+              );
+            }
           }
         } catch (e) {
           console.error('Vote notification error:', e);
@@ -661,12 +696,25 @@ export const addComment = async (req: any, res: Response) => {
         const shouldNotify = settingsRes.rows.length === 0 || settingsRes.rows[0].notify_on_comment;
         const shouldEmail = settingsRes.rows.length === 0 || settingsRes.rows[0].email_enabled;
 
-        if (shouldNotify) {
-           await query(
-            'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
-            [idea.author_id, 'comment', id, `${commenterName} commented on your idea: ${idea.title}`, idea.tenant_id]
-          );
-        }
+          if (shouldNotify) {
+            const existingNotif = await query(
+              "SELECT id, count FROM notifications WHERE user_id = $1 AND type = 'comment' AND reference_id = $2 AND is_read = FALSE AND tenant_id = $3",
+              [idea.author_id, id, idea.tenant_id]
+            );
+
+            if (existingNotif.rows.length > 0) {
+              const newCount = (existingNotif.rows[0].count || 1) + 1;
+              await query(
+                "UPDATE notifications SET count = $1, message = $2, created_at = CURRENT_TIMESTAMP WHERE id = $3",
+                [newCount, `${newCount} people commented on your idea: ${idea.title}`, existingNotif.rows[0].id]
+              );
+            } else {
+              await query(
+                'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id, count) VALUES ($1, $2, $3, $4, $5, 1)',
+                [idea.author_id, 'comment', id, `${commenterName} commented on your idea: ${idea.title}`, idea.tenant_id]
+              );
+            }
+          }
 
         if (shouldEmail) {
           const author = await query('SELECT email FROM users WHERE id = $1', [idea.author_id]);
@@ -699,10 +747,23 @@ export const addComment = async (req: any, res: Response) => {
           const shouldEmail = settingsRes.rows.length === 0 || settingsRes.rows[0].email_enabled;
 
           if (shouldNotify) {
-            await query(
-              'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id) VALUES ($1, $2, $3, $4, $5)',
-              [b.id, 'comment', id, `${commenterName} commented on a followed idea: ${idea.title}`, idea.tenant_id]
+            const existingNotif = await query(
+              "SELECT id, count FROM notifications WHERE user_id = $1 AND type = 'comment' AND reference_id = $2 AND is_read = FALSE AND tenant_id = $3",
+              [b.id, id, idea.tenant_id]
             );
+
+            if (existingNotif.rows.length > 0) {
+              const newCount = (existingNotif.rows[0].count || 1) + 1;
+              await query(
+                "UPDATE notifications SET count = $1, message = $2, created_at = CURRENT_TIMESTAMP WHERE id = $3",
+                [newCount, `${newCount} people commented on a followed idea: ${idea.title}`, existingNotif.rows[0].id]
+              );
+            } else {
+              await query(
+                'INSERT INTO notifications (user_id, type, reference_id, message, tenant_id, count) VALUES ($1, $2, $3, $4, $5, 1)',
+                [b.id, 'comment', id, `${commenterName} commented on a followed idea: ${idea.title}`, idea.tenant_id]
+              );
+            }
           }
           // Intentionally omitting email to bookmarkers as per requirement "only comments mail to user"
         } catch (e) {
@@ -739,13 +800,22 @@ export const getComments = async (req: any, res: Response) => {
 
   try {
     const result = await query(`
-      SELECT c.*, u.name as author 
+      SELECT c.*, u.name as author, u.avatar_url as author_avatar 
       FROM comments c 
       JOIN users u ON c.user_id = u.id 
       WHERE c.idea_id = $1 AND c.tenant_id = $2
       ORDER BY c.created_at ASC
     `, [id, tenant_id]);
-    res.json(result.rows);
+
+    // Sign author avatars
+    const signedComments = await Promise.all(result.rows.map(async (comment: any) => {
+      if (comment.author_avatar && comment.author_avatar.includes('backblazeb2.com')) {
+        comment.author_avatar = await generateViewUrl(comment.author_avatar) || comment.author_avatar;
+      }
+      return comment;
+    }));
+
+    res.json(signedComments);
   } catch (error) {
     console.error('Get comments error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -919,7 +989,7 @@ export const getUserIdeas = async (req: any, res: Response) => {
   const tenant_id = req.tenantId;
   try {
     const result = await query(`
-      SELECT i.*, u.name as author, c.name as category, s.name as space_name,
+      SELECT i.*, u.name as author, u.avatar_url as author_avatar, c.name as category, s.name as space_name,
       (SELECT json_agg(t.name) FROM tags t 
        JOIN idea_tags it ON t.id = it.tag_id 
        WHERE it.idea_id = i.id) as tags,
@@ -932,7 +1002,8 @@ export const getUserIdeas = async (req: any, res: Response) => {
       WHERE i.author_id = $1 AND i.tenant_id = $2
       ORDER BY i.created_at DESC
     `, [user_id, tenant_id]);
-    res.json(result.rows);
+    const signedIdeas = await signAuthorAvatars(result.rows);
+    res.json(signedIdeas);
   } catch (error) {
     console.error('Get user ideas error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -1198,6 +1269,7 @@ export const searchIdeas = async (req: any, res: Response) => {
       SELECT 
         i.*,
         u.name AS author_name,
+        u.avatar_url AS author_avatar,
         c.name AS category,
         p.name AS parent_name,
         s.name AS space_name,
@@ -1230,7 +1302,8 @@ export const searchIdeas = async (req: any, res: Response) => {
     const ftsResult = await query(ftsSql, ftsParams);
     
     if (ftsResult.rows.length > 0) {
-      return res.json(ftsResult.rows);
+      const signedIdeas = await signAuthorAvatars(ftsResult.rows);
+      return res.json(signedIdeas);
     }
 
     // 2. Fallback to ILIKE if FTS returns nothing (better for partial words/prefixes)
@@ -1238,6 +1311,7 @@ export const searchIdeas = async (req: any, res: Response) => {
       SELECT 
         i.*,
         u.name AS author_name,
+        u.avatar_url AS author_avatar,
         c.name AS category,
         p.name AS parent_name,
         s.name AS space_name,
@@ -1265,7 +1339,8 @@ export const searchIdeas = async (req: any, res: Response) => {
     fallbackSql += ` ORDER BY i.created_at DESC LIMIT 30`;
 
     const fallbackResult = await query(fallbackSql, fallbackParams);
-    return res.json(fallbackResult.rows);
+    const signedIdeas = await signAuthorAvatars(fallbackResult.rows);
+    return res.json(signedIdeas);
 
   } catch (error: any) {
     console.error('Search ideas error:', error);

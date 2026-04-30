@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Share2, MoreHorizontal } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
-import { cn, getInitials } from '@/lib/utils';
+import { cn, getInitials, getAvatarUrl } from '@/lib/utils';
 import VotingSystem from './VotingSystem';
 import { Button } from './ui/button';
 
@@ -55,7 +55,7 @@ const CommentNode: React.FC<CommentNodeProps> = ({ comment, depth = 0, onReply }
         <div className="flex-1 min-w-0 space-y-2">
           <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8 rounded-full border border-border/50 shadow-sm shrink-0">
-              <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.author || 'U'}`} />
+              <AvatarImage src={getAvatarUrl(comment.author_avatar, comment.author)} />
               <AvatarFallback className="text-[10px] font-black bg-muted text-muted-foreground uppercase">
                 {getInitials(comment.author || 'U')}
               </AvatarFallback>

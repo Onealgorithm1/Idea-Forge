@@ -50,6 +50,15 @@ const saApi = {
     if (!res.ok) throw new Error((await res.json()).message || "Error");
     return res.json();
   },
+  delete: async (endpoint: string) => {
+    const token = localStorage.getItem("super_admin_token");
+    const res = await fetch(`${SUPER_ADMIN_API}${endpoint}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+    });
+    if (!res.ok) throw new Error((await res.json()).message || "Error");
+    return res.json();
+  },
 };
 
 const SuperAdminDashboard = () => {
@@ -100,6 +109,15 @@ const SuperAdminDashboard = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sa-tenants"] });
       toast.success("Tenant status updated");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteTenantMutation = useMutation({
+    mutationFn: (id: string) => saApi.delete(`/super-admin/tenants/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sa-tenants"] });
+      toast.success("Tenant deleted successfully");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -305,6 +323,18 @@ const SuperAdminDashboard = () => {
                               >
                                 <Power className="mr-2 h-4 w-4" />
                                 {tenant.status === 'active' ? 'Suspend' : 'Activate'}
+                              </DropdownMenuItem>
+                            )}
+                            {tenant.id !== '00000000-0000-0000-0000-000000000001' && (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  if(confirm("Are you sure you want to delete this tenant? This action will mark it as deleted.")) {
+                                    deleteTenantMutation.mutate(tenant.id);
+                                  }
+                                }}
+                                className="hover:bg-destructive/20 cursor-pointer text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Tenant
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>

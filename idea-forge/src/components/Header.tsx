@@ -25,7 +25,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ import { ROUTES, getTenantPath } from "@/lib/constants";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { NotificationSettingsDialog } from "./NotificationSettingsDialog";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, getAvatarUrl } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -398,10 +398,15 @@ const Header = () => {
                           <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-full" />
                         )}
                         <div className={cn(
-                          "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 duration-300",
+                          "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 duration-300 relative",
                           n.is_read ? "bg-muted text-muted-foreground" : "bg-primary/20 text-primary shadow-lg shadow-primary/10"
                         )}>
                           <Bell className="h-5 w-5" />
+                          {n.count > 1 && (
+                            <Badge className="absolute -top-1.5 -right-1.5 h-4 min-w-4 p-0 px-1 rounded-full bg-primary text-white text-[9px] border-2 border-background flex items-center justify-center font-black animate-in fade-in zoom-in duration-300">
+                              {n.count}
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className={cn(
@@ -447,6 +452,7 @@ const Header = () => {
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 p-1 rounded-full hover:bg-muted transition-all border border-transparent hover:border-border/50">
                 <Avatar className="h-8 w-8 border border-border/50">
+                   <AvatarImage src={getAvatarUrl(user?.avatar_url, user?.name)} />
                    <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-black">
                      {getInitials(user?.name || "U")}
                    </AvatarFallback>

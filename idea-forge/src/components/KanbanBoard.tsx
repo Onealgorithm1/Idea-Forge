@@ -18,7 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getInitials, cn } from "@/lib/utils";
+import { getInitials, cn, getAvatarUrl } from "@/lib/utils";
 import { api } from "@/lib/api";
 import VotingSystem from "./VotingSystem";
 import ConfirmationModal from "./ConfirmationModal";
@@ -171,7 +171,7 @@ const SocialFeed = ({ category = "All", spaceId = null, search = "" }: { categor
       {/* Create Post Input (Fake) */}
       <div className="flex bg-card rounded-3xl p-5 border border-border shadow-sm items-center gap-4 group hover:border-primary/30 transition-all">
         <Avatar className="h-12 w-12 border border-border shadow-sm group-hover:scale-105 transition-transform">
-          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Me'}`} />
+          <AvatarImage src={getAvatarUrl(user?.avatar_url, user?.name)} />
           <AvatarFallback className="bg-primary/5 text-primary font-bold">
             {getInitials(user?.name || "Me")}
           </AvatarFallback>
@@ -243,7 +243,7 @@ const SocialFeed = ({ category = "All", spaceId = null, search = "" }: { categor
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10 border border-border shadow-sm">
-                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.author_name || 'U'}`} />
+                    <AvatarImage src={getAvatarUrl(item.author_avatar, item.author_name)} />
                     <AvatarFallback className="bg-muted text-muted-foreground font-bold">
                       {getInitials(item.author_name || "Un")}
                     </AvatarFallback>

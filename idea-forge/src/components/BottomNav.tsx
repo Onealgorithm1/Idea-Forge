@@ -1,7 +1,7 @@
 import { Home, Rocket, Plus, Search, Bookmark, User, Moon, Sun, HelpCircle, LogOut } from "lucide-react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ROUTES, getTenantPath } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { cn, getAvatarUrl } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SupportDialog } from "./SupportDialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const BottomNav = () => {
   const { pathname } = useLocation();
@@ -87,6 +87,7 @@ const BottomNav = () => {
                     <div className="relative">
                       {user ? (
                         <Avatar className="h-5 w-5 border border-white/10">
+                          <AvatarImage src={getAvatarUrl(user?.avatar_url, user?.name)} />
                           <AvatarFallback className="bg-primary text-white text-[8px] font-bold">
                             {user.name.substring(0, 2).toUpperCase()}
                           </AvatarFallback>

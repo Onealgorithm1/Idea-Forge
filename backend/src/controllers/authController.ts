@@ -5,6 +5,7 @@ import { query } from '../config/db.js';
 import { sendEmail } from '../config/mail.js';
 import crypto from 'crypto';
 import { env } from '../config/env.js';
+import { generateViewUrl } from './uploadController.js';
 
 // ─── Regular User Login ──────────────────────────────────────────────────────
 export const login = async (req: Request, res: Response) => {
@@ -49,6 +50,9 @@ export const login = async (req: Request, res: Response) => {
         email: user.rows[0].email,
         role: user.rows[0].role,
         tenantId: user.rows[0].tenant_id,
+        avatar_url: user.rows[0].avatar_url?.includes('backblazeb2.com') 
+          ? await generateViewUrl(user.rows[0].avatar_url) 
+          : user.rows[0].avatar_url,
       },
       token,
     });
@@ -87,7 +91,7 @@ export const register = async (req: Request, res: Response) => {
 
     const newUser = await query(
       `INSERT INTO users (name, email, password_hash, role, tenant_id) 
-       VALUES ($1, $2, $3, 'user', $4) RETURNING id, name, email, role, tenant_id`,
+       VALUES ($1, $2, $3, 'user', $4) RETURNING id, name, email, role, tenant_id, avatar_url`,
       [name, email, hashedPassword, tenant.id]
     );
 
@@ -135,7 +139,10 @@ export const superAdminLogin = async (req: Request, res: Response) => {
         name: user.rows[0].name, 
         email: user.rows[0].email, 
         role: user.rows[0].role,
-        isSuperAdmin: true 
+        isSuperAdmin: true,
+        avatar_url: user.rows[0].avatar_url?.includes('backblazeb2.com') 
+          ? await generateViewUrl(user.rows[0].avatar_url) 
+          : user.rows[0].avatar_url,
       },
       token,
     });

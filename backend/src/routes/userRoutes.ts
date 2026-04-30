@@ -7,16 +7,8 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Multer storage configuration
-const storage = multer.diskStorage({
-  destination: (req: any, file: any, cb: any) => {
-    cb(null, 'uploads/avatars/');
-  },
-  filename: (req: any, file: any, cb: any) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Multer storage configuration using memory
+const storage = multer.memoryStorage();
 
 const upload = multer({ 
   storage: storage,

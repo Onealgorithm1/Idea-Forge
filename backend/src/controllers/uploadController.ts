@@ -227,6 +227,34 @@ export async function getPresignedUrl(req: Request, res: Response) {
 }
 
 /**
+ * Upload a buffer directly to Backblaze B2.
+ */
+export async function uploadBufferToB2(buffer: Buffer, mimetype: string, originalname: string, folder: string = 'attachments'): Promise<{ url: string, key: string }> {
+  const timestamp = Date.now();
+  const randomString = Math.random().toString(36).substring(2, 15);
+  const extension = path.extname(originalname);
+  const safeFilename = `${timestamp}-${randomString}${extension}`;
+  const key = `${folder}/${safeFilename}`;
+
+  const command = new PutObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+    Body: buffer,
+    ContentType: mimetype,
+    Metadata: {
+      'original-name': encodeURIComponent(originalname),
+    },
+  });
+
+  await s3Client.send(command);
+
+  const b2Host = env.B2_ENDPOINT?.replace('s3.', 'f000.') || 'f000.backblazeb2.com';
+  const fileUrl = `https://${b2Host}/file/${BUCKET_NAME}/${key}`;
+
+  return { url: fileUrl, key };
+}
+
+/**
  * Delete a file from Backblaze B2 bucket.
  * Extracts the key from the full B2 URL.
  */
@@ -276,28 +304,37 @@ export async function deleteFileFromB2(fileUrl: string): Promise<boolean> {
  * URL is valid for 1 hour.
  */
 export async function generateViewUrl(fileUrl: string): Promise<string | null> {
+  if (!fileUrl) return null;
+  
   try {
-    // Extract key from URL - supports both formats:
-    // Friendly: https://f000.backblazeb2.com/file/bucket/attachments/filename
-    // S3-style: https://s3.eu-central-003.backblazeb2.com/bucket/attachments/filename
     let key: string | null = null;
     
-    // Try friendly URL format first: /file/BUCKET/KEY
-    const friendlyPattern = new RegExp(`/file/${BUCKET_NAME}/(.+)$`);
-    const friendlyMatch = fileUrl.match(friendlyPattern);
-    if (friendlyMatch) {
-      key = friendlyMatch[1];
-    } else {
-      // Try S3-style format: endpoint/BUCKET/KEY
-      const s3Pattern = new RegExp(`${BUCKET_NAME}/(.+)$`);
-      const s3Match = fileUrl.match(s3Pattern);
-      if (s3Match) {
-        key = s3Match[1];
+    if (fileUrl.startsWith('http')) {
+      // Strip query parameters
+      const urlWithoutParams = fileUrl.split('?')[0];
+      
+      // Try friendly URL format first: /file/BUCKET/KEY
+      const friendlyPattern = new RegExp(`/file/${BUCKET_NAME}/(.+)$`);
+      const friendlyMatch = urlWithoutParams.match(friendlyPattern);
+      
+      if (friendlyMatch) {
+        key = friendlyMatch[1];
+      } else {
+        // Try S3-style format: endpoint/BUCKET/KEY
+        const s3Pattern = new RegExp(`${BUCKET_NAME}/(.+)$`);
+        const s3Match = urlWithoutParams.match(s3Pattern);
+        if (s3Match) {
+          key = s3Match[1];
+        }
       }
+    } else {
+      // It's already a key (e.g. "avatars/filename.png")
+      key = fileUrl;
     }
     
     if (!key) {
-      console.error('Could not extract key from URL for view:', fileUrl);
+      // If it's a full URL but not from B2, return as is
+      if (fileUrl.startsWith('http')) return fileUrl;
       return null;
     }
     
@@ -311,7 +348,7 @@ export async function generateViewUrl(fileUrl: string): Promise<string | null> {
     return viewUrl;
   } catch (error) {
     console.error('Error generating view URL:', error);
-    return null;
+    return fileUrl.startsWith('http') ? fileUrl : null;
   }
 }
 

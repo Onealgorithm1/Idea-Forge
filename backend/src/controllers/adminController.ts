@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { query } from '../config/db.js';
 import { sendEmail } from '../config/mail.js';
 import { env } from '../config/env.js';
+import { generateViewUrl } from './uploadController.js';
 
 export const createUser = async (req: Request, res: Response) => {
   const tenantId = (req as any).tenantId;
@@ -86,7 +87,16 @@ export const getAllUsers = async (req: any, res: Response) => {
        ORDER BY u.created_at DESC`,
       [req.tenantId, 'super_admin']
     );
-    res.json(result.rows);
+
+    // Sign avatars for B2 hosted images
+    const signedUsers = await Promise.all(result.rows.map(async (user: any) => {
+      if (user.avatar_url && user.avatar_url.includes('backblazeb2.com')) {
+        user.avatar_url = await generateViewUrl(user.avatar_url) || user.avatar_url;
+      }
+      return user;
+    }));
+
+    res.json(signedUsers);
   } catch (error) {
     console.error('Get all users error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -478,26 +488,49 @@ export const updateCategory = async (req: any, res: Response) => {
 
 export const deleteCategory = async (req: any, res: Response) => {
   const { id } = req.params;
+  const actorRole = (req as any).user.role;
+  
+  if (actorRole !== 'tenant_admin' && actorRole !== 'super_admin') {
+    return res.status(403).json({ message: 'Only tenant admins can delete categories completely' });
+  }
+
   try {
-    // Check if the category exists and is not a default one
     const check = await query(
-      'SELECT is_default FROM categories WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)',
+      'SELECT id FROM categories WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)',
       [id, req.tenantId]
     );
     if (check.rows.length === 0) return res.status(404).json({ message: 'Category not found' });
-    if (check.rows[0].is_default) {
-      return res.status(403).json({ message: 'Cannot deactivate default categories' });
+    
+    const ideaCheck = await query('SELECT COUNT(*) FROM ideas WHERE category_id = $1', [id]);
+    if (parseInt(ideaCheck.rows[0].count) > 0) {
+      return res.status(400).json({ message: 'Cannot delete category because it contains ideas' });
     }
 
-    // Soft delete: set is_active to false
+    await query('DELETE FROM categories WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)', [id, req.tenantId]);
+    res.json({ message: 'Category deleted successfully' });
+  } catch (error) {
+    console.error('Delete category error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const archiveCategory = async (req: any, res: Response) => {
+  const { id } = req.params;
+  try {
+    const check = await query(
+      'SELECT id FROM categories WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)',
+      [id, req.tenantId]
+    );
+    if (check.rows.length === 0) return res.status(404).json({ message: 'Category not found' });
+
     await query(
       'UPDATE categories SET is_active = false WHERE id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)',
       [id, req.tenantId]
     );
     
-    res.json({ message: 'Category deactivated successfully' });
+    res.json({ message: 'Category archived successfully' });
   } catch (error) {
-    console.error('Delete (deactivate) category error:', error);
+    console.error('Archive category error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

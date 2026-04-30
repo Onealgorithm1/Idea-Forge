@@ -20,7 +20,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ROUTES, getTenantPath, PLATFORM_STATUS_LABELS, ADMIN_ROLES, MANAGEMENT_ROLES } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { cn, getInitials } from "@/lib/utils";
+import { cn, getInitials, getAvatarUrl } from "@/lib/utils";
 import VotingSystem from "@/components/VotingSystem";
 import CommentSection from "@/components/CommentSection";
 
@@ -159,7 +159,7 @@ const IdeaDetail = () => {
                 <Card className="p-8 border-none bg-card/40 backdrop-blur-2xl rounded-[2.5rem] space-y-6 border border-border/50 shadow-sm sticky top-8">
                     <div className="flex items-center gap-4 p-4 bg-muted/10 rounded-3xl border border-border/20">
                         <Avatar className="h-14 w-14 rounded-2xl border border-border/50 shadow-sm">
-                            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${idea.author_name || 'U'}`} />
+                            <AvatarImage src={getAvatarUrl(idea.author_avatar, idea.author_name)} />
                             <AvatarFallback>{getInitials(idea.author_name || 'U')}</AvatarFallback>
                         </Avatar>
                         <div>

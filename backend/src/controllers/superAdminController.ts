@@ -247,3 +247,20 @@ export const resetUserPassword = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const deleteTenant = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const tenant = await query('SELECT status FROM tenants WHERE id = $1', [id]);
+    if (tenant.rows.length === 0) return res.status(404).json({ message: 'Tenant not found' });
+
+    // Soft delete is safer than cascading deletes for large organizations
+    await query('UPDATE tenants SET status = $1, updated_at = NOW() WHERE id = $2', ['deleted', id]);
+
+    res.json({ message: 'Tenant successfully deleted' });
+  } catch (error) {
+    console.error('Delete tenant error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

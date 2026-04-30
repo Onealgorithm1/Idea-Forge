@@ -17,7 +17,8 @@ import {
   Trash2,
   Loader2,
   Building,
-  Layers
+  Layers,
+  Archive
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTenant } from "@/contexts/TenantContext";
@@ -49,7 +50,19 @@ const AdminSettings = () => {
   });
   const deleteCatMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/admin/categories/${id}`, token!),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-categories"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      toast.success("Category deleted");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const archiveCatMutation = useMutation({
+    mutationFn: (id: string) => api.put(`/admin/categories/${id}/archive`, {}, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      toast.success("Category archived");
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -254,18 +267,31 @@ const AdminSettings = () => {
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.8 }}
-                            className={`hover:bg-warning/5 border px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 group transition-all ${cat.is_default ? 'bg-warning/10 border-warning/20 text-warning' : 'bg-muted border-border text-muted-foreground hover:border-warning/20 hover:text-warning'}`}
+                            className={`hover:bg-warning/5 border px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 group transition-all ${cat.is_default ? 'bg-warning/10 border-warning/20 text-warning' : 'bg-muted border-border text-muted-foreground hover:border-warning/20 hover:text-warning'} ${!cat.is_active ? 'opacity-50 grayscale' : ''}`}
                           >
                             {cat.name}
                             {cat.is_default && (
                               <Badge variant="outline" className="h-4 px-1 text-[8px] bg-warning text-warning border-warning/20 uppercase">Default</Badge>
                             )}
-                            {isTenantAdmin && !cat.is_default && (
+                            {!cat.is_active && (
+                              <Badge variant="outline" className="h-4 px-1 text-[8px] bg-muted-foreground text-muted-foreground border-muted-foreground/20 uppercase">Archived</Badge>
+                            )}
+                            {isTenantAdmin && cat.is_active && (
                               <button 
-                                onClick={() => { if (confirm("Delete this category?")) deleteCatMutation.mutate(cat.id); }}
-                                className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all font-bold"
+                                onClick={() => { if (confirm("Archive this category?")) archiveCatMutation.mutate(cat.id); }}
+                                className="text-muted-foreground hover:text-warning opacity-0 group-hover:opacity-100 transition-all font-bold"
+                                title="Archive Category"
                               >
-                                <Plus className="h-3 w-3 rotate-45" />
+                                <Archive className="h-3 w-3" />
+                              </button>
+                            )}
+                            {isTenantAdmin && cat.ideas_count === 0 && (
+                              <button 
+                                onClick={() => { if (confirm("Permanently delete this category?")) deleteCatMutation.mutate(cat.id); }}
+                                className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all font-bold"
+                                title="Delete Category"
+                              >
+                                <Trash2 className="h-3 w-3" />
                               </button>
                             )}
                           </motion.div>

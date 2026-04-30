@@ -158,11 +158,44 @@ export const deleteTenant = async (req: Request, res: Response) => {
     return res.status(403).json({ message: 'Cannot delete the default tenant' });
   }
   try {
-    await query('UPDATE tenants SET status = $1, updated_at = NOW() WHERE id = $2', ['deleted', id]);
-    res.json({ message: 'Tenant deleted' });
+    // Perform a hard delete of all tenant data to completely remove the tenant
+    await query('BEGIN');
+    
+    // Clear references
+    await query('UPDATE audit_logs SET actor_user_id = NULL WHERE tenant_id = $1', [id]);
+    await query('UPDATE categories SET manager_id = NULL WHERE tenant_id = $1', [id]);
+    await query('UPDATE ideas SET author_id = NULL WHERE tenant_id = $1', [id]);
+    
+    // Delete data in order to satisfy foreign keys
+    await query('DELETE FROM audit_logs WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM notifications WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM idea_scores WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM scorecard_criteria WHERE scorecard_id IN (SELECT id FROM scorecards WHERE tenant_id = $1)', [id]);
+    await query('DELETE FROM scorecards WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM idea_attachments WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM idea_tags WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM tags WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM comments WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM votes WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM bookmarks WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM ideas WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM categories WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM user_idea_spaces WHERE idea_space_id IN (SELECT id FROM idea_spaces WHERE tenant_id = $1)', [id]);
+    await query('DELETE FROM idea_spaces WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM user_roles WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM roles WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM tenant_users WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM support_requests WHERE tenant_id = $1', [id]);
+    await query('DELETE FROM notification_settings WHERE user_id IN (SELECT id FROM users WHERE tenant_id = $1)', [id]);
+    await query('DELETE FROM users WHERE tenant_id = $1 AND is_super_admin = FALSE', [id]);
+    await query('DELETE FROM tenants WHERE id = $1', [id]);
+    
+    await query('COMMIT');
+    res.json({ message: 'Tenant and all associated data permanently deleted' });
   } catch (error) {
+    await query('ROLLBACK');
     console.error('Delete tenant error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error during tenant deletion' });
   }
 };
 

@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { cn, getInitials } from '@/lib/utils';
+import { cn, getInitials, getAvatarUrl } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import VotingSystem from './VotingSystem';
@@ -59,7 +59,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ ideaId }) => {
       <div className="bg-card/40 backdrop-blur-2xl border border-border/50 rounded-[2rem] p-6 space-y-4 shadow-sm">
         <div className="flex gap-4">
         <Avatar className="h-10 w-10 rounded-2xl border border-border/50 shrink-0">
-            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Me'}`} />
+            <AvatarImage src={getAvatarUrl(user?.avatar_url, user?.name)} />
             <AvatarFallback className="bg-primary/10 text-primary font-bold">
               {getInitials(user?.name || 'Me')}
             </AvatarFallback>

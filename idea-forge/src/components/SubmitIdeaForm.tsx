@@ -20,7 +20,7 @@ import { useTenant } from "@/contexts/TenantContext";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { cn, getInitials } from "@/lib/utils";
+import { cn, getInitials, getAvatarUrl } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "./ui/card";
 
@@ -293,7 +293,7 @@ const SubmitIdeaForm = ({ onSuccess }: { onSuccess?: () => void }) => {
             <div className="idea-card p-5">
               <div className="flex items-center gap-3.5">
                 <Avatar className="h-11 w-11 rounded-xl border border-border/60">
-                  <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'U'}`} />
+                  <AvatarImage src={getAvatarUrl(user?.avatar_url, user?.name)} />
                   <AvatarFallback className="rounded-xl bg-primary/10 text-primary font-black text-sm">
                     {getInitials(user?.name || 'U')}
                   </AvatarFallback>

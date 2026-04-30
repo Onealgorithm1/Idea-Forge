@@ -9,6 +9,8 @@ interface User {
   email: string;
   role: string;
   tenantId: string;
+  avatar_url?: string;
+  bio?: string;
 }
 
 interface AuthContextType {
@@ -17,6 +19,7 @@ interface AuthContextType {
   login: (email: string, password: string, tenantSlug?: string) => Promise<void>;
   register: (name: string, email: string, password: string, tenantSlug?: string) => Promise<void>;
   logout: (message?: string) => void;
+  updateUser: (userData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,11 +41,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
+    // Fetch latest profile to sync state (important for signed URLs)
+    if (token) {
+      api.get("/users/me", token)
+        .then(data => {
+          updateUser(data);
+        })
+        .catch(err => {
+          console.error("Failed to sync user profile:", err);
+        });
+    }
+
     // Set up global unauthorized handler
     setUnauthorizedHandler(() => {
       logout("Your session has expired. Please login again.");
     });
-  }, []);
+  }, [token]);
 
   // Inactivity timer
   useEffect(() => {
@@ -109,7 +123,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw error;
     }
   };
-
   const logout = (message?: string) => {
     setUser(null);
     setToken(null);
@@ -125,9 +138,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast.info("You have been logged out");
     }
   };
+  
+  const updateUser = (userData: Partial<User>) => {
+    if (!user) return;
+    const updatedUser = { ...user, ...userData };
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

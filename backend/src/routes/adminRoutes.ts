@@ -1,6 +1,6 @@
 import express from 'express';
 import { authenticateToken, isAdmin, extractTenant } from '../middleware/auth.js';
-import { getAllUsers, createUser, updateUserRole, deleteUser, updateUserPassword, getStats, getRecentActivity, getAdminCategories, createCategory, updateCategory, deleteCategory, getIdeaSpaces, createIdeaSpace, deleteIdeaSpace, getUserSpaces, assignUserSpaces } from '../controllers/adminController.js';
+import { getAllUsers, createUser, updateUserRole, deleteUser, updateUserPassword, getStats, getRecentActivity, getAdminCategories, createCategory, updateCategory, deleteCategory, archiveCategory, getIdeaSpaces, createIdeaSpace, deleteIdeaSpace, getUserSpaces, assignUserSpaces } from '../controllers/adminController.js';
 
 const router = express.Router();
 
@@ -22,6 +22,7 @@ router.get('/categories', getAdminCategories);
 router.post('/categories', createCategory);
 router.put('/categories/:id', updateCategory);
 router.delete('/categories/:id', deleteCategory);
+router.put('/categories/:id/archive', archiveCategory);
 
 // Idea Spaces
 router.get('/spaces', getIdeaSpaces);

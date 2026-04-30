@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { query } from '../config/db.js';
+import { uploadBufferToB2, deleteFileFromB2, generateViewUrl } from './uploadController.js';
 
 export const updateProfile = async (req: any, res: Response) => {
   const { name, bio, avatar_url } = req.body;
@@ -7,15 +8,15 @@ export const updateProfile = async (req: any, res: Response) => {
 
   try {
     const result = await query(
-      'UPDATE users SET name = COALESCE($1, name), bio = COALESCE($2, bio), avatar_url = COALESCE($3, avatar_url), updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, name, email, role, avatar_url, bio',
+      'UPDATE users SET name = COALESCE($1, name), bio = COALESCE($2, bio), avatar_url = COALESCE($3, avatar_url) WHERE id = $4 RETURNING id, name, email, role, avatar_url, bio',
       [name || null, bio || null, avatar_url || null, user_id]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
+    const user = result.rows[0];
+    if (user.avatar_url && user.avatar_url.includes('backblazeb2.com')) {
+      user.avatar_url = await generateViewUrl(user.avatar_url) || user.avatar_url;
     }
-
-    res.json(result.rows[0]);
+    res.json(user);
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -28,12 +29,29 @@ export const uploadAvatar = async (req: any, res: Response) => {
     return res.status(400).json({ message: 'No file uploaded' });
   }
 
-  // Use forward slashes for URL consistency
-  const avatar_url = `/uploads/avatars/${req.file.filename}`;
-
   try {
-    await query('UPDATE users SET avatar_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [avatar_url, user_id]);
-    res.json({ avatar_url });
+    // 1. Get current avatar URL to delete if it's on B2
+    const userResult = await query('SELECT avatar_url FROM users WHERE id = $1', [user_id]);
+    const oldAvatarUrl = userResult.rows[0]?.avatar_url;
+
+    if (oldAvatarUrl && oldAvatarUrl.includes('backblazeb2.com')) {
+      await deleteFileFromB2(oldAvatarUrl);
+    }
+
+    // 2. Upload new file to B2
+    const { url } = await uploadBufferToB2(
+      req.file.buffer,
+      req.file.mimetype,
+      req.file.originalname,
+      'avatars'
+    );
+
+    // 3. Update database
+    await query('UPDATE users SET avatar_url = $1 WHERE id = $2', [url, user_id]);
+    
+    // 4. Generate signed URL for immediate preview
+    const viewUrl = await generateViewUrl(url);
+    res.json({ avatar_url: viewUrl || url });
   } catch (error) {
     console.error('Upload avatar error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -47,7 +65,11 @@ export const getProfile = async (req: any, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
-    res.json(result.rows[0]);
+    const user = result.rows[0];
+    if (user.avatar_url && user.avatar_url.includes('backblazeb2.com')) {
+      user.avatar_url = await generateViewUrl(user.avatar_url) || user.avatar_url;
+    }
+    res.json(user);
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ message: 'Server error' });

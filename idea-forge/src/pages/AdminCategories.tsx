@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit2, Plus, Loader2, Tag, User, Search, Hash, Archive, RotateCcw, ChevronRight, FolderTree, Clock } from "lucide-react";
+import { Edit2, Plus, Loader2, Tag, User, Search, Hash, Archive, RotateCcw, ChevronRight, FolderTree, Clock, Trash2 } from "lucide-react";
 import { getInitials, cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -35,6 +35,7 @@ const AdminCategories = () => {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [categoryToArchive, setCategoryToArchive] = useState<string | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   
@@ -94,15 +95,27 @@ const AdminCategories = () => {
     }
   });
 
+  const archiveCategoryMutation = useMutation({
+    mutationFn: (id: string) => api.put(`/admin/categories/${id}/archive`, {}, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      toast.success("Category archived successfully");
+      setCategoryToArchive(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to archive category");
+    }
+  });
+
   const deleteCategoryMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/admin/categories/${id}`, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
-      toast.success("Category deactivated successfully");
+      toast.success("Category deleted permanently");
       setCategoryToDelete(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to deactivate category");
+      toast.error(error.message || "Failed to delete category");
     }
   });
 
@@ -213,7 +226,7 @@ const AdminCategories = () => {
               </div>
             </div>
 
-            {category.ideas_count === 0 && !category.is_default && !isInactive && (
+            {category.ideas_count === 0 && !isInactive && (
               <div className="flex items-center gap-2 px-4 py-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/20">
                 <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
                   <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-500" />
@@ -245,15 +258,24 @@ const AdminCategories = () => {
                 <Edit2 className="h-3 w-3 mr-2" />
                 Edit
               </Button>
-              {!category.is_default && (
+              <Button 
+                variant="ghost"
+                size="sm"
+                className="rounded-xl h-9 px-3 text-muted-foreground hover:text-amber-600 hover:bg-amber-100 disabled:opacity-30 font-bold"
+                onClick={() => setCategoryToArchive(category.id)}
+                disabled={!canEdit}
+              >
+                <Archive className="h-4 w-4 mr-2" /> Archive
+              </Button>
+              {isTenantAdmin && category.ideas_count === 0 && (
                 <Button 
                   variant="ghost"
                   size="sm"
-                  className="rounded-xl h-9 px-3 text-muted-foreground hover:text-amber-600 hover:bg-amber-100 disabled:opacity-30 font-bold"
+                  className="rounded-xl h-9 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-30 font-bold"
                   onClick={() => setCategoryToDelete(category.id)}
                   disabled={!canEdit}
                 >
-                  <Archive className="h-4 w-4 mr-2" /> Archive
+                  <Trash2 className="h-4 w-4 mr-2" /> Delete
                 </Button>
               )}
             </>
@@ -577,13 +599,23 @@ const AdminCategories = () => {
       </Dialog>
 
       <ConfirmationModal
+        isOpen={!!categoryToArchive}
+        onClose={() => setCategoryToArchive(null)}
+        onConfirm={() => categoryToArchive && archiveCategoryMutation.mutate(categoryToArchive)}
+        title="Archive Category?"
+        message="This category will be moved to the Inactive list. Ideas attached to it will remain active in the system, but this category will no longer be available for new ideas."
+        type="warning"
+        confirmText="Yes, archive"
+      />
+
+      <ConfirmationModal
         isOpen={!!categoryToDelete}
         onClose={() => setCategoryToDelete(null)}
         onConfirm={() => categoryToDelete && deleteCategoryMutation.mutate(categoryToDelete)}
-        title="Deactivate Category?"
-        message="This category will be moved to the Inactive list. Ideas attached to it will remain active in the system, but this category will no longer be available for new ideas."
-        type="warning"
-        confirmText="Yes, deactivate"
+        title="Permanently Delete Category?"
+        message="Are you sure you want to completely delete this category? This action cannot be undone."
+        type="danger"
+        confirmText="Yes, delete permanently"
       />
     </>
   );

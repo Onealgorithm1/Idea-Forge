@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getInitials, cn, isValidEmail } from "@/lib/utils";
+import { getInitials, cn, isValidEmail, getAvatarUrl } from "@/lib/utils";
 import { format } from "date-fns";
 import { Trash2, Shield, User, Loader2, Key, Lock, UserPlus, Plus, Mail, Layers, ChevronDown, MoreVertical } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -288,7 +288,7 @@ const AdminUsers = () => {
                            <td className="px-6 py-4">
                              <div className="flex items-center gap-3">
                                <Avatar className="h-10 w-10">
-                                 <AvatarImage src={u.avatar_url} />
+                                 <AvatarImage src={getAvatarUrl(u.avatar_url, u.name)} />
                                  <AvatarFallback className="bg-primary/5 text-primary">
                                    {getInitials(u.name)}
                                  </AvatarFallback>
