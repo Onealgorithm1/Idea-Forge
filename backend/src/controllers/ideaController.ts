@@ -58,9 +58,9 @@ export const getIdeas = async (req: any, res: Response) => {
     const { space_id, category } = req.query;
 
     let baseQuery = `
-      SELECT i.*, u.name as author_name, u.avatar_url as author_avatar, c.name as category, c.is_active as category_active, p.name as parent_name, s.name as space_name,
-             (SELECT json_agg(t.name) FROM tags t 
-              JOIN idea_tags it ON t.id = it.tag_id 
+      SELECT i.*, u.name as author_name, u.avatar_url as author_avatar, c.name as category, c.color as category_color, c.is_active as category_active, p.name as parent_name, s.name as space_name, t.name as tenant_name,
+             (SELECT json_agg(tg.name) FROM tags tg 
+              JOIN idea_tags it ON tg.id = it.tag_id 
               WHERE it.idea_id = i.id) as tags,
              (SELECT type FROM votes WHERE idea_id = i.id AND user_id = $2 LIMIT 1) as vote_type,
              (EXISTS (SELECT 1 FROM bookmarks WHERE idea_id = i.id AND user_id = $2 AND tenant_id = $1)) as is_bookmarked
@@ -69,6 +69,7 @@ export const getIdeas = async (req: any, res: Response) => {
       LEFT JOIN categories c ON i.category_id = c.id
       LEFT JOIN categories p ON c.parent_id = p.id
       LEFT JOIN idea_spaces s ON i.idea_space_id = s.id
+      LEFT JOIN tenants t ON i.tenant_id = t.id
       WHERE i.tenant_id = $1
     `;
 
@@ -119,7 +120,7 @@ export const getIdea = async (req: any, res: Response) => {
 
   try {
     const result = await query(`
-      SELECT i.*, u.name as author_name, u.avatar_url as author_avatar, c.name as category, c.is_active as category_active, p.name as parent_name, s.name as space_name,
+      SELECT i.*, u.name as author_name, u.avatar_url as author_avatar, c.name as category, c.color as category_color, c.is_active as category_active, p.name as parent_name, s.name as space_name,
              (SELECT json_agg(t.name) FROM tags t 
               JOIN idea_tags it ON t.id = it.tag_id 
               WHERE it.idea_id = i.id) as tags,
@@ -416,7 +417,7 @@ export const getCategories = async (req: any, res: Response) => {
     `, [tenantId]);
 
     const result = await query(
-      `SELECT id, name, description, slug, is_default, tenant_id, manager_id, parent_id, is_active, created_at,
+      `SELECT id, name, description, slug, is_default, tenant_id, manager_id, parent_id, is_active, created_at, color,
               (SELECT COUNT(*) FROM ideas WHERE category_id = categories.id)::int as ideas_count
        FROM categories 
        WHERE (tenant_id = $1 OR tenant_id IS NULL) 

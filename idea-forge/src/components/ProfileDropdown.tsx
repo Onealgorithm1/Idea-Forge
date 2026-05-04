@@ -127,7 +127,7 @@ export const ProfileDropdown = ({ trigger, align = "end", side = "bottom" }: Pro
               <Users className="mr-3 h-4 w-4 text-blue-500" /> Manage Users
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_SETTINGS, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
-              <Building className="mr-3 h-4 w-4 text-purple-500" /> Organisation Settings
+              <Building className="mr-3 h-4 w-4 text-purple-500" /> Organization Settings
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate(getTenantPath(ROUTES.ADMIN_CATEGORIES, currentSlug))} className="rounded-xl px-3 py-2.5 cursor-pointer">
               <Tag className="mr-3 h-4 w-4 text-amber-500" /> Manage Categories

@@ -44,8 +44,23 @@ const AdminCategories = () => {
     name: "", 
     description: "", 
     manager_id: "none",
-    parent_id: "none"
+    parent_id: "none",
+    color: ""
   });
+
+  const CATEGORY_COLORS = [
+    { value: "", label: "None", bg: "bg-muted", hex: "" },
+    { value: "#6366f1", label: "Indigo", bg: "bg-indigo-500", hex: "#6366f1" },
+    { value: "#8b5cf6", label: "Violet", bg: "bg-violet-500", hex: "#8b5cf6" },
+    { value: "#ec4899", label: "Pink", bg: "bg-pink-500", hex: "#ec4899" },
+    { value: "#f97316", label: "Orange", bg: "bg-orange-500", hex: "#f97316" },
+    { value: "#eab308", label: "Yellow", bg: "bg-yellow-500", hex: "#eab308" },
+    { value: "#22c55e", label: "Green", bg: "bg-green-500", hex: "#22c55e" },
+    { value: "#14b8a6", label: "Teal", bg: "bg-teal-500", hex: "#14b8a6" },
+    { value: "#3b82f6", label: "Blue", bg: "bg-blue-500", hex: "#3b82f6" },
+    { value: "#ef4444", label: "Red", bg: "bg-red-500", hex: "#ef4444" },
+    { value: "#64748b", label: "Slate", bg: "bg-slate-500", hex: "#64748b" },
+  ];
 
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ["admin-categories"],
@@ -131,7 +146,7 @@ const AdminCategories = () => {
   });
 
   const resetForm = () => {
-    setFormData({ name: "", description: "", manager_id: "none", parent_id: "none" });
+    setFormData({ name: "", description: "", manager_id: "none", parent_id: "none", color: "" });
   };
 
   const handleEdit = (cat: any) => {
@@ -140,7 +155,8 @@ const AdminCategories = () => {
       name: cat.name,
       description: cat.description || "",
       manager_id: cat.manager_id || "none",
-      parent_id: cat.parent_id || "none"
+      parent_id: cat.parent_id || "none",
+      color: cat.color || ""
     });
     setIsEditDialogOpen(true);
   };
@@ -185,6 +201,9 @@ const AdminCategories = () => {
             <div className="space-y-1">
               <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors flex flex-col gap-1">
                 <div className="flex items-center gap-2">
+                  {category.color && (
+                    <span className="w-3 h-3 rounded-full shrink-0 ring-2 ring-white/20" style={{ background: category.color }} />
+                  )}
                   {category.name}
                   {category.is_default && (
                     <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary border-none">
@@ -487,6 +506,27 @@ const AdminCategories = () => {
                 </SelectContent>
               </Select>
             </div>
+            {['tenant_admin', 'super_admin'].includes(currentUser?.role || '') && (
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Category Color</Label>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {CATEGORY_COLORS.map((c) => (
+                    <button
+                      key={c.value}
+                      type="button"
+                      title={c.label}
+                      onClick={() => setFormData(f => ({ ...f, color: c.value }))}
+                      className={cn(
+                        "w-7 h-7 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
+                        formData.color === c.value ? "border-foreground scale-110 shadow-md" : "border-transparent",
+                        !c.value && "border-border bg-muted"
+                      )}
+                      style={c.value ? { background: c.value } : {}}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)} className="rounded-xl font-bold text-muted-foreground">
@@ -579,6 +619,27 @@ const AdminCategories = () => {
                 </SelectContent>
               </Select>
             </div>
+            {['tenant_admin', 'super_admin'].includes(currentUser?.role || '') && (
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Category Color</Label>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {CATEGORY_COLORS.map((c) => (
+                    <button
+                      key={c.value}
+                      type="button"
+                      title={c.label}
+                      onClick={() => setFormData(f => ({ ...f, color: c.value }))}
+                      className={cn(
+                        "w-7 h-7 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
+                        formData.color === c.value ? "border-foreground scale-110 shadow-md" : "border-transparent",
+                        !c.value && "border-border bg-muted"
+                      )}
+                      style={c.value ? { background: c.value } : {}}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)} className="rounded-xl font-bold text-muted-foreground">

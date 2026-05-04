@@ -141,6 +141,19 @@ const SocialFeed = ({ category = "All", spaceId = null, search = "" }: { categor
     voteMutation.mutate({ id, type });
   };
 
+  const deleteIdeaMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/ideas/${id}`, token!),
+    onSuccess: () => {
+      toast.success("Post deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["ideas", tenantSlug, search, spaceId] });
+      setIdeaToDelete(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to delete post");
+      setIdeaToDelete(null);
+    }
+  });
+
   const baseFilteredIdeas = ideas.filter((i: any) => {
     const categoryMatch = category === "All" || i.category === category;
     const spaceMatch = !spaceId || i.idea_space_id === spaceId;
@@ -257,8 +270,25 @@ const SocialFeed = ({ category = "All", spaceId = null, search = "" }: { categor
                         {(item.votes_count || 0) * 10} PTS
                       </Badge>
                     </div>
-                    <p className="text-[13px] text-muted-foreground font-medium">
-                      {timeAgo(item.created_at)} • <span className="hover:text-primary transition-colors">{item.category}</span>
+                    <p className="text-[13px] text-muted-foreground font-medium flex items-center gap-1.5 flex-wrap">
+                      {timeAgo(item.created_at)}
+                      {item.category && (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold"
+                          style={item.category_color
+                            ? { background: item.category_color + '22', color: item.category_color, border: `1px solid ${item.category_color}55` }
+                            : { background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}
+                        >
+                          {item.category_color && <span className="w-1.5 h-1.5 rounded-full" style={{ background: item.category_color }} />}
+                          {item.category}
+                        </span>
+                      )}
+                      {item.tenant_name && (
+                        <span className="text-[11px] text-muted-foreground/60 font-medium">· {item.tenant_name}</span>
+                      )}
+                      {item.space_name && (
+                        <span className="text-[11px] text-muted-foreground/60 font-medium">· {item.space_name}</span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -269,9 +299,10 @@ const SocialFeed = ({ category = "All", spaceId = null, search = "" }: { categor
                       <MoreHorizontal className="h-5 w-5" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                <DropdownMenuContent align="end" className="w-40 rounded-xl">
                     <DropdownMenuItem className="cursor-pointer">Report post</DropdownMenuItem>
-                    {['admin', 'super_admin'].includes(user?.role || '') && (
+                    {['admin', 'tenant_admin', 'super_admin'].includes(user?.role || '') &&
+                      ['Pending', 'Open', 'Under Review', 'In Progress', 'In Development'].includes(item.status) && (
                       <DropdownMenuItem className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={(e) => { e.stopPropagation(); setIdeaToDelete(item.id); }}>
                         Delete post
                       </DropdownMenuItem>
@@ -336,7 +367,7 @@ const SocialFeed = ({ category = "All", spaceId = null, search = "" }: { categor
         onClose={() => setIdeaToDelete(null)}
         onConfirm={() => {
           if (ideaToDelete) {
-            setIdeaToDelete(null);
+            deleteIdeaMutation.mutate(ideaToDelete);
           }
         }}
         title="Delete Post?"

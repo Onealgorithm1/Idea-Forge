@@ -1,4 +1,4 @@
-import { ChevronLeft, Info, MessageSquare, Timer, Users, Flame, Vote, Trophy, Crown, CheckCircle2, Sparkles } from "lucide-react";
+import { ChevronLeft, Info, MessageSquare, Timer, Users, Flame, Vote, Trophy, Crown, CheckCircle2, Sparkles, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
@@ -13,85 +13,66 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { getInitials, getAvatarUrl } from "@/lib/utils";
 import CommentNode from "../components/CommentNode";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const EventDetail = () => {
   const { id, tenantSlug } = useParams<{ id: string; tenantSlug: string }>();
   const navigate = useNavigate();
   const { user, token } = useAuth();
+  const queryClient = useQueryClient();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [newComment, setNewComment] = useState("");
 
-  const [event, setEvent] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: event, isLoading, error } = useQuery({
+    queryKey: ["event", id],
+    queryFn: () => api.get(`/events/${id}`, token!),
+    enabled: !!id && !!token,
+  });
 
-  useEffect(() => {
-    const loadEvent = () => {
-      const stored = localStorage.getItem("platformEvents");
-      if (stored) {
-        const events = JSON.parse(stored);
-        const found = events.find((e: any) => e.id === id);
-        setEvent(found);
-      }
-      setIsLoading(false);
-    };
-    loadEvent();
-  }, [id]);
-
-  const handleVote = (index: number) => {
-    if (!token) return toast.error("Please login to vote");
-    
-    const stored = localStorage.getItem("platformEvents");
-    if (stored && event) {
-      const events = JSON.parse(stored);
-      const updatedEvents = events.map((e: any) => {
-        if (e.id === id) {
-          const updatedOptions = [...(e.options || [])];
-          if (updatedOptions[index]) {
-            updatedOptions[index] = { 
-              ...updatedOptions[index], 
-              votes: (updatedOptions[index].votes || 0) + 1 
-            };
-          }
-          return { ...e, options: updatedOptions, votes: (e.votes || 0) + 1, hasVoted: true };
-        }
-        return e;
-      });
-      localStorage.setItem("platformEvents", JSON.stringify(updatedEvents));
-      setEvent(updatedEvents.find((e: any) => e.id === id));
+  const voteMutation = useMutation({
+    mutationFn: (optionId: string) => api.post(`/events/${id}/vote/${optionId}`, {}, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["event", id] });
       toast.success("Vote recorded!");
-    }
+    },
+    onError: (error: any) => toast.error(error.message || "Failed to vote"),
+  });
+
+  const commentMutation = useMutation({
+    mutationFn: (content: string) => api.post(`/events/${id}/comments`, { content }, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["event", id] });
+      setNewComment("");
+      toast.success("Comment posted!");
+    },
+    onError: (error: any) => toast.error(error.message || "Failed to post comment"),
+  });
+
+  const handleVote = (optionId: string) => {
+    if (!token) return toast.error("Please login to vote");
+    voteMutation.mutate(optionId);
   };
 
   const handlePostComment = () => {
     if (!token) return toast.error("Please login to comment");
     if (!newComment.trim()) return;
-
-    const stored = localStorage.getItem("platformEvents");
-    if (stored && event) {
-      const events = JSON.parse(stored);
-      const updatedEvents = events.map((e: any) => {
-        if (e.id === id) {
-          const newCommentObj = {
-            id: Date.now().toString(),
-            content: newComment,
-            author_name: user?.name || "Anonymous",
-            created_at: new Date().toISOString(),
-            votes_count: 0
-          };
-          const updatedComments = [newCommentObj, ...(e.comments_list || [])];
-          return { ...e, comments_count: (e.comments_count || 0) + 1, comments_list: updatedComments };
-        }
-        return e;
-      });
-      localStorage.setItem("platformEvents", JSON.stringify(updatedEvents));
-      setEvent(updatedEvents.find((e: any) => e.id === id));
-      setNewComment("");
-      toast.success("Comment posted!");
-    }
+    commentMutation.mutate(newComment);
   };
 
-  if (isLoading) return <div className="min-h-[60vh] flex items-center justify-center">Loading event...</div>;
-  if (!event) return <div className="min-h-[60vh] flex items-center justify-center text-muted-foreground font-bold">Event not found</div>;
+  if (isLoading) return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+      <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <p className="text-muted-foreground font-bold animate-pulse">Fetching intelligence...</p>
+    </div>
+  );
+  
+  if (!event || error) return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center text-muted-foreground font-bold gap-4">
+      <Sparkles className="h-12 w-12 opacity-20" />
+      <p>Event not found or has been archived.</p>
+      <Button variant="outline" onClick={() => navigate(getTenantPath(ROUTES.IDEA_BOARD, tenantSlug!))}>Return to Board</Button>
+    </div>
+  );
 
   return (
     <div className="flex-1 w-full">
@@ -131,7 +112,7 @@ const EventDetail = () => {
                         </Badge>
                     </div>
                     <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none">
-                        {event.name}
+                        {event.title || event.name}
                     </h1>
                 </div>
             </div>
@@ -147,10 +128,10 @@ const EventDetail = () => {
                 {/* Stats Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-8 bg-card/40 backdrop-blur-2xl border border-border/50 rounded-[2.5rem] shadow-sm">
                     {[
-                        { label: 'Ends In', value: event.timeLeft || '2d 14h', icon: Timer, color: 'text-yellow-500' },
-                        { label: 'Community', value: event.participants, icon: Users, color: 'text-primary' },
-                        { label: 'Hype', value: `${event.hype || 85}%`, icon: Flame, color: 'text-orange-500' },
-                        { label: 'Votes', value: event.votes, icon: Vote, color: 'text-purple-500' }
+                        { label: 'Ends At', value: event.ends_at ? new Date(event.ends_at).toLocaleDateString() : 'Active', icon: Timer, color: 'text-yellow-500' },
+                        { label: 'Community', value: event.participants_count || 0, icon: Users, color: 'text-primary' },
+                        { label: 'Hype', value: `85%`, icon: Flame, color: 'text-orange-500' },
+                        { label: 'Votes', value: event.votes_count || 0, icon: Vote, color: 'text-purple-500' }
                     ].map((stat, i) => (
                         <div key={i} className="space-y-1">
                             <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
@@ -175,31 +156,29 @@ const EventDetail = () => {
                                 const percentage = totalVotes > 0 ? Math.round((opt.votes || 0) / totalVotes * 100) : 0;
                                 return (
                                     <motion.button
-                                        key={idx}
-                                        whileHover={!event.hasVoted ? { scale: 1.01, x: 5 } : {}}
-                                        disabled={event.hasVoted}
-                                        onClick={() => handleVote(idx)}
+                                        key={opt.id}
+                                        whileHover={!opt.user_voted ? { scale: 1.01, x: 5 } : {}}
+                                        disabled={voteMutation.isPending}
+                                        onClick={() => handleVote(opt.id)}
                                         className={`w-full relative min-h-[85px] rounded-[2.5rem] border-2 transition-all p-8 flex items-center justify-between overflow-hidden group/opt ${
-                                            event.hasVoted 
-                                                ? 'bg-muted/10 border-border/40 cursor-default' 
+                                            opt.user_voted 
+                                                ? 'bg-primary/5 border-primary/20 cursor-default' 
                                                 : 'bg-background border-primary/5 hover:border-primary/40 hover:shadow-2xl'
                                         }`}
                                     >
                                         <div className="absolute left-0 top-0 bottom-0 bg-primary/10 transition-all duration-1000 ease-out" style={{ width: `${percentage}%` }} />
                                         <div className="relative z-10 flex items-center gap-6">
-                                            {event.hasVoted && (
-                                                <div className={`h-10 w-10 rounded-2xl flex items-center justify-center ${opt.votes > 0 ? 'bg-primary text-white shadow-lg' : 'bg-muted opacity-50'}`}>
+                                            {opt.user_voted && (
+                                                <div className="h-10 w-10 rounded-2xl flex items-center justify-center bg-primary text-white shadow-lg">
                                                     <CheckCircle2 className="h-6 w-6" />
                                                 </div>
                                             )}
                                             <span className="text-xl font-black text-foreground/90 group-hover/opt:text-primary transition-colors">{opt.text}</span>
                                         </div>
-                                        {event.hasVoted && (
-                                            <div className="relative z-10 flex flex-col items-end">
-                                                <span className="text-3xl font-black text-primary leading-none tracking-tighter">{percentage}%</span>
-                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">{opt.votes} votes</span>
-                                            </div>
-                                        )}
+                                        <div className="relative z-10 flex flex-col items-end">
+                                            <span className="text-3xl font-black text-primary leading-none tracking-tighter">{percentage}%</span>
+                                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">{opt.votes || 0} votes</span>
+                                        </div>
                                     </motion.button>
                                 );
                             })}
@@ -215,7 +194,7 @@ const EventDetail = () => {
                     </h3>
                     <Card className="p-10 border-none bg-card/60 backdrop-blur-3xl rounded-[3rem] shadow-premium border border-border/10">
                         <p className="text-lg md:text-xl text-muted-foreground leading-relaxed font-medium italic">
-                            "{event.description}"
+                            "{event.description || 'No description provided.'}"
                         </p>
                     </Card>
                 </div>
@@ -269,10 +248,10 @@ const EventDetail = () => {
                                   <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Share your feedback with the community</p>
                                   <Button 
                                       onClick={handlePostComment}
-                                      disabled={!newComment.trim()}
+                                      disabled={!newComment.trim() || commentMutation.isPending}
                                       className="rounded-xl px-8 font-black uppercase tracking-widest h-10 shadow-lg shadow-primary/20"
                                   >
-                                      Post Comment
+                                      {commentMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post Comment"}
                                   </Button>
                               </div>
                           </div>

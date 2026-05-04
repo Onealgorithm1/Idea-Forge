@@ -111,7 +111,10 @@ const IdeaDetail = () => {
 
                 <div className="space-y-4 w-full">
                     <div className="flex items-center gap-3">
-                        <Badge className="bg-primary text-primary-foreground border-none px-4 py-1.5 rounded-full font-black uppercase tracking-widest text-[9px]">
+                        <Badge 
+                            className="text-primary-foreground border-none px-4 py-1.5 rounded-full font-black uppercase tracking-widest text-[9px]"
+                            style={idea.category_color ? { backgroundColor: idea.category_color } : { backgroundColor: 'hsl(var(--primary))' }}
+                        >
                             {idea.category}
                         </Badge>
                         <Badge variant="outline" className="border-white/20 text-white/80 px-4 py-1.5 rounded-full font-black uppercase tracking-widest text-[9px] backdrop-blur-sm">

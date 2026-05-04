@@ -350,7 +350,7 @@ export const getAdminCategories = async (req: any, res: Response) => {
 
     const result = await query(
       `SELECT c.id, c.name, c.description, c.slug, c.is_default, c.tenant_id, c.manager_id, 
-              c.parent_id, c.is_active, c.created_at,
+              c.parent_id, c.is_active, c.created_at, c.color,
               u.name as manager_name,
               p.name as parent_name,
               (SELECT COUNT(*) FROM ideas WHERE category_id = c.id)::int as ideas_count
@@ -369,7 +369,7 @@ export const getAdminCategories = async (req: any, res: Response) => {
 };
 
 export const createCategory = async (req: any, res: Response) => {
-  const { name, description, manager_id, parent_id } = req.body;
+  const { name, description, manager_id, parent_id, color } = req.body;
   const actor = (req as any).user;
   const tenant_id = req.tenantId;
 
@@ -395,9 +395,9 @@ export const createCategory = async (req: any, res: Response) => {
 
     const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     const result = await query(
-      `INSERT INTO categories (name, description, slug, tenant_id, manager_id, parent_id)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [name.trim(), description || '', slug, tenant_id, manager_id || null, parent_id || null]
+      `INSERT INTO categories (name, description, slug, tenant_id, manager_id, parent_id, color)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [name.trim(), description || '', slug, tenant_id, manager_id || null, parent_id || null, color || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (error: any) {
@@ -409,7 +409,7 @@ export const createCategory = async (req: any, res: Response) => {
 
 export const updateCategory = async (req: any, res: Response) => {
   const { id } = req.params;
-  const { name, description, manager_id, parent_id, is_active } = req.body;
+  const { name, description, manager_id, parent_id, is_active, color } = req.body;
   const actor = (req as any).user;
   const tenant_id = req.tenantId;
 
@@ -469,6 +469,11 @@ export const updateCategory = async (req: any, res: Response) => {
     if (is_active !== undefined) {
       setParts.push(`is_active = $${paramCount}`);
       values.push(is_active);
+      paramCount++;
+    }
+    if (color !== undefined) {
+      setParts.push(`color = $${paramCount}`);
+      values.push(color || null);
       paramCount++;
     }
 

@@ -14,6 +14,7 @@ import userRoutes from './routes/userRoutes.js';
 import organizationRoutes from './routes/organizationRoutes.js';
 import registerRoutes from './routes/registerRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import eventRoutes from './routes/eventRoutes.js';
 import { env } from './config/env.js';
 import { getTenantBySlug } from './controllers/tenantController.js';
 
@@ -69,6 +70,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/org', organizationRoutes);
 app.use('/api/register', registerRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/events', eventRoutes);
 
 import { query } from './config/db.js';
 
