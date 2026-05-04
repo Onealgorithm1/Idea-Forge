@@ -196,9 +196,6 @@ const IdeaDetail = () => {
                             <Bookmark className={cn("h-4 w-4 mr-2", idea.is_bookmarked && "fill-current")} />
                             {idea.is_bookmarked ? "Saved" : "Bookmark"}
                         </Button>
-                        <Button variant="outline" className="h-11 w-11 rounded-2xl p-0">
-                            <Share2 className="h-4 w-4" />
-                        </Button>
                     </div>
                 </Card>
               </div>

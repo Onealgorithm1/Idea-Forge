@@ -71,7 +71,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
         "font-black text-center select-none",
         isVertical ? "text-[12px] py-0.5" : "text-[13px] px-1 min-w-[2.5ch]",
         userVote === 'up' ? "text-primary" : 
-        userVote === 'down' ? "text-blue-500" : 
+        userVote === 'down' ? "text-red-500" : 
         "text-foreground"
       )}>
         <AnimatePresence mode="popLayout" initial={false}>
@@ -94,7 +94,7 @@ const VotingSystem: React.FC<VotingSystemProps> = ({
         className={cn(
           'p-1.5 transition-all duration-200 outline-none',
           userVote === 'down' 
-            ? 'text-blue-500 bg-blue-500/10' 
+            ? 'text-red-500 bg-red-500/10' 
             : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
         )}
         onClick={(e) => {

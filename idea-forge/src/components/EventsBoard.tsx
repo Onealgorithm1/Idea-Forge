@@ -537,7 +537,7 @@ const EventsBoard = () => {
                   <div className="w-14 bg-muted/10 flex flex-col items-center py-6 gap-2 border-r border-border/10">
                     <button className="p-1 hover:text-primary transition-colors"><ArrowBigUp className="h-7 w-7" /></button>
                     <span className="text-xs font-black">{event.votes_count || 0}</span>
-                    <button className="p-1 hover:text-blue-500 transition-colors"><ArrowBigDown className="h-7 w-7" /></button>
+                    <button className="p-1 hover:text-red-500 transition-colors"><ArrowBigDown className="h-7 w-7" /></button>
                   </div>
 
                   {/* Content */}
@@ -588,9 +588,7 @@ const EventsBoard = () => {
                       <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-muted-foreground hover:text-primary transition-colors">
                           <MessageSquare className="h-4 w-4" /> {event.comments_count || 0}
                       </div>
-                      <button className="flex items-center gap-1.5 text-[10px] font-black uppercase text-muted-foreground hover:text-primary transition-colors">
-                          <Share2 className="h-4 w-4" /> Share
-                      </button>
+                      
                       
                       <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-primary ml-auto">
                           <Timer className="h-4 w-4" /> {event.ends_at ? new Date(event.ends_at).toLocaleDateString() : 'Active'}
