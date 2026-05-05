@@ -94,9 +94,6 @@ const CommentNode: React.FC<CommentNodeProps> = ({ comment, depth = 0, onReply }
                   <MessageSquare className="h-4 w-4" /> Reply
                 </button>
                 <button className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground hover:text-primary transition-colors">
-                  <Share2 className="h-4 w-4" /> Share
-                </button>
-                <button className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground hover:text-primary transition-colors">
                   <MoreHorizontal className="h-4 w-4" /> More
                 </button>
               </div>

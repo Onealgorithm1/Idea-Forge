@@ -370,21 +370,11 @@ const SocialFeed = ({ category = "All", spaceId = null, search = "" }: { categor
                     </div>
                     <span className="font-semibold text-[13px]">{item.comments_count || 0}</span>
                   </button>
-
-                  {/* Repost (Fake) */}
-                  <button className="flex items-center gap-2 text-muted-foreground hover:text-green-500 group transition-colors">
-                    <div className="p-2 -ml-2 rounded-full transition-colors group-hover:bg-green-500/10">
-                      <Repeat2 className="h-[18px] w-[18px]" />
-                    </div>
-                  </button>
                 </div>
 
                 <div className="flex items-center gap-1">
                   <button onClick={(e) => e.stopPropagation()} className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
                     <Bookmark className="h-[18px] w-[18px]" />
-                  </button>
-                  <button onClick={(e) => e.stopPropagation()} className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
-                    <Share className="h-[18px] w-[18px]" />
                   </button>
                 </div>
               </div>
