@@ -38,36 +38,44 @@ interface SidebarButtonProps {
   label: string;
   active?: boolean;
   onClick?: () => void;
+  color?: string;
 }
 
-function SidebarButton({ icon: Icon, label, active, onClick }: SidebarButtonProps) {
+function SidebarButton({ icon: Icon, label, active, onClick, color }: SidebarButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`relative flex items-center gap-3 px-4 py-3 text-sm w-full text-left group transition-all duration-300 rounded-r-2xl overflow-hidden ${
         active
-          ? "text-primary font-semibold bg-gradient-to-r from-primary/10 to-transparent"
+          ? "font-semibold"
           : "text-muted-foreground font-medium hover:text-foreground hover:bg-accent/40"
       }`}
+      style={active ? { 
+        color: color || 'hsl(var(--primary))',
+        background: `linear-gradient(to right, ${color ? color + '33' : 'hsl(var(--primary) / 0.2)'}, transparent)`,
+        boxShadow: `inset 4px 0 12px -4px ${color ? color + '44' : 'hsl(var(--primary) / 0.3)'}`
+      } : {}}
     >
       <div 
-        className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full bg-primary transition-all duration-300 ${
+        className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-300 ${
           active ? "h-6 opacity-100" : "h-0 opacity-0"
         }`} 
+        style={active ? { background: color || 'hsl(var(--primary))' } : {}}
       />
       
       <div className={`relative flex items-center justify-center p-1.5 rounded-lg transition-colors duration-300 ${
-        active ? 'bg-background shadow-sm ring-1 ring-border' : 'bg-transparent'
-      }`}>
+        active ? 'bg-background shadow-sm ring-1' : 'bg-transparent'
+      }`} style={active ? { '--tw-ring-color': color ? color + '33' : 'hsl(var(--border))' } as React.CSSProperties : {}}>
         <Icon 
           className={`h-4 w-4 shrink-0 transition-all duration-300 ${
-            active ? 'text-primary scale-110' : 'text-muted-foreground group-hover:text-foreground group-hover:scale-105'
+            active ? 'scale-110' : 'text-muted-foreground group-hover:text-foreground group-hover:scale-105'
           }`} 
-          strokeWidth={active ? 2.5 : 2}
+          style={active ? { color: color || 'hsl(var(--primary))' } : {}}
+          strokeWidth={active ? 3 : 2}
         />
       </div>
-      <span className="tracking-tight truncate pr-2">{label}</span>
+      <span className={cn("tracking-tight truncate pr-2 font-black uppercase text-[11px]", active ? "opacity-100" : "opacity-70 group-hover:opacity-100")}>{label}</span>
     </button>
   );
 }
@@ -107,7 +115,9 @@ export const SidebarContent = ({ onCategorySelect, selectedCategory: propCategor
       }));
   };
 
-  const activeCategories = (Array.isArray(dbCategories) ? dbCategories : []).filter(c => c.is_active);
+  const activeCategories = (Array.isArray(dbCategories) ? dbCategories : [])
+    .filter(c => c.is_active)
+    .sort((a, b) => a.name.localeCompare(b.name));
   const categoryTree = buildTree(activeCategories);
 
   const handleCategoryClick = (label: string) => {
@@ -140,6 +150,7 @@ export const SidebarContent = ({ onCategorySelect, selectedCategory: propCategor
             icon={getCategoryIcon(item.name)}
             label={item.name}
             active={isActive}
+            color={item.color}
             onClick={() => handleCategoryClick(item.name)}
           />
           {hasChildren && (

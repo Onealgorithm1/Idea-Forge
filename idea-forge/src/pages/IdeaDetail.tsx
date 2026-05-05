@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { cn, getInitials, getAvatarUrl } from "@/lib/utils";
 import VotingSystem from "@/components/VotingSystem";
 import CommentSection from "@/components/CommentSection";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 const IdeaDetail = () => {
   const { id, tenantSlug } = useParams<{ id: string; tenantSlug: string }>();
@@ -30,6 +31,7 @@ const IdeaDetail = () => {
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const { data: idea, isLoading: isIdeaLoading } = useQuery({
     queryKey: ["idea", id, tenantSlug],
@@ -52,6 +54,22 @@ const IdeaDetail = () => {
       queryClient.invalidateQueries({ queryKey: ["idea", id, tenantSlug] });
     },
   });
+  
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete(`/ideas/${id}`, token!),
+    onSuccess: () => {
+      toast.success("Post deleted successfully");
+      navigate(getTenantPath(ROUTES.IDEA_BOARD, tenantSlug || "default"));
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to delete post");
+    }
+  });
+
+  const canManage = user && (
+    ['admin', 'tenant_admin', 'super_admin', 'supportadmin'].includes(user.role) || 
+    idea?.author_id === user.id
+  );
 
   if (isIdeaLoading) {
     return (
@@ -99,15 +117,31 @@ const IdeaDetail = () => {
             </div>
 
             <div className="relative z-10 w-full p-8 md:p-16 space-y-6">
-                <motion.button
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    onClick={() => navigate(getTenantPath(ROUTES.IDEA_BOARD, tenantSlug))}
-                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-all bg-background/40 backdrop-blur-md px-5 py-2.5 rounded-full border border-border/10 mb-2 w-fit"
-                >
-                    <ChevronLeft className="h-3 w-3" />
-                    Back to Feed
-                </motion.button>
+                <div className="flex items-center gap-3 mb-2">
+                    <motion.button
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        onClick={() => navigate(getTenantPath(ROUTES.IDEA_BOARD, tenantSlug))}
+                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-all bg-background/40 backdrop-blur-md px-5 py-2.5 rounded-full border border-border/10 w-fit"
+                    >
+                        <ChevronLeft className="h-3 w-3" />
+                        Back to Feed
+                    </motion.button>
+                    
+                    {canManage && (
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          className="h-9 px-4 rounded-full font-black uppercase text-[9px] tracking-widest bg-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white border-none transition-all backdrop-blur-md"
+                          onClick={() => setShowDeleteModal(true)}
+                        >
+                          <Trash2 className="h-3 w-3 mr-2" />
+                          Delete Post
+                        </Button>
+                      </div>
+                    )}
+                </div>
 
                 <div className="space-y-4 w-full">
                     <div className="flex items-center gap-3">
@@ -216,6 +250,16 @@ const IdeaDetail = () => {
 
             </div>
           </div>
+          
+          <ConfirmationModal
+            isOpen={showDeleteModal}
+            onClose={() => setShowDeleteModal(false)}
+            onConfirm={() => deleteMutation.mutate()}
+            title="Delete Post?"
+            message="This action will permanently delete this post. This action cannot be undone."
+            confirmText="Delete"
+            type="danger"
+          />
     </div>
   );
 };

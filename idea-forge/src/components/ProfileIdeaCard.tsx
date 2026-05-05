@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
-import { Calendar, MessageSquare, ThumbsUp, Bookmark } from "lucide-react";
+import { Calendar, MessageSquare, ThumbsUp, Bookmark, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getTenantPath, ROUTES, PLATFORM_STATUS_LABELS } from "@/lib/constants";
@@ -10,9 +10,11 @@ interface ProfileIdeaCardProps {
   idea: any;
   tenantSlug: string;
   onBookmark: (e: React.MouseEvent, id: string) => void;
+  onDelete?: (e: React.MouseEvent, id: string) => void;
+  canDelete?: boolean;
 }
 
-const ProfileIdeaCard = ({ idea, tenantSlug, onBookmark }: ProfileIdeaCardProps) => (
+const ProfileIdeaCard = ({ idea, tenantSlug, onBookmark, onDelete, canDelete }: ProfileIdeaCardProps) => (
   <Link to={getTenantPath(ROUTES.IDEA_DETAIL.replace(":id", idea.id), tenantSlug)}>
     <Card className="h-full border border-border/60 dark:border-border/40 shadow-sm hover:shadow-md bg-card group p-5 flex flex-col justify-between transition-all duration-300 rounded-2xl hover:-translate-y-1">
       <div className="space-y-3">
@@ -68,6 +70,15 @@ const ProfileIdeaCard = ({ idea, tenantSlug, onBookmark }: ProfileIdeaCardProps)
           >
             <Bookmark className={cn("h-3.5 w-3.5", idea.is_bookmarked && "fill-current")} />
           </button>
+          {canDelete && onDelete && (
+            <button
+              onClick={(e) => onDelete(e, idea.id)}
+              className="p-1.5 rounded-xl transition-all border border-transparent text-muted-foreground/40 hover:text-rose-500 hover:bg-rose-500/10 hover:border-rose-500/20 hover:scale-110"
+              title="Delete Idea"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
     </Card>

@@ -216,7 +216,10 @@ const Index = () => {
                           <React.Fragment key={cat.id}>
                             <BreadcrumbItem>
                               {idx === categoryPath.length - 1 ? (
-                                <BreadcrumbPage className="text-xs font-bold uppercase tracking-wider text-primary">
+                                <BreadcrumbPage 
+                                  className="text-xs font-bold uppercase tracking-wider"
+                                  style={{ color: cat.color || 'hsl(var(--primary))' }}
+                                >
                                   {cat.name}
                                 </BreadcrumbPage>
                               ) : (
@@ -240,7 +243,10 @@ const Index = () => {
                           <LayoutGrid className="h-7 w-7 text-primary" />
                         </div>
                         <div>
-                          <h2 className="text-3xl font-black tracking-tight text-foreground transition-colors">
+                          <h2 
+                            className="text-3xl font-black tracking-tight text-foreground transition-colors flex items-center gap-3"
+                          >
+                            {activeCategory?.color && <span className="w-4 h-4 rounded-full" style={{ background: activeCategory.color }} />}
                             {activeCategory?.name || activeSpace?.name || "Home Feed"}
                           </h2>
                           <p className="text-muted-foreground font-medium mt-0.5">
@@ -259,9 +265,16 @@ const Index = () => {
                           key={sub.id}
                           onClick={() => setSelectedCategory(sub.name)}
                           className="group p-4 bg-card/50 hover:bg-card border border-border/5 hover:border-primary/20 rounded-2xl transition-all hover:shadow-lg hover:-translate-y-1 text-left flex flex-col gap-2"
+                          style={sub.color ? { '--hover-border': sub.color + '33' } as any : {}}
                         >
-                          <div className="p-2 bg-primary/10 rounded-xl w-fit group-hover:bg-primary transition-colors">
-                            <FolderTree className="h-4 w-4 text-primary group-hover:text-primary-foreground" />
+                          <div 
+                            className="p-2 rounded-xl w-fit group-hover:bg-primary transition-colors"
+                            style={{ background: sub.color ? sub.color + '22' : 'hsl(var(--primary) / 0.1)' }}
+                          >
+                            <FolderTree 
+                              className="h-4 w-4 transition-colors group-hover:text-primary-foreground" 
+                              style={{ color: sub.color || 'hsl(var(--primary))' }}
+                            />
                           </div>
                           <span className="font-black text-sm text-foreground truncate">{sub.name}</span>
                         </button>

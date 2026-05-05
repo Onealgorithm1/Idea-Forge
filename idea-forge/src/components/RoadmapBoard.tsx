@@ -100,7 +100,10 @@ const RoadmapIdeaCard = ({
             <div className="flex justify-between items-start">
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black text-primary/70 uppercase tracking-widest flex items-center gap-1">
+                  <span 
+                    className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1 px-2 py-0.5 rounded-md"
+                    style={idea.category_color ? { background: idea.category_color + '15', color: idea.category_color } : { color: 'hsl(var(--primary) / 0.7)' }}
+                  >
                     {idea.parent_name ? (
                       <>
                         {idea.parent_name}
@@ -108,7 +111,10 @@ const RoadmapIdeaCard = ({
                         {idea.category}
                       </>
                     ) : (
-                      idea.category
+                      <>
+                        {idea.category_color && <span className="w-1.5 h-1.5 rounded-full" style={{ background: idea.category_color }} />}
+                        {idea.category}
+                      </>
                     )}
                   </span>
                   {idea.priority && (
@@ -260,6 +266,7 @@ const RoadmapBoard = ({ spaceId = null, search = "" }: { spaceId?: string | null
   const queryClient = useQueryClient();
   const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
   const [activeStage, setActiveStage] = useState<string>(roadmapStages[0].id);
+  const [sortBy, setSortBy] = useState<'votes' | 'date' | 'comments' | 'alphabetical'>('date');
 
   const { data: ideas = [], isLoading, isFetching } = useQuery({
     queryKey: ["ideas", tenantSlug, search, spaceId],
@@ -277,11 +284,26 @@ const RoadmapBoard = ({ spaceId = null, search = "" }: { spaceId?: string | null
 
   // Calculate stage items even during loading for hook consistency
   const getStageItems = (statuses: string[]) => {
-    return ideas.filter(i => {
-      const statusMatch = statuses.includes(i.status);
-      const spaceMatch = !spaceId || i.idea_space_id === spaceId;
-      return statusMatch && spaceMatch;
-    });
+    return ideas
+      .filter(i => {
+        const statusMatch = statuses.includes(i.status);
+        const spaceMatch = !spaceId || i.idea_space_id === spaceId;
+        return statusMatch && spaceMatch;
+      })
+      .sort((a: any, b: any) => {
+        switch (sortBy) {
+          case 'votes':
+            return (b.votes_count || 0) - (a.votes_count || 0);
+          case 'date':
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          case 'comments':
+            return (b.comments_count || 0) - (a.comments_count || 0);
+          case 'alphabetical':
+            return (a.title || "").localeCompare(b.title || "");
+          default:
+            return 0;
+        }
+      });
   };
 
   const backlogItems = getStageItems(roadmapStages[0].statuses);
@@ -432,6 +454,27 @@ const RoadmapBoard = ({ spaceId = null, search = "" }: { spaceId?: string | null
     <>
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+             <div className="flex items-center gap-2 bg-card/50 backdrop-blur-md border border-border/50 p-1.5 rounded-2xl shadow-sm w-fit">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2 mr-1">Sort Roadmap</span>
+              <button 
+                onClick={() => setSortBy('date')}
+                className={cn("px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all", sortBy === 'date' ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted text-muted-foreground")}
+              >Date</button>
+              <button 
+                onClick={() => setSortBy('votes')}
+                className={cn("px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all", sortBy === 'votes' ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted text-muted-foreground")}
+              >Votes</button>
+              <button 
+                onClick={() => setSortBy('comments')}
+                className={cn("px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all", sortBy === 'comments' ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted text-muted-foreground")}
+              >Comments</button>
+              <button 
+                onClick={() => setSortBy('alphabetical')}
+                className={cn("px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all", sortBy === 'alphabetical' ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted text-muted-foreground")}
+              >A-Z</button>
+            </div>
+          </div>
           {/* Mobile Stage Selector — pill tabs matching KanbanBoard */}
           <div className="lg:hidden sticky top-0 z-20 bg-background/95 backdrop-blur-xl -mx-4 px-4 py-3 border-b border-border/50">
             <div className="flex bg-muted/30 p-1 rounded-2xl border border-border/50">

@@ -9,11 +9,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getTenantPath, ROUTES } from "@/lib/constants";
 import ProfileIdeaCard from "./ProfileIdeaCard";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import ConfirmationModal from "./ConfirmationModal";
 
 const MyIdeasView = () => {
   const { token, user } = useAuth();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const [searchQuery, setSearchQuery] = useState("");
+  const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'votes' | 'date' | 'comments' | 'alphabetical'>('date');
   const queryClient = useQueryClient();
 
   const { data: ideas = [], isLoading } = useQuery({
@@ -30,6 +34,19 @@ const MyIdeasView = () => {
       queryClient.invalidateQueries({ queryKey: ["bookmarked-ideas", user?.id] });
     },
   });
+  
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/ideas/${id}`, token!),
+    onSuccess: () => {
+      toast.success("Post deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["user-ideas", user?.id] });
+      setIdeaToDelete(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to delete post");
+      setIdeaToDelete(null);
+    }
+  });
 
   const handleBookmark = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -37,10 +54,31 @@ const MyIdeasView = () => {
     bookmarkMutation.mutate(id);
   };
 
-  const filteredIdeas = ideas.filter((idea: any) =>
-    idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    idea.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIdeaToDelete(id);
+  };
+
+  const filteredIdeas = ideas
+    .filter((idea: any) =>
+      idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      idea.category.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a: any, b: any) => {
+      switch (sortBy) {
+        case 'votes':
+          return (b.votes_count || 0) - (a.votes_count || 0);
+        case 'date':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'comments':
+          return (b.comments_count || 0) - (a.comments_count || 0);
+        case 'alphabetical':
+          return (a.title || "").localeCompare(b.title || "");
+        default:
+          return 0;
+      }
+    });
 
   if (isLoading) return <div className="flex justify-center py-20"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
 
@@ -57,15 +95,37 @@ const MyIdeasView = () => {
           </div>
         </div>
 
-        <div className="relative w-full sm:w-72 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-          <input
-            type="text"
-            placeholder="Search my ideas…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-card border border-border rounded-2xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all shadow-sm text-foreground"
-          />
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+          <div className="relative w-full sm:w-72 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <input
+              type="text"
+              placeholder="Search my ideas…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-card border border-border rounded-2xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all shadow-sm text-foreground"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 bg-card border border-border p-1.5 rounded-2xl shadow-sm">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2 mr-1">Sort</span>
+            <button 
+              onClick={() => setSortBy('date')}
+              className={cn("px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all", sortBy === 'date' ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted text-muted-foreground")}
+            >Date</button>
+            <button 
+              onClick={() => setSortBy('votes')}
+              className={cn("px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all", sortBy === 'votes' ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted text-muted-foreground")}
+            >Votes</button>
+            <button 
+              onClick={() => setSortBy('comments')}
+              className={cn("px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all", sortBy === 'comments' ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted text-muted-foreground")}
+            >Comments</button>
+            <button 
+              onClick={() => setSortBy('alphabetical')}
+              className={cn("px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all", sortBy === 'alphabetical' ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted text-muted-foreground")}
+            >A-Z</button>
+          </div>
         </div>
       </div>
 
@@ -80,7 +140,13 @@ const MyIdeasView = () => {
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.2 }}
             >
-              <ProfileIdeaCard idea={idea} tenantSlug={tenantSlug || "default"} onBookmark={handleBookmark} />
+              <ProfileIdeaCard 
+                idea={idea} 
+                tenantSlug={tenantSlug || "default"} 
+                onBookmark={handleBookmark} 
+                onDelete={handleDelete}
+                canDelete={true}
+              />
             </motion.div>
           ))}
         </AnimatePresence>
@@ -98,6 +164,16 @@ const MyIdeasView = () => {
           </Button>
         </div>
       )}
+      
+      <ConfirmationModal
+        isOpen={!!ideaToDelete}
+        onClose={() => setIdeaToDelete(null)}
+        onConfirm={() => ideaToDelete && deleteMutation.mutate(ideaToDelete)}
+        title="Delete Post?"
+        message="This action will permanently delete this post. This action cannot be undone."
+        confirmText="Delete"
+        type="danger"
+      />
     </div>
   );
 };

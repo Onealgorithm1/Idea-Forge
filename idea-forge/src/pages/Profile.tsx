@@ -53,6 +53,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTenant } from "@/contexts/TenantContext";
 import ProfileIdeaCard from "@/components/ProfileIdeaCard";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 /* ─── Constants ────────────────────────────────────────────────────────── */
 const PRECONFIGURED_AVATARS = [
@@ -82,6 +83,7 @@ const Profile = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeSection, setActiveSection] = useState<string>(searchParams.get("section") || "general");
   const [searchQuery, setSearchQuery] = useState("");
+  const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
 
   const [editName, setEditName] = useState("");
   const [editBio, setEditBio] = useState("");
@@ -171,6 +173,19 @@ const Profile = () => {
       toast.success("Password changed successfully");
     },
     onError: (e: any) => toast.error(e.message || "Failed to change password"),
+  });
+
+  const deleteIdeaMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/ideas/${id}`, token!),
+    onSuccess: () => {
+      toast.success("Post deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["user-ideas", user?.id] });
+      setIdeaToDelete(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to delete post");
+      setIdeaToDelete(null);
+    }
   });
 
   const handleBookmark = (e: React.MouseEvent, id: string) => {
@@ -357,11 +372,22 @@ const Profile = () => {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                           {filteredIdeas.length > 0 ? (
-                              filteredIdeas.map((idea: any) => (
-                                 <ProfileIdeaCard key={idea.id} idea={idea} tenantSlug={tenantSlug} onBookmark={handleBookmark} />
-                              ))
-                           ) : (
+                            {filteredIdeas.length > 0 ? (
+                               filteredIdeas.map((idea: any) => (
+                                  <ProfileIdeaCard 
+                                    key={idea.id} 
+                                    idea={idea} 
+                                    tenantSlug={tenantSlug} 
+                                    onBookmark={handleBookmark} 
+                                    onDelete={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setIdeaToDelete(idea.id);
+                                    }}
+                                    canDelete={true}
+                                  />
+                               ))
+                            ) : (
                               <div className="col-span-full py-20 bg-muted/20 border-2 border-dashed border-border/40 rounded-[2.5rem] flex flex-col items-center justify-center gap-4 text-center">
                                  <div className="p-5 bg-background rounded-full shadow-sm">
                                     <Lightbulb className="h-10 w-10 text-muted-foreground/30" />
@@ -509,6 +535,16 @@ const Profile = () => {
 
                   </motion.div>
                 </AnimatePresence>
+
+                <ConfirmationModal
+                  isOpen={!!ideaToDelete}
+                  onClose={() => setIdeaToDelete(null)}
+                  onConfirm={() => ideaToDelete && deleteIdeaMutation.mutate(ideaToDelete)}
+                  title="Delete Post?"
+                  message="This action will permanently delete this post. This action cannot be undone."
+                  confirmText="Delete"
+                  type="danger"
+                />
               </div>
             </div>
           </div>

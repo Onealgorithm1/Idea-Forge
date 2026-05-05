@@ -517,12 +517,16 @@ const AdminCategories = () => {
                       title={c.label}
                       onClick={() => setFormData(f => ({ ...f, color: c.value }))}
                       className={cn(
-                        "w-7 h-7 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
-                        formData.color === c.value ? "border-foreground scale-110 shadow-md" : "border-transparent",
-                        !c.value && "border-border bg-muted"
+                        "w-8 h-8 rounded-full border-2 transition-all relative flex items-center justify-center",
+                        formData.color === c.value 
+                          ? "border-foreground ring-2 ring-primary ring-offset-2 scale-110 shadow-lg z-10" 
+                          : "border-transparent hover:scale-110 opacity-70 hover:opacity-100",
+                        !c.value && "border-border bg-muted/50"
                       )}
                       style={c.value ? { background: c.value } : {}}
-                    />
+                    >
+                      {formData.color === c.value && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm animate-in zoom-in duration-300" />}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -630,12 +634,16 @@ const AdminCategories = () => {
                       title={c.label}
                       onClick={() => setFormData(f => ({ ...f, color: c.value }))}
                       className={cn(
-                        "w-7 h-7 rounded-full border-2 transition-all hover:scale-110 active:scale-95",
-                        formData.color === c.value ? "border-foreground scale-110 shadow-md" : "border-transparent",
-                        !c.value && "border-border bg-muted"
+                        "w-8 h-8 rounded-full border-2 transition-all relative flex items-center justify-center",
+                        formData.color === c.value 
+                          ? "border-foreground ring-2 ring-primary ring-offset-2 scale-110 shadow-lg z-10" 
+                          : "border-transparent hover:scale-110 opacity-70 hover:opacity-100",
+                        !c.value && "border-border bg-muted/50"
                       )}
                       style={c.value ? { background: c.value } : {}}
-                    />
+                    >
+                      {formData.color === c.value && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm animate-in zoom-in duration-300" />}
+                    </button>
                   ))}
                 </div>
               </div>

@@ -72,6 +72,7 @@ const SocialFeed = ({ category = "All", spaceId = null, search = "" }: { categor
   const queryClient = useQueryClient();
   const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
   const [activeStage, setActiveStage] = useState<'ideation' | 'development' | 'production'>('ideation');
+  const [sortBy, setSortBy] = useState<'votes' | 'date' | 'comments' | 'alphabetical'>('votes');
 
   const { data: ideas = [], isLoading, isFetching } = useQuery({
     queryKey: ["ideas", tenantSlug, search, spaceId],
@@ -164,9 +165,26 @@ const SocialFeed = ({ category = "All", spaceId = null, search = "" }: { categor
   const votingItems = baseFilteredIdeas.filter((i: any) => i.status === 'Under Review' || i.status === 'In Progress' || i.status === 'In Development' || i.status === 'QA' || i.status === 'Planned');
   const devItems = baseFilteredIdeas.filter((i: any) => i.status === 'Shipped' || i.status === 'Live' || i.status === 'Closed');
 
-  const filteredIdeas = (activeStage === 'ideation' ? ideaPoolItems 
-                      : activeStage === 'development' ? votingItems 
-                      : devItems).sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0));
+  const filteredIdeas = (() => {
+    const items = activeStage === 'ideation' ? ideaPoolItems 
+                : activeStage === 'development' ? votingItems 
+                : devItems;
+    
+    return [...items].sort((a, b) => {
+      switch (sortBy) {
+        case 'votes':
+          return (b.votes_count || 0) - (a.votes_count || 0);
+        case 'date':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'comments':
+          return (b.comments_count || 0) - (a.comments_count || 0);
+        case 'alphabetical':
+          return (a.title || "").localeCompare(b.title || "");
+        default:
+          return 0;
+      }
+    });
+  })();
 
   const [quickTitle, setQuickTitle] = useState("");
 
@@ -234,11 +252,25 @@ const SocialFeed = ({ category = "All", spaceId = null, search = "" }: { categor
         })}
       </div>
 
-      {/* Feed Divider */}
-      <div className="flex items-center gap-4 py-1">
-        <div className="h-[1px] flex-1 bg-border/50"></div>
-        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Feed</span>
-        <div className="h-[1px] flex-1 bg-border/50"></div>
+      {/* Feed Header with Sort */}
+      <div className="flex items-center justify-between gap-4 py-1">
+        <div className="flex items-center gap-4 flex-1">
+          <div className="h-[1px] flex-1 bg-border/50"></div>
+          <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">Feed</span>
+          <div className="h-[1px] flex-1 bg-border/50"></div>
+        </div>
+        
+        <Select value={sortBy} onValueChange={(val: any) => setSortBy(val)}>
+          <SelectTrigger className="w-[140px] h-9 rounded-xl bg-background border-border/50 text-xs font-bold ring-0 focus:ring-0">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl border-border/50">
+            <SelectItem value="votes" className="text-xs font-medium">Most Voted</SelectItem>
+            <SelectItem value="date" className="text-xs font-medium">Newest First</SelectItem>
+            <SelectItem value="comments" className="text-xs font-medium">Most Comments</SelectItem>
+            <SelectItem value="alphabetical" className="text-xs font-medium">Title (A-Z)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* List Items */}
@@ -301,8 +333,7 @@ const SocialFeed = ({ category = "All", spaceId = null, search = "" }: { categor
                   </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40 rounded-xl">
                     <DropdownMenuItem className="cursor-pointer">Report post</DropdownMenuItem>
-                    {['admin', 'tenant_admin', 'super_admin'].includes(user?.role || '') &&
-                      ['Pending', 'Open', 'Under Review', 'In Progress', 'In Development'].includes(item.status) && (
+                    {(['admin', 'tenant_admin', 'super_admin', 'supportadmin'].includes(user?.role || '') || item.author_id === user?.id) && (
                       <DropdownMenuItem className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={(e) => { e.stopPropagation(); setIdeaToDelete(item.id); }}>
                         Delete post
                       </DropdownMenuItem>
